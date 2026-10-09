@@ -1,0 +1,1376 @@
+﻿@model AccountingSystem.Models.ViewModels.Products.ProductCreateViewModel
+
+@{
+    ViewData["Title"] = "إضافة منتج";
+}
+
+<style>
+    /* ═══════ Page Shell ═══════ */
+    .product-page {
+        padding: 20px 24px 100px;
+        background: #f5f7fa;
+        min-height: 100vh;
+    }
+
+    .page-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+        .page-head h2 {
+            font-weight: 800;
+            color: #111a3f;
+            margin: 0 0 4px;
+            font-size: 1.5rem;
+        }
+
+        .page-head p {
+            color: #6b7280;
+            margin: 0;
+            font-size: .9rem;
+        }
+
+    /* ═══════ Tabs ═══════ */
+    .erp-tabs {
+        display: flex;
+        gap: 6px;
+        background: #fff;
+        padding: 6px;
+        border-radius: 14px;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, .05);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 20px;
+        overflow-x: auto;
+    }
+
+    .erp-tab {
+        flex: 1;
+        min-width: 160px;
+        padding: 12px 18px;
+        border: 0;
+        background: transparent;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: .92rem;
+        color: #4b5563;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: .18s ease;
+        white-space: nowrap;
+    }
+
+        .erp-tab:hover {
+            background: #f3f4f6;
+            color: #111a3f;
+        }
+
+        .erp-tab.active {
+            background: linear-gradient(135deg, #4f8cff, #1e40af);
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(79, 140, 255, .3);
+        }
+
+        .erp-tab i {
+            font-size: 1.1rem;
+        }
+
+    .tab-pane {
+        display: none;
+    }
+
+        .tab-pane.active {
+            display: block;
+            animation: fadeIn .25s ease;
+        }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ═══════ Card ═══════ */
+    .erp-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, .04);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .erp-card-head {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: #fff;
+    }
+
+        .erp-card-head h5 {
+            margin: 0 0 2px;
+            font-weight: 700;
+            color: #111a3f;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .erp-card-head h5 i {
+                color: #4f8cff;
+                font-size: 1.2rem;
+            }
+
+        .erp-card-head small {
+            display: block;
+            color: #6b7280;
+            font-size: .82rem;
+        }
+
+    .erp-card-body {
+        padding: 20px;
+    }
+
+    /* ═══════ Form controls ═══════ */
+    .form-label {
+        font-weight: 600;
+        font-size: .88rem;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: .92rem;
+        transition: .15s ease;
+        background: #fff;
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #4f8cff;
+            box-shadow: 0 0 0 3px rgba(79, 140, 255, .15);
+            outline: none;
+        }
+
+        .form-control::placeholder {
+            color: #9ca3af;
+        }
+
+    .help-text {
+        display: block;
+        color: #6b7280;
+        font-size: .78rem;
+        margin-top: 5px;
+    }
+
+    /* ═══════ Unit select wrapper (زر + بجانب كل قائمة وحدات) ═══════ */
+    .unit-select-wrapper {
+        display: flex;
+        gap: 6px;
+        align-items: stretch;
+    }
+
+        .unit-select-wrapper .form-select {
+            flex: 1;
+            min-width: 0;
+        }
+
+    .btn-add-unit-inline {
+        width: 40px;
+        min-width: 40px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        transition: .15s ease;
+        font-size: 1rem;
+        padding: 0;
+    }
+
+        .btn-add-unit-inline:hover {
+            background: #4f8cff;
+            color: #fff;
+            border-color: #4f8cff;
+            transform: translateY(-1px);
+        }
+
+        .btn-add-unit-inline:active {
+            transform: translateY(0);
+        }
+
+    /* ═══════ Categories ═══════ */
+    .cat-toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+    }
+
+    .cat-search {
+        flex: 1;
+        min-width: 200px;
+        position: relative;
+    }
+
+        .cat-search input {
+            padding-right: 40px;
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 10px 40px 10px 14px;
+            font-size: .88rem;
+        }
+
+        .cat-search i {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            pointer-events: none;
+        }
+
+    .btn-add-cat {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: .88rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: .18s ease;
+    }
+
+        .btn-add-cat:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, .3);
+        }
+
+        .btn-add-cat:active {
+            transform: translateY(0);
+        }
+
+    .cat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        max-height: 340px;
+        overflow-y: auto;
+        padding: 2px;
+    }
+
+        .cat-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .cat-grid::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 8px;
+        }
+
+    .cat-chip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border: 1.5px solid #e5e7eb;
+        background: #fff;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: .15s ease;
+        position: relative;
+        user-select: none;
+    }
+
+        .cat-chip:hover {
+            border-color: #4f8cff;
+            background: #f8faff;
+        }
+
+        .cat-chip.checked {
+            border-color: #4f8cff;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            box-shadow: 0 2px 8px rgba(79, 140, 255, .12);
+        }
+
+        .cat-chip input {
+            display: none;
+        }
+
+        .cat-chip .check-box {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            background: #fff;
+            transition: .15s ease;
+        }
+
+        .cat-chip.checked .check-box {
+            background: #4f8cff;
+            border-color: #4f8cff;
+        }
+
+        .cat-chip .check-box i {
+            color: #fff;
+            font-size: .72rem;
+            opacity: 0;
+            transition: .15s ease;
+        }
+
+        .cat-chip.checked .check-box i {
+            opacity: 1;
+        }
+
+        .cat-chip .cat-name {
+            font-weight: 500;
+            font-size: .88rem;
+            color: #374151;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .cat-chip.checked .cat-name {
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .cat-chip.new-flash {
+            animation: newCatFlash 1.4s ease;
+        }
+
+    @@keyframes newCatFlash {
+        0% {
+            background: #a7f3d0;
+            border-color: #10b981;
+        }
+
+        100% {
+            background: #eff6ff;
+            border-color: #4f8cff;
+        }
+    }
+
+    .cat-empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6b7280;
+    }
+
+        .cat-empty i {
+            font-size: 2.6rem;
+            color: #d1d5db;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+    .cat-counter {
+        background: #eff6ff;
+        color: #1e40af;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: .82rem;
+        font-weight: 600;
+        border: 1px solid #bfdbfe;
+    }
+
+    /* ═══════ Units Table ═══════ */
+    .units-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: .88rem;
+    }
+
+        .units-table thead th {
+            background: #f9fafb;
+            color: #374151;
+            font-weight: 600;
+            font-size: .82rem;
+            padding: 12px 14px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: right;
+        }
+
+        .units-table tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: middle;
+        }
+
+        .units-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .units-table tbody tr:hover {
+            background: #fafbff;
+        }
+
+    .btn-remove-row {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid #fee2e2;
+        background: #fef2f2;
+        color: #dc2626;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        transition: .15s ease;
+        margin: 0 auto;
+    }
+
+        .btn-remove-row:hover {
+            background: #dc2626;
+            color: #fff;
+            border-color: #dc2626;
+        }
+
+    .empty-units {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6b7280;
+    }
+
+        .empty-units i {
+            font-size: 3rem;
+            color: #d1d5db;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .empty-units .btn-add-cat {
+            margin-top: 6px;
+        }
+
+    #addUnitFooter .btn-add-cat {
+        padding: 10px 24px;
+    }
+
+    /* ═══════ Sticky Footer ═══════ */
+    .action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 280px;
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        box-shadow: 0 -4px 20px rgba(16, 24, 40, .06);
+        padding: 14px 24px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        z-index: 1030;
+        align-items: center;
+    }
+
+    @@media (max-width: 991.98px) {
+        .action-bar {
+            right: 0;
+        }
+    }
+
+    .action-bar .saved-hint {
+        margin-right: auto;
+        color: #6b7280;
+        font-size: .82rem;
+    }
+
+    .btn-erp {
+        border-radius: 10px;
+        padding: 11px 22px;
+        font-weight: 600;
+        font-size: .9rem;
+        border: 1px solid transparent;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: .15s ease;
+        text-decoration: none;
+    }
+
+    .btn-erp-secondary {
+        background: #fff;
+        border-color: #d1d5db;
+        color: #374151;
+    }
+
+        .btn-erp-secondary:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+            color: #111a3f;
+        }
+
+    .btn-erp-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(16, 185, 129, .25);
+    }
+
+        .btn-erp-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, .35);
+        }
+
+    /* ═══════ Modals ═══════ */
+    #addCategoryModal .modal-content,
+    #addUnitModal .modal-content {
+        border: 0;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #addCategoryModal .modal-header,
+    #addUnitModal .modal-header {
+        background: linear-gradient(135deg, #4f8cff, #1e40af);
+        color: #fff;
+        border: 0;
+        padding: 18px 22px;
+    }
+
+    #addCategoryModal .modal-title,
+    #addUnitModal .modal-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #addCategoryModal .btn-close,
+    #addUnitModal .btn-close {
+        filter: invert(1);
+        opacity: .85;
+    }
+
+    #addCategoryModal .modal-body,
+    #addUnitModal .modal-body {
+        padding: 22px;
+    }
+</style>
+
+
+<div class="product-page">
+
+    <!-- ═══════ Page Head ═══════ -->
+    <div class="page-head">
+        <div>
+            <h2><i class="bi bi-box-seam-fill" style="color:#4f8cff"></i> إضافة منتج جديد</h2>
+            <p>أدخل بيانات المنتج والتصنيفات والوحدات وأسعار البيع</p>
+        </div>
+        <a asp-controller="Product" asp-action="Index" class="btn-erp btn-erp-secondary">
+            <i class="bi bi-arrow-right"></i>
+            العودة للمنتجات
+        </a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger" style="border-radius:12px;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            @TempData["Error"]
+        </div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="border-radius:12px;"></div>
+
+    <form asp-controller="Product" asp-action="Create" method="post" id="productForm">
+        @Html.AntiForgeryToken()
+
+        <!-- ═══════ Tabs ═══════ -->
+        <div class="erp-tabs">
+            <button type="button" class="erp-tab active" data-tab="tab-basic">
+                <i class="bi bi-info-circle"></i>
+                البيانات الأساسية
+            </button>
+            <button type="button" class="erp-tab" data-tab="tab-units">
+                <i class="bi bi-rulers"></i>
+                الوحدات والأسعار
+                <span class="badge bg-light text-dark" id="unitsCountBadge">0</span>
+            </button>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             TAB 1: البيانات الأساسية
+             ═══════════════════════════════════════ -->
+        <div class="tab-pane active" id="tab-basic">
+            <div class="erp-card">
+                <div class="erp-card-head">
+                    <div>
+                        <h5><i class="bi bi-card-text"></i> بيانات المنتج</h5>
+                        <small>الاسم والباركود والكود والوصف</small>
+                    </div>
+                </div>
+                <div class="erp-card-body">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label">اسم المنتج *</label>
+                            <input asp-for="Name" class="form-control" placeholder="مثال: مياه معدنية 600 مل" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label asp-for="Barcode" class="form-label">الباركود</label>
+                            <input asp-for="Barcode" class="form-control" placeholder="امسح أو اكتب" />
+                            <span asp-validation-for="Barcode" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label asp-for="Code" class="form-label">كود المنتج</label>
+                            <input asp-for="Code" class="form-control" placeholder="SKU-0001" />
+                            <span asp-validation-for="Code" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label">الوصف</label>
+                            <textarea asp-for="Description" class="form-control" rows="2" placeholder="وصف اختياري للمنتج"></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- التصنيفات -->
+            <div class="erp-card">
+                <div class="erp-card-head">
+                    <div>
+                        <h5><i class="bi bi-tags-fill"></i> تصنيفات المنتج</h5>
+                        <small>يمكنك اختيار أكثر من تصنيف لنفس المنتج</small>
+                    </div>
+                    <span class="cat-counter" id="selectedCategoriesCount">0 تصنيف محدد</span>
+                </div>
+                <div class="erp-card-body">
+
+                    <div class="cat-toolbar">
+                        <div class="cat-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="catSearchInput" placeholder="ابحث عن تصنيف..." />
+                        </div>
+                        <button type="button" class="btn-add-cat" id="openAddCatModal">
+                            <i class="bi bi-plus-lg"></i>
+                            إضافة تصنيف جديد
+                        </button>
+                    </div>
+
+                    @if (Model.AvailableCategories != null && Model.AvailableCategories.Any())
+                    {
+                        <div class="cat-grid" id="catGrid">
+                            @foreach (var category in Model.AvailableCategories)
+                            {
+                                var selected = Model.CategoryIds != null && Model.CategoryIds.Contains(category.Id);
+                                <label class="cat-chip @(selected ? "checked" : "")" data-name="@category.Name.ToLower()">
+                                    <input type="checkbox"
+                                           name="CategoryIds"
+                                           value="@category.Id"
+                                    @(selected ? "checked" : "")
+                                           class="category-checkbox" />
+                                    <span class="check-box"><i class="bi bi-check-lg"></i></span>
+                                    <span class="cat-name">@category.Name</span>
+                                </label>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="cat-empty" id="catEmptyState">
+                            <i class="bi bi-tags"></i>
+                            <div style="font-weight:600;color:#374151;margin-bottom:6px;">لا توجد تصنيفات بعد</div>
+                            <div style="font-size:.85rem;">ابدأ بإضافة أول تصنيف من الزر بالأعلى</div>
+                        </div>
+                        <div class="cat-grid" id="catGrid" style="display:none"></div>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- ═══════════════════════════════════════
+             TAB 2: الوحدات والأسعار
+             ═══════════════════════════════════════ -->
+        <div class="tab-pane" id="tab-units">
+            <div class="erp-card">
+                <div class="erp-card-head">
+                    <div>
+                        <h5><i class="bi bi-rulers"></i> وحدات المنتج وأسعار البيع</h5>
+                        <small>أضف كل الوحدات التي يمكن بيع المنتج بها</small>
+                    </div>
+                    <button type="button" class="btn-add-cat add-unit-btn" id="addUnitBtn">
+                        <i class="bi bi-plus-lg"></i>
+                        إضافة وحدة
+                    </button>
+                </div>
+                <div class="erp-card-body">
+
+                    <div class="alert alert-info" style="border-radius:12px;font-size:.88rem;">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>مثال:</strong> القطعة = 1، الدستة = 12، الكرتونة = 30 —
+                        النظام يطبّق معامل التحويل تلقائيًا أثناء البيع والمخزون.
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="BaseUnitId" class="form-label">الوحدة الأساسية *</label>
+
+                        <!-- ✅ زر إضافة وحدة جديدة بجانب القائمة -->
+                        <div class="unit-select-wrapper">
+                            <select asp-for="BaseUnitId" class="form-select" id="baseUnitSelect">
+                                <option value="0">-- اختر الوحدة الأساسية --</option>
+                                @foreach (var unit in Model.AvailableUnits)
+                                {
+                                    <option value="@unit.Id" selected="@(unit.Id == Model.BaseUnitId)">
+                                        @unit.Name@(string.IsNullOrWhiteSpace(unit.ShortName) ? "" : $" ({unit.ShortName})")
+                                    </option>
+                                }
+                            </select>
+                            <button type="button"
+                                    class="btn-add-unit-inline add-new-unit-btn"
+                                    title="إضافة وحدة جديدة">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+
+                        <small class="help-text">الوحدة التي يحسب بها المخزون داخليًا.</small>
+                        <span asp-validation-for="BaseUnitId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MinQuantity" class="form-label">الحد الأدنى للمخزون</label>
+                        <input asp-for="MinQuantity" type="number" step="0.001" min="0" class="form-control" />
+                        <small class="help-text">يتم التنبيه عند انخفاض الرصيد عن هذا الحد.</small>
+                        <span asp-validation-for="MinQuantity" class="text-danger small"></span>
+                    </div>
+                    <div class="table-responsive" id="unitsTableWrap">
+                        <table class="units-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:28%">الوحدة</th>
+                                    <th style="width:20%">معامل التحويل</th>
+                                    <th style="width:20%">سعر البيع</th>
+                                    <th style="width:14%;text-align:center">الحالة</th>
+                                    <th style="width:10%;text-align:center">إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unitsBody">
+                                @if (Model.Units != null && Model.Units.Any())
+                                {
+                                    for (var i = 0; i < Model.Units.Count; i++)
+                                    {
+                                        <tr class="unit-row">
+                                            <td>
+                                                <!-- ✅ زر إضافة وحدة جديدة بجانب كل قائمة في الجدول -->
+                                                <div class="unit-select-wrapper">
+                                                    <select name="Units[@i].UnitId" class="form-select unit-select">
+                                                        <option value="0">-- اختر الوحدة --</option>
+                                                        @foreach (var unit in Model.AvailableUnits)
+                                                        {
+                                                            <option value="@unit.Id" selected="@(unit.Id == Model.Units[i].UnitId)">
+                                                                @unit.Name
+                                                            </option>
+                                                        }
+                                                    </select>
+                                                    <button type="button"
+                                                            class="btn-add-unit-inline add-new-unit-btn"
+                                                            title="إضافة وحدة جديدة">
+                                                        <i class="bi bi-plus-lg"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="Units[@i].ConversionFactor"
+                                                       class="form-control conversion-input"
+                                                       value="@Model.Units[i].ConversionFactor"
+                                                       min="0.000001" step="0.000001" />
+                                            </td>
+                                            <td>
+                                                <input type="number" name="Units[@i].SalePrice"
+                                                       class="form-control sale-price-input"
+                                                       value="@Model.Units[i].SalePrice"
+                                                       min="0" step="0.01" />
+                                            </td>
+                                            <td style="text-align:center">
+                                                <input type="checkbox" name="Units[@i].IsActive"
+                                                       value="true" class="form-check-input"
+                                                @(Model.Units[i].IsActive ? "checked" : "") />
+                                                <input type="hidden" name="Units[@i].IsActive" value="false" />
+                                            </td>
+                                            <td style="text-align:center">
+                                                <button type="button" class="btn-remove-row remove-unit" title="حذف">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ✅ زر إضافة وحدة أخرى (يظهر فقط لو فيه صفوف) -->
+                    <div class="text-center mt-3" id="addUnitFooter" style="display:none;">
+                        <button type="button" class="btn-add-cat add-unit-btn">
+                            <i class="bi bi-plus-lg"></i>
+                            إضافة وحدة أخرى
+                        </button>
+                    </div>
+
+                    <!-- ✅ الحالة الفارغة مع زر إضافة -->
+                    <div class="empty-units" id="noUnitsMessage">
+                        <i class="bi bi-inboxes"></i>
+                        <div style="font-weight:600;color:#374151;margin-bottom:6px;">لا توجد وحدات بعد</div>
+                        <div style="font-size:.85rem;margin-bottom:14px;">اضغط الزر بالأسفل للبدء</div>
+                        <button type="button" class="btn-add-cat add-unit-btn">
+                            <i class="bi bi-plus-lg"></i>
+                            إضافة وحدة جديدة
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+
+<!-- ═══════ Sticky Action Bar ═══════ -->
+<div class="action-bar">
+    <span class="saved-hint"><i class="bi bi-shield-check"></i> يتم حفظ البيانات داخل قاعدة البيانات مباشرة</span>
+    <a asp-controller="Product" asp-action="Index" class="btn-erp btn-erp-secondary">
+        إلغاء
+    </a>
+    <button type="submit" form="productForm" class="btn-erp btn-erp-success">
+        <i class="bi bi-check2-circle"></i>
+        حفظ المنتج
+    </button>
+</div>
+
+
+<!-- ═══════ Modal: إضافة تصنيف جديد ═══════ -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">
+                    <i class="bi bi-tag-fill"></i>
+                    إضافة تصنيف جديد
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اسم التصنيف *</label>
+                    <input type="text" class="form-control" id="newCatName" placeholder="مثال: مشروبات غازية" maxlength="100" />
+                    <div class="text-danger small mt-1" id="newCatNameError" style="display:none;"></div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">الوصف (اختياري)</label>
+                    <textarea class="form-control" id="newCatDesc" rows="2" placeholder="وصف مختصر للتصنيف" maxlength="250"></textarea>
+                </div>
+                <div class="alert alert-danger mb-0" id="newCatGlobalError" style="display:none;border-radius:10px;"></div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #f3f4f6;padding:14px 22px;">
+                <button type="button" class="btn-erp btn-erp-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn-erp btn-erp-success" id="saveNewCatBtn">
+                    <i class="bi bi-check2-circle"></i>
+                    حفظ التصنيف
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════ Modal: إضافة وحدة جديدة ═══════ -->
+<div class="modal fade" id="addUnitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">
+                    <i class="bi bi-rulers"></i>
+                    إضافة وحدة جديدة
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اسم الوحدة *</label>
+                    <input type="text" class="form-control" id="newUnitName" placeholder="مثال: كرتونة" maxlength="50" />
+                    <div class="text-danger small mt-1" id="newUnitNameError" style="display:none;"></div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">الاختصار (اختياري)</label>
+                    <input type="text" class="form-control" id="newUnitShortName" placeholder="مثال: كرت" maxlength="20" />
+                </div>
+                <div class="alert alert-danger mb-0" id="newUnitGlobalError" style="display:none;border-radius:10px;"></div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #f3f4f6;padding:14px 22px;">
+                <button type="button" class="btn-erp btn-erp-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn-erp btn-erp-success" id="saveNewUnitBtn">
+                    <i class="bi bi-check2-circle"></i>
+                    حفظ الوحدة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // ═════════════════════════════════════════
+        // Tabs
+        // ═════════════════════════════════════════
+        document.querySelectorAll('.erp-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.erp-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ═════════════════════════════════════════
+        // Categories: counter + search + chips
+        // ═════════════════════════════════════════
+        const catGrid = document.getElementById('catGrid');
+        const catCounter = document.getElementById('selectedCategoriesCount');
+        const catSearch = document.getElementById('catSearchInput');
+
+        function updateCatCounter() {
+            const count = document.querySelectorAll('.category-checkbox:checked').length;
+            catCounter.textContent = `${count} تصنيف محدد`;
+        }
+
+        function syncChipState() {
+            document.querySelectorAll('.cat-chip').forEach(chip => {
+                const cb = chip.querySelector('.category-checkbox');
+                chip.classList.toggle('checked', cb.checked);
+            });
+        }
+
+        document.querySelectorAll('.cat-chip').forEach(chip => {
+            const cb = chip.querySelector('.category-checkbox');
+            cb.addEventListener('change', () => {
+                chip.classList.toggle('checked', cb.checked);
+                updateCatCounter();
+            });
+        });
+
+        if (catSearch) {
+            catSearch.addEventListener('input', e => {
+                const q = e.target.value.trim().toLowerCase();
+                document.querySelectorAll('.cat-chip').forEach(chip => {
+                    chip.style.display = chip.dataset.name.includes(q) ? '' : 'none';
+                });
+            });
+        }
+
+        // ═════════════════════════════════════════
+        // Add Category Modal
+        // ═════════════════════════════════════════
+        const addCatModalEl = document.getElementById('addCategoryModal');
+        const addCatModal = new bootstrap.Modal(addCatModalEl);
+        const newCatName = document.getElementById('newCatName');
+        const newCatDesc = document.getElementById('newCatDesc');
+        const newCatNameError = document.getElementById('newCatNameError');
+        const newCatGlobalError = document.getElementById('newCatGlobalError');
+        const saveNewCatBtn = document.getElementById('saveNewCatBtn');
+
+        document.getElementById('openAddCatModal').addEventListener('click', () => {
+            newCatName.value = '';
+            newCatDesc.value = '';
+            newCatNameError.style.display = 'none';
+            newCatGlobalError.style.display = 'none';
+            addCatModal.show();
+            setTimeout(() => newCatName.focus(), 250);
+        });
+
+        saveNewCatBtn.addEventListener('click', async () => {
+            const name = newCatName.value.trim();
+            const description = newCatDesc.value.trim();
+
+            newCatNameError.style.display = 'none';
+            newCatGlobalError.style.display = 'none';
+
+            if (!name) {
+                newCatNameError.textContent = 'اسم التصنيف مطلوب';
+                newCatNameError.style.display = 'block';
+                newCatName.focus();
+                return;
+            }
+
+            saveNewCatBtn.disabled = true;
+            const originalHtml = saveNewCatBtn.innerHTML;
+            saveNewCatBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                const resp = await fetch('/Category/CreateAjax', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: new URLSearchParams({ name, description })
+                });
+
+                const data = await resp.json();
+
+                if (!data.success) {
+                    newCatGlobalError.textContent = data.message || 'حدث خطأ غير متوقع';
+                    newCatGlobalError.style.display = 'block';
+                    return;
+                }
+
+                appendNewCategory(data);
+                addCatModal.hide();
+            }
+            catch (err) {
+                newCatGlobalError.textContent = 'تعذّر الاتصال بالخادم';
+                newCatGlobalError.style.display = 'block';
+            }
+            finally {
+                saveNewCatBtn.disabled = false;
+                saveNewCatBtn.innerHTML = originalHtml;
+            }
+        });
+
+        function appendNewCategory(data) {
+            const emptyState = document.getElementById('catEmptyState');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+                catGrid.style.display = '';
+            }
+
+            const chip = document.createElement('label');
+            chip.className = 'cat-chip checked new-flash';
+            chip.dataset.name = data.name.toLowerCase();
+            chip.innerHTML = `
+                                <input type="checkbox" name="CategoryIds" value="${data.id}" class="category-checkbox" checked />
+                                <span class="check-box"><i class="bi bi-check-lg"></i></span>
+                                <span class="cat-name"></span>
+                            `;
+            chip.querySelector('.cat-name').textContent = data.name;
+
+            chip.querySelector('.category-checkbox').addEventListener('change', function() {
+                chip.classList.toggle('checked', this.checked);
+                updateCatCounter();
+            });
+
+            catGrid.prepend(chip);
+            updateCatCounter();
+
+            setTimeout(() => chip.classList.remove('new-flash'), 1500);
+        }
+
+        // ═════════════════════════════════════════
+        // Units
+        // ═════════════════════════════════════════
+        // ✅ Html.Raw ضرورية لمنع Razor من ترميز JSON إلى HTML entities (&quot; &amp;)
+        const availableUnits = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                                                                    Model.AvailableUnits.Select(x => new { id = x.Id, name = x.Name, shortName = x.ShortName }),
+                    new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+        const unitsBody = document.getElementById('unitsBody');
+        const noUnitsMessage = document.getElementById('noUnitsMessage');
+        const baseUnitSelect = document.getElementById('baseUnitSelect');
+        const unitsCountBadge = document.getElementById('unitsCountBadge');
+        const unitsTableWrap = document.getElementById('unitsTableWrap');
+        const addUnitFooter = document.getElementById('addUnitFooter');
+
+        function updateNoUnitsMessage() {
+            const count = unitsBody.querySelectorAll('.unit-row').length;
+            noUnitsMessage.style.display = count === 0 ? 'block' : 'none';
+            unitsTableWrap.style.display = count === 0 ? 'none' : 'block';
+            if (addUnitFooter) addUnitFooter.style.display = count === 0 ? 'none' : 'block';
+            if (unitsCountBadge) unitsCountBadge.textContent = count;
+        }
+
+        function createUnitOptions(selectedId) {
+            let html = '<option value="0">-- اختر الوحدة --</option>';
+            availableUnits.forEach(unit => {
+                const text = unit.shortName ? `${unit.name} (${unit.shortName})` : unit.name;
+                const sel = unit.id === selectedId ? 'selected' : '';
+                html += `<option value="${unit.id}" ${sel}>${text}</option>`;
+            });
+            return html;
+        }
+
+        // ✅ دالة موحّدة لإضافة صف وحدة جديدة
+        function addUnitRow() {
+            const index = unitsBody.querySelectorAll('.unit-row').length;
+            const row = document.createElement('tr');
+            row.className = 'unit-row';
+            row.innerHTML = `
+                                <td>
+                                    <div class="unit-select-wrapper">
+                                        <select name="Units[${index}].UnitId" class="form-select unit-select">
+                                            ${createUnitOptions()}
+                                        </select>
+                                        <button type="button"
+                                                class="btn-add-unit-inline add-new-unit-btn"
+                                                title="إضافة وحدة جديدة">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" name="Units[${index}].ConversionFactor"
+                                           class="form-control conversion-input" value="1"
+                                           min="0.000001" step="0.000001" />
+                                </td>
+                                <td>
+                                    <input type="number" name="Units[${index}].SalePrice"
+                                           class="form-control sale-price-input" value="0"
+                                           min="0" step="0.01" />
+                                </td>
+                                <td style="text-align:center">
+                                    <input type="checkbox" name="Units[${index}].IsActive"
+                                           value="true" class="form-check-input" checked />
+                                    <input type="hidden" name="Units[${index}].IsActive" value="false" />
+                                </td>
+                                <td style="text-align:center">
+                                    <button type="button" class="btn-remove-row remove-unit" title="حذف">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </td>
+                            `;
+            unitsBody.appendChild(row);
+            updateNoUnitsMessage();
+
+            // اربط زر "إضافة وحدة" الجديد
+            bindAddNewUnitButton(row.querySelector('.add-new-unit-btn'));
+
+            row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ✅ اربط كل أزرار إضافة صف وحدة
+        document.querySelectorAll('.add-unit-btn').forEach(btn => {
+            btn.addEventListener('click', addUnitRow);
+        });
+
+        // حذف صف
+        unitsBody.addEventListener('click', e => {
+            if (!e.target.closest('.remove-unit')) return;
+            const row = e.target.closest('.unit-row');
+            if (row) {
+                row.remove();
+                reindexUnits();
+                updateNoUnitsMessage();
+            }
+        });
+
+        function reindexUnits() {
+            unitsBody.querySelectorAll('.unit-row').forEach((row, index) => {
+                const select = row.querySelector('.unit-select');
+                const conversion = row.querySelector('.conversion-input');
+                const salePrice = row.querySelector('.sale-price-input');
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                const hidden = row.querySelector('input[type="hidden"]');
+
+                if (select) select.name = `Units[${index}].UnitId`;
+                if (conversion) conversion.name = `Units[${index}].ConversionFactor`;
+                if (salePrice) salePrice.name = `Units[${index}].SalePrice`;
+                if (checkbox) checkbox.name = `Units[${index}].IsActive`;
+                if (hidden) hidden.name = `Units[${index}].IsActive`;
+            });
+        }
+
+        if (baseUnitSelect) {
+            baseUnitSelect.addEventListener('change', function() {
+                const baseUnitId = parseInt(this.value);
+                unitsBody.querySelectorAll('.unit-row').forEach(row => {
+                    const select = row.querySelector('.unit-select');
+                    const conversion = row.querySelector('.conversion-input');
+                    if (!select || !conversion) return;
+                    if (parseInt(select.value) === baseUnitId) conversion.value = '1';
+                });
+            });
+        }
+
+        // ═════════════════════════════════════════
+        // ✅ Add Unit Modal (جديد)
+        // ═════════════════════════════════════════
+        const addUnitModalEl = document.getElementById('addUnitModal');
+        const addUnitModal = new bootstrap.Modal(addUnitModalEl);
+        const newUnitName = document.getElementById('newUnitName');
+        const newUnitShortName = document.getElementById('newUnitShortName');
+        const newUnitNameError = document.getElementById('newUnitNameError');
+        const newUnitGlobalError = document.getElementById('newUnitGlobalError');
+        const saveNewUnitBtn = document.getElementById('saveNewUnitBtn');
+
+        // عنصر الـ select اللي فتح المودال
+        let pendingUnitSelect = null;
+
+        function bindAddNewUnitButton(btn) {
+            if (!btn) return;
+            btn.addEventListener('click', function() {
+                // تحديد القائمة المقصودة
+                const wrapper = this.closest('.unit-select-wrapper');
+                pendingUnitSelect = wrapper
+                    ? wrapper.querySelector('select')
+                    : null;
+
+                // إعادة تعيين النموذج
+                newUnitName.value = '';
+                newUnitShortName.value = '';
+                newUnitNameError.style.display = 'none';
+                newUnitGlobalError.style.display = 'none';
+
+                addUnitModal.show();
+                setTimeout(() => newUnitName.focus(), 250);
+            });
+        }
+
+        // اربط كل الأزرار الموجودة مسبقًا في الصفحة
+        document.querySelectorAll('.add-new-unit-btn').forEach(bindAddNewUnitButton);
+
+        // حفظ الوحدة الجديدة
+        saveNewUnitBtn.addEventListener('click', async () => {
+            const name = newUnitName.value.trim();
+            const shortName = newUnitShortName.value.trim();
+
+            newUnitNameError.style.display = 'none';
+            newUnitGlobalError.style.display = 'none';
+
+            if (!name) {
+                newUnitNameError.textContent = 'اسم الوحدة مطلوب';
+                newUnitNameError.style.display = 'block';
+                newUnitName.focus();
+                return;
+            }
+
+            saveNewUnitBtn.disabled = true;
+            const originalHtml = saveNewUnitBtn.innerHTML;
+            saveNewUnitBtn.innerHTML =
+                '<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                const resp = await fetch('/Unit/CreateAjax', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: new URLSearchParams({ name, shortName })
+                });
+
+                const data = await resp.json();
+
+                if (!data.success) {
+                    newUnitGlobalError.textContent =
+                        data.message || 'حدث خطأ غير متوقع';
+                    newUnitGlobalError.style.display = 'block';
+                    return;
+                }
+
+                appendNewUnit(data);
+                addUnitModal.hide();
+            }
+            catch (err) {
+                newUnitGlobalError.textContent = 'تعذّر الاتصال بالخادم';
+                newUnitGlobalError.style.display = 'block';
+            }
+            finally {
+                saveNewUnitBtn.disabled = false;
+                saveNewUnitBtn.innerHTML = originalHtml;
+            }
+        });
+
+        // ✅ إضافة الوحدة الجديدة لكل القوائم + تحديدها تلقائيًا
+        function appendNewUnit(data) {
+            // 1) أضف للذاكرة
+            availableUnits.push({
+                id: data.id,
+                name: data.name,
+                shortName: data.shortName || ''
+            });
+
+            // 2) حدّث قائمة الوحدة الأساسية
+            const currentBaseValue = baseUnitSelect.value;
+            let baseHtml = '<option value="0">-- اختر الوحدة الأساسية --</option>';
+            availableUnits.forEach(u => {
+                const text = u.shortName ? `${u.name} (${u.shortName})` : u.name;
+                baseHtml += `<option value="${u.id}">${text}</option>`;
+            });
+            baseUnitSelect.innerHTML = baseHtml;
+
+            // 3) حدّث كل قوائم الجدول
+            unitsBody.querySelectorAll('.unit-select').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = createUnitOptions();
+
+                if (select === pendingUnitSelect) {
+                    // القائمة اللي ضغطت منها زر + → اختر الوحدة الجديدة
+                    select.value = data.id;
+                } else if (currentVal) {
+                    // الباقي حافظ على اختياره
+                    select.value = currentVal;
+                }
+            });
+
+            // 4) لو الضغط كان من قائمة الوحدة الأساسية
+            if (pendingUnitSelect === baseUnitSelect) {
+                baseUnitSelect.value = data.id;
+            } else {
+                baseUnitSelect.value = currentBaseValue;
+            }
+
+            // 5) شغّل منطق تغيير الوحدة الأساسية
+            if (typeof baseUnitSelect.onchange === 'function') {
+                baseUnitSelect.dispatchEvent(new Event('change'));
+            }
+
+            pendingUnitSelect = null;
+        }
+
+        // ═════════════════════════════════════════
+        // Init
+        // ═════════════════════════════════════════
+        syncChipState();
+        updateCatCounter();
+        updateNoUnitsMessage();
+    </script>
+}

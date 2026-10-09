@@ -1,0 +1,80 @@
+﻿@model List<AccountingSystem.Models.PayrollRun>
+
+@{
+ViewData["Title"] = "الرواتب";
+
+string StatusBadge(AccountingSystem.Models.PayrollRunStatus s) => s switch
+{
+AccountingSystem.Models.PayrollRunStatus.Draft => "<span class='badge bg-secondary'>مسودة</span>",
+AccountingSystem.Models.PayrollRunStatus.Approved => "<span class='badge bg-info text-dark'>معتمد</span>",
+AccountingSystem.Models.PayrollRunStatus.Paid => "<span class='badge bg-success'>مصروف</span>",
+AccountingSystem.Models.PayrollRunStatus.Cancelled => "<span class='badge bg-danger'>ملغي</span>",
+_ => ""
+};
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div>
+<h2 class="mb-1">الرواتب</h2>
+<p class="text-muted mb-0 small">سجل أشهر الرواتب</p>
+</div>
+<a asp-action="Create" class="btn btn-primary">
+<i class="bi bi-plus-lg"></i> شهر رواتب جديد
+</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success alert-dismissible fade show">
+@TempData["Success"]
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+@if (TempData["Error"] != null)
+{
+<div class="alert alert-danger alert-dismissible fade show">
+@TempData["Error"]
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+<div class="card shadow-sm border-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th>الشهر</th>
+<th>الفترة</th>
+<th>الإجمالي</th>
+<th>الصافي</th>
+<th>الحالة</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+@foreach (var r in Model)
+{
+<tr>
+<td><strong>@r.PeriodName</strong></td>
+<td class="text-muted small">
+@r.PeriodStart.ToString("yyyy-MM-dd") → @r.PeriodEnd.ToString("yyyy-MM-dd")
+</td>
+<td>@r.TotalGross.ToString("N2")</td>
+<td><strong class="text-primary">@r.TotalNet.ToString("N2")</strong></td>
+<td>@Html.Raw(StatusBadge(r.Status))</td>
+<td class="text-end">
+<a asp-action="Details" asp-route-id="@r.Id" class="btn btn-sm btn-outline-primary">
+عرض
+</a>
+</td>
+</tr>
+}
+@if (!Model.Any())
+{
+<tr><td colspan="6" class="text-center text-muted py-4">لا يوجد أشهر رواتب بعد</td></tr>
+}
+</tbody>
+</table>
+</div>
+</div>

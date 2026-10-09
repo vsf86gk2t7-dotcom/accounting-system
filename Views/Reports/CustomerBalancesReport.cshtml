@@ -1,0 +1,142 @@
+@model AccountingSystem.Models.ViewModels.Reports.CustomerBalancesReportViewModel
+
+@{
+	ViewData["Title"] = "أرصدة العملاء";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>أرصدة العملاء</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		كل التقارير
+	</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+
+	<div class="card-body">
+
+		<div class="row g-3 align-items-end">
+
+			<div class="col-md-2">
+
+				<label class="form-label fw-semibold">من تاريخ</label>
+
+				<input type="date"
+					   name="fromDate"
+					   class="form-control"
+					   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-2">
+
+				<label class="form-label fw-semibold">إلى تاريخ</label>
+
+				<input type="date"
+					   name="toDate"
+					   class="form-control"
+					   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-2">
+
+				<button type="submit"
+						class="btn btn-primary">
+					عرض
+				</button>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</form>
+
+<div class="table-responsive">
+	<table class="table table-striped table-hover">
+		<thead class="table-dark">
+			<tr>
+				<th>العميل</th>
+				<th>رصيد افتتاحي</th>
+				<th>مدين</th>
+				<th>دائن</th>
+				<th>الرصيد</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+
+			@if (!Model.Customers.Any())
+			{
+				<tr>
+					<td colspan="6"
+						class="text-center text-muted py-3">
+						لا يوجد عملاء لعرض أرصدتهم.
+					</td>
+				</tr>
+			}
+			else
+			{
+				foreach (var row in Model.Customers)
+				{
+					var statementUrl =
+						Url.Action(
+							"CustomerStatement",
+							new
+							{
+								customerId = row.CustomerId,
+								fromDate =
+									Model.FromDate
+										.ToString("yyyy-MM-dd"),
+								toDate =
+									Model.ToDate
+										.ToString("yyyy-MM-dd")
+							});
+
+					<tr style="cursor:pointer"
+						onclick="window.location='@statementUrl'">
+
+						<td>@row.CustomerName</td>
+
+						<td>
+							@row.OpeningBalance.ToString("N2")
+						</td>
+
+						<td>@row.Debit.ToString("N2")</td>
+
+						<td>@row.Credit.ToString("N2")</td>
+
+						<td class="fw-bold">
+							@row.Balance.ToString("N2")
+						</td>
+
+						<td class="text-end">
+
+							<a href="@statementUrl"
+							   class="btn btn-sm btn-outline-primary"
+							   onclick="event.stopPropagation()">
+								كشف الحساب
+							</a>
+
+						</td>
+
+					</tr>
+				}
+			}
+
+		</tbody>
+		<tfoot class="table-dark fw-bold">
+			<tr>
+				<td>الإجمالي</td>
+				<td>@Model.GrandOpening.ToString("N2")</td>
+				<td>@Model.GrandDebit.ToString("N2")</td>
+				<td>@Model.GrandCredit.ToString("N2")</td>
+				<td>@Model.GrandBalance.ToString("N2")</td>
+				<td></td>
+			</tr>
+		</tfoot>
+	</table>
+</div>

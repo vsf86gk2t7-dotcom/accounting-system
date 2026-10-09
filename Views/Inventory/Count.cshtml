@@ -1,0 +1,277 @@
+@model AccountingSystem.Models.ViewModels.Inventory.InventoryCountViewModel
+
+@{
+	ViewData["Title"] = "جرد مخزن";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>جرد مخزن</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للأرصدة
+	</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<div class="card shadow-sm mb-3">
+
+	<div class="card-header">
+		<h5 class="mb-0">اختيار المخزن</h5>
+	</div>
+
+	<div class="card-body">
+
+		<form method="get"
+			  asp-action="Count"
+			  class="row g-2 align-items-end">
+
+			<div class="col-md-6">
+
+				<label class="form-label fw-semibold">
+					المخزن
+				</label>
+
+				<select name="storeId"
+						class="form-select">
+
+					<option value="">
+						-- اختر المخزن --
+					</option>
+
+					@foreach (var store in Model.Stores)
+					{
+						<option value="@store.Key"
+								selected=@(store.Key == Model.StoreId ? "selected" : null)>
+							@store.Value
+						</option>
+					}
+
+				</select>
+
+			</div>
+
+			<div class="col-md-3">
+
+				<button type="submit"
+						class="btn btn-primary w-100">
+					تحميل الأرصدة
+				</button>
+
+			</div>
+
+		</form>
+
+	</div>
+
+</div>
+
+@if (Model.StoreId > 0)
+{
+
+	@if (Model.Lines == null || Model.Lines.Count == 0)
+	{
+		<div class="alert alert-info">
+			لا توجد أرصدة لهذا المخزن لعمل جرد له.
+		</div>
+	}
+	else
+	{
+
+		<form asp-action="Count"
+			  method="post">
+
+			@Html.AntiForgeryToken()
+
+			<input asp-for="StoreId" type="hidden" />
+
+			<div class="card shadow-sm mb-3">
+
+				<div class="card-header d-flex justify-content-between align-items-center">
+
+					<h5 class="mb-0">أصناف الجرد</h5>
+
+					<span id="countSummary" class="badge bg-secondary">
+						0 فروقات
+					</span>
+
+				</div>
+
+				<div class="card-body">
+
+					<div class="table-responsive">
+
+						<table class="table table-bordered align-middle mb-0">
+
+							<thead class="table-light">
+								<tr>
+									<th>المنتج</th>
+									<th>رصيد النظام</th>
+									<th>الكمية الفعلية</th>
+									<th>الفرق</th>
+								</tr>
+							</thead>
+
+							<tbody>
+
+								@for (var i = 0; i < Model.Lines.Count; i++)
+								{
+									var line = Model.Lines[i];
+
+									<tr class="count-row">
+
+										<td>
+
+											<input type="hidden"
+												   name="Lines[@i].ProductId"
+												   value="@line.ProductId" />
+
+											<strong>@line.ProductName</strong>
+
+										</td>
+
+										<td>
+
+											<span class="system-qty">
+												@line.SystemQuantity.ToString("N3")
+											</span>
+
+										</td>
+
+										<td style="width:180px">
+
+											<input type="number"
+												   name="Lines[@i].CountedQuantity"
+												   class="form-control counted-input"
+												   value="@line.CountedQuantity"
+												   min="0"
+												   step="0.001" />
+
+										</td>
+
+										<td>
+
+											<span class="diff-badge badge bg-success">
+												مطابق
+											</span>
+
+										</td>
+
+									</tr>
+								}
+
+							</tbody>
+
+						</table>
+
+					</div>
+
+					<div class="mt-3">
+
+						<label asp-for="Notes" class="form-label fw-semibold">
+							ملاحظات الجرد
+						</label>
+
+						<input asp-for="Notes"
+							   class="form-control"
+							   placeholder="ملاحظات اختيارية" />
+
+					</div>
+
+				</div>
+
+			</div>
+
+			<div class="d-flex justify-content-end gap-2">
+
+				<a asp-action="Index"
+				   class="btn btn-outline-secondary">
+					إلغاء
+				</a>
+
+				<button type="submit"
+						class="btn btn-success px-4">
+					حفظ نتائج الجرد
+				</button>
+
+			</div>
+
+		</form>
+
+	}
+
+}
+
+@section Scripts
+{
+	<partial name="_ValidationScriptsPartial" />
+
+	<script>
+		const summary =
+			document.getElementById("countSummary");
+
+		function updateDiffs() {
+			const rows =
+				document.querySelectorAll(".count-row");
+
+			let diffCount = 0;
+
+			rows.forEach(row => {
+				const system =
+					parseFloat(
+						row.querySelector(".system-qty").textContent
+					);
+
+				const counted =
+					parseFloat(
+						row.querySelector(".counted-input").value
+					) || 0;
+
+				const diff =
+					counted - system;
+
+				const badge =
+					row.querySelector(".diff-badge");
+
+				if (Math.abs(diff) < 0.000001) {
+					badge.className =
+						"diff-badge badge bg-success";
+					badge.textContent = "مطابق";
+				} else if (diff > 0) {
+					badge.className =
+						"diff-badge badge bg-warning text-dark";
+					badge.textContent =
+						`زيادة ${diff.toFixed(3)}`;
+					diffCount++;
+				} else {
+					badge.className =
+						"diff-badge badge bg-danger";
+					badge.textContent =
+						`نقص ${Math.abs(diff).toFixed(3)}`;
+					diffCount++;
+				}
+			});
+
+			if (summary) {
+				summary.textContent =
+					`${diffCount} فروقات`;
+			}
+		}
+
+		document
+			.querySelectorAll(".counted-input")
+			.forEach(input => {
+				input.addEventListener("input", updateDiffs);
+			});
+
+		updateDiffs();
+	</script>
+}

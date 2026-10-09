@@ -1,0 +1,136 @@
+@model AccountingSystem.Models.ViewModels.Treasury.TreasuryAdjustViewModel
+
+@{
+	ViewData["Title"] = "تسوية خزينة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تسوية خزينة</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للخزينة
+	</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<form asp-action="Adjust"
+	  method="post">
+
+	@Html.AntiForgeryToken()
+
+	<div class="card shadow-sm mb-3">
+
+		<div class="card-header">
+			<h5 class="mb-0">بيانات التسوية</h5>
+		</div>
+
+		<div class="card-body">
+
+			<div class="row g-3">
+
+				<div class="col-md-6">
+
+					<label asp-for="CashAccountId" class="form-label fw-semibold">
+						المركز النقدي
+					</label>
+
+					<select asp-for="CashAccountId"
+							class="form-select">
+
+						<option value="0">
+							-- اختر المركز --
+						</option>
+
+						@foreach (var account in Model.Accounts)
+						{
+							<option value="@account.Key">@account.Value</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="CashAccountId" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-3">
+
+					<label asp-for="Amount" class="form-label fw-semibold">
+						مبلغ التعديل
+					</label>
+
+					<input asp-for="Amount"
+						   class="form-control"
+						   type="number"
+						   min="0.01"
+						   step="0.01"
+						   placeholder="0.00" />
+
+					<span asp-validation-for="Amount" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-3">
+
+					<label class="form-label fw-semibold">
+						اتجاه التسوية
+					</label>
+
+					<select asp-for="IsIncrease"
+							class="form-select">
+
+						<option value="true">زيادة الرصيد</option>
+						<option value="false">نقص الرصيد</option>
+
+					</select>
+
+				</div>
+
+				<div class="col-12">
+
+					<label asp-for="Reason" class="form-label fw-semibold">
+						سبب التسوية (إجباري)
+					</label>
+
+					<input asp-for="Reason"
+						   class="form-control"
+						   placeholder="اكتب سبب التسوية" />
+
+					<span asp-validation-for="Reason" class="text-danger"></span>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="d-flex justify-content-end gap-2">
+
+		<a asp-action="Index"
+		   class="btn btn-outline-secondary">
+			إلغاء
+		</a>
+
+		<button type="submit"
+				class="btn btn-success px-4">
+			حفظ التسوية
+		</button>
+
+	</div>
+
+</form>
+
+@section Scripts
+{
+	<partial name="_ValidationScriptsPartial" />
+}

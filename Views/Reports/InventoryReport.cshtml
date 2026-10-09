@@ -1,0 +1,100 @@
+@model AccountingSystem.Models.ViewModels.Reports.InventoryReportViewModel
+
+@{
+	ViewData["Title"] = "تقرير المخزون";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تقرير المخزون</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		كل التقارير
+	</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+
+	<div class="card-body">
+
+		<div class="row g-3 align-items-end">
+
+			<div class="col-md-4">
+
+				<label class="form-label fw-semibold">المخزن</label>
+
+				<select name="storeId"
+						class="form-select">
+
+					<option value="">
+						جميع المخازن
+					</option>
+
+					@foreach (var store in Model.Stores)
+					{
+						<option value="@store.Key"
+								selected="@(Model.StoreId == store.Key ? "selected" : null)">
+							@store.Value
+						</option>
+					}
+
+				</select>
+
+			</div>
+
+			<div class="col-md-3">
+
+				<button type="submit"
+						class="btn btn-primary">
+					عرض التقرير
+				</button>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد كميات متبقية مبينة بهذا المخزن حاليا.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>المنتج</th>
+					<th>الكود</th>
+					<th>المخزن</th>
+					<th>الكمية</th>
+					<th>متوسط التكلفة</th>
+					<th>القيمة</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td><strong>@row.ProductName</strong></td>
+						<td>@(row.ProductCode ?? "-")</td>
+						<td>@row.StoreName</td>
+						<td>@row.Quantity.ToString("N3")</td>
+						<td>@row.AverageCost.ToString("N2")</td>
+						<td>@row.Value.ToString("N2")</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot class="table-dark fw-bold">
+				<tr>
+					<td colspan="5">إجمالي قيمة المخزون</td>
+					<td>@Model.GrandValue.ToString("N2")</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

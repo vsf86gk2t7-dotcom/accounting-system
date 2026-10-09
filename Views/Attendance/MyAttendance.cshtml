@@ -1,0 +1,66 @@
+@model List<AccountingSystem.Models.Attendance>
+
+@{
+	ViewData["Title"] = "حضوري";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">سجل حضوري</h2>
+		<p class="text-muted mb-0 small">متابعة حضورك وانصرافك</p>
+	</div>
+</div>
+
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">لا يوجد سجلات حضور حتى الآن.</div>
+}
+else
+{
+	<div class="card border-0 shadow-sm">
+		<div class="card-body p-0">
+			<div class="table-responsive">
+				<table class="table table-hover mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>التاريخ</th>
+							<th>وقت الحضور</th>
+							<th>وقت الانصراف</th>
+							<th>الحالة</th>
+							<th>ملاحظات</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var record in Model)
+						{
+							<tr>
+								<td>@record.Date.ToString("yyyy-MM-dd")</td>
+								<td>@(record.CheckIn?.ToString("HH:mm") ?? "-")</td>
+								<td>@(record.CheckOut?.ToString("HH:mm") ?? "-")</td>
+								<td>
+									@if (record.Status == AttendanceStatus.Present)
+									{
+										<span class="badge bg-success">حاضر</span>
+									}
+									else if (record.Status == AttendanceStatus.Absent)
+									{
+										<span class="badge bg-danger">غائب</span>
+									}
+									else if (record.Status == AttendanceStatus.Late)
+									{
+										<span class="badge bg-warning text-dark">متأخر</span>
+									}
+									else if (record.Status == AttendanceStatus.OnLeave)
+									{
+										<span class="badge bg-info text-dark">في إجازة</span>
+									}
+								</td>
+								<td>@(record.Notes ?? "-")</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+}

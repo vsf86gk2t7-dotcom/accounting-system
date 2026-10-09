@@ -1,0 +1,79 @@
+@model List<AccountingSystem.Models.SalesInvoice>
+
+@{
+ViewData["Title"] = "فواتيري";
+
+string StatusLabel(SalesInvoiceStatus s) => s switch
+{
+SalesInvoiceStatus.Draft => "مسودة",
+SalesInvoiceStatus.Confirmed => "معتمدة",
+SalesInvoiceStatus.Cancelled => "ملغاة",
+_ => s.ToString()
+};
+
+string StatusBadge(SalesInvoiceStatus s) => s switch
+{
+SalesInvoiceStatus.Draft => "bg-warning text-dark",
+SalesInvoiceStatus.Confirmed => "bg-success",
+SalesInvoiceStatus.Cancelled => "bg-danger",
+_ => "bg-secondary"
+};
+
+string PaymentLabel(SalesPaymentMethod m) => m switch
+{
+SalesPaymentMethod.Cash => "نقدي",
+SalesPaymentMethod.BankTransfer => "تحويل بنكي",
+SalesPaymentMethod.Cheque => "شيك",
+SalesPaymentMethod.Credit => "آجل",
+SalesPaymentMethod.Wallet => "محفظة",
+_ => m.ToString()
+};
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div>
+<h2 class="mb-1">فواتيري</h2>
+<p class="text-muted mb-0 small">جميع الفواتير الصادرة باسمك (@Model.Count)</p>
+</div>
+<a asp-action="Dashboard" class="btn btn-outline-secondary"><i class="bi bi-speedometer2"></i> لوحة التحكم</a>
+</div>
+
+<div class="card shadow-sm border-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th>الفاتورة</th>
+<th>التاريخ</th>
+<th>العميل</th>
+<th>طريقة الدفع</th>
+<th>الحالة</th>
+<th class="text-end">الإجمالي</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+@foreach (var inv in Model)
+{
+<tr>
+<td class="fw-bold">@inv.InvoiceNumber</td>
+<td class="small text-muted">@inv.InvoiceDate.ToString("yyyy/MM/dd")</td>
+<td>@(inv.Customer?.Name ?? "نقدي")</td>
+<td class="small">@PaymentLabel(inv.PaymentMethod)</td>
+<td>
+<span class="badge @StatusBadge(inv.Status)">@StatusLabel(inv.Status)</span>
+</td>
+<td class="text-end fw-bold">@inv.TotalAmount.ToString("N2")</td>
+<td class="text-end">
+<a asp-controller="SalesInvoice" asp-action="Details" asp-route-id="@inv.Id" class="btn btn-sm btn-outline-primary">تفاصيل</a>
+</td>
+</tr>
+}
+@if (!Model.Any())
+{
+<tr><td colspan="7" class="text-center text-muted py-4">لا توجد فواتير بعد</td></tr>
+}
+</tbody>
+</table>
+</div>
+</div>

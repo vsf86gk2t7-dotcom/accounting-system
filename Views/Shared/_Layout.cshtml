@@ -1,0 +1,1311 @@
+﻿@using System.Security.Claims
+@using AccountingSystem.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext _layoutDb
+
+@{
+    var roleCode = User.FindFirst("Role")?.Value
+        ?? User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+
+    var userPhone = User.FindFirst(ClaimTypes.MobilePhone)?.Value
+        ?? User.FindFirst("MobilePhone")?.Value ?? "";
+
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isCustomer = roleCode.Equals("Customer", StringComparison.OrdinalIgnoreCase);
+    var isSupplier = roleCode.Equals("Supplier", StringComparison.OrdinalIgnoreCase);
+    var isAdminArea = isAuthenticated && !isCustomer && !isSupplier;
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    // =========================================
+    // جلب بيانات البروفايل للعرض في القائمة
+    // =========================================
+    string? currentUserImage = null;
+    string? currentUserFullName = null;
+    int? currentEmployeeId = null;
+
+    if (isAuthenticated)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdStr, out var uid))
+        {
+            var u = await _layoutDb.Users
+                .AsNoTracking()
+                .Where(x => x.Id == uid)
+                .Select(x => new
+                {
+                    x.FullName,
+                    x.ProfileImagePath,
+                    x.EmployeeId
+                })
+                .FirstOrDefaultAsync();
+
+            if (u != null)
+            {
+                currentUserImage = u.ProfileImagePath;
+                currentUserFullName = u.FullName;
+                currentEmployeeId = u.EmployeeId;
+            }
+        }
+    }
+
+    // ✅ هل المستخدم موظف مربوط بحساب؟
+    var isEmployee = isAuthenticated && currentEmployeeId.HasValue;
+
+    var displayName = !string.IsNullOrWhiteSpace(currentUserFullName)
+        ? currentUserFullName
+        : (string.IsNullOrWhiteSpace(userPhone) ? "المستخدم" : userPhone);
+
+    Func<string, string, string> isActive = (controller, action) =>
+    {
+        var match = currentController.Equals(controller, StringComparison.OrdinalIgnoreCase);
+        if (!string.IsNullOrEmpty(action))
+            match = match && currentAction.Equals(action, StringComparison.OrdinalIgnoreCase);
+        return match ? "active" : "";
+    };
+
+    // هل الرابط الحالي داخل القسم ده؟ (لفتح القسم تلقائيًا)
+    Func<string[], bool> sectionHasActive = (controllers) =>
+        controllers.Any(c => currentController.Equals(c, StringComparison.OrdinalIgnoreCase));
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AccountingSystem</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" />
+    <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                min-height: 100%;
+            }
+
+            body {
+                background: #f5f7fa;
+            }
+
+            /* ===== App Shell ===== */
+            .app-shell {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* ===== Topbar ===== */
+            .app-topbar {
+                height: 64px;
+                background: linear-gradient(185deg, #111a3f 0%, #0c1129 100%);
+                border-bottom: 1px solid rgba(125, 227, 255, .10);
+                display: flex;
+                align-items: center;
+                padding: 0 18px;
+                position: sticky;
+                top: 0;
+                z-index: 1040;
+            }
+
+            .topbar-brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 700;
+                font-size: 1.1rem;
+                color: #fff;
+                text-decoration: none;
+                white-space: nowrap;
+            }
+
+                .topbar-brand:hover {
+                    color: #fff;
+                }
+
+                .topbar-brand i {
+                    display: grid;
+                    place-items: center;
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 10px;
+                    font-size: 1.05rem;
+                    color: #fff;
+                    background: linear-gradient(135deg, #4f8cff, #7de3ff);
+                    box-shadow: 0 6px 16px rgba(79, 140, 255, .35);
+                }
+
+            .sidebar-toggle {
+                display: none;
+                width: 42px;
+                height: 42px;
+                border: 0;
+                background: rgba(255, 255, 255, .06);
+                border-radius: 10px;
+                font-size: 1.3rem;
+                color: #c3d0f5;
+                margin-left: 12px;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .sidebar-toggle:hover {
+                    background: rgba(79, 140, 255, .18);
+                    color: #fff;
+                }
+
+            .topbar-spacer {
+                flex: 1;
+            }
+
+            .role-badge {
+                background: rgba(125, 227, 255, .10);
+                color: #7de3ff;
+                border: 1px solid rgba(125, 227, 255, .25);
+                border-radius: 20px;
+                padding: 7px 14px;
+                font-size: .8rem;
+                font-weight: 600;
+            }
+
+            /* ===== Topbar Avatar ===== */
+            .topbar-avatar {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #a06bff, #7de3ff);
+                color: #fff;
+                text-decoration: none;
+                overflow: hidden;
+                border: 2px solid rgba(125, 227, 255, .25);
+                transition: .18s ease;
+                flex-shrink: 0;
+            }
+
+            .topbar-avatar:hover {
+                border-color: #7de3ff;
+                box-shadow: 0 0 0 3px rgba(125, 227, 255, .18);
+                color: #fff;
+            }
+
+            .topbar-avatar img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+            .topbar-avatar i {
+                font-size: 1.1rem;
+            }
+
+            /* ===== Layout ===== */
+            .app-body {
+                flex: 1;
+                display: flex;
+                min-height: calc(100vh - 64px);
+            }
+
+            /* ===== Sidebar ===== */
+            .app-sidebar {
+                width: 280px;
+                background: linear-gradient(185deg, #111a3f 0%, #0c1129 100%);
+                border-left: 1px solid rgba(125, 227, 255, .08);
+                padding: 0 10px 16px;
+                flex-shrink: 0;
+                overflow-y: auto;
+                max-height: calc(100vh - 64px);
+                position: relative;
+            }
+
+                .app-sidebar::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    background: radial-gradient(380px 200px at 95% 0%, rgba(79, 140, 255, .22), transparent 60%), radial-gradient(320px 200px at 5% 25%, rgba(125, 227, 255, .10), transparent 60%);
+                }
+
+                .app-sidebar::-webkit-scrollbar {
+                    width: 6px;
+                }
+
+                .app-sidebar::-webkit-scrollbar-thumb {
+                    background: rgba(125, 227, 255, .2);
+                    border-radius: 8px;
+                }
+
+            .sidebar-status {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin: 12px 4px;
+                padding: 8px 12px;
+                border-radius: 10px;
+                border: 1px solid rgba(125, 227, 255, .15);
+                background: rgba(125, 227, 255, .06);
+                font-size: 11px;
+                color: #b9c6f0;
+            }
+
+            .sidebar-status-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #5be39a;
+                animation: sidePulse 1.8s infinite;
+            }
+            @@keyframes sidePulse {
+                0% {
+                    box-shadow: 0 0 0 0 rgba(91, 227, 154, .7);
+                }
+
+                70% {
+                    box-shadow: 0 0 0 9px rgba(91, 227, 154, 0);
+                }
+
+                100% {
+                    box-shadow: 0 0 0 0 rgba(91, 227, 154, 0);
+                }
+            }
+
+            .sidebar-title {
+                position: relative;
+                font-size: .7rem;
+                color: #6f7fb5;
+                font-weight: 700;
+                margin: 14px 10px 6px;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+            }
+
+            /* ===== Section (Collapsible) ===== */
+            .sidebar-section {
+                position: relative;
+                margin-bottom: 2px;
+            }
+
+            .sidebar-section-toggle {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+                min-height: 44px;
+                padding: 10px 12px;
+                border: 0;
+                border-radius: 10px;
+                background: transparent;
+                color: #c3d0f5;
+                text-align: right;
+                cursor: pointer;
+                transition: .2s ease;
+                font-size: .92rem;
+                font-weight: 600;
+            }
+
+                .sidebar-section-toggle:hover {
+                    background: rgba(79, 140, 255, .12);
+                    color: #fff;
+                }
+
+                .sidebar-section-toggle .toggle-icon {
+                    margin-right: auto;
+                    color: #6f7fb5;
+                    font-size: .72rem;
+                    transition: transform .25s ease;
+                }
+
+                .sidebar-section-toggle[aria-expanded="true"] .toggle-icon {
+                    transform: rotate(180deg);
+                    color: #7de3ff;
+                }
+
+            /* ===== Submenu & Links ===== */
+            .sidebar-submenu {
+                padding: 4px 6px 6px 4px;
+                list-style: none;
+                margin: 0;
+            }
+
+                .sidebar-submenu .sidebar-link {
+                    min-height: 38px;
+                    font-size: .85rem;
+                }
+
+            .sidebar-link {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-height: 42px;
+                padding: 8px 12px;
+                border-radius: 10px;
+                color: #aebce6;
+                text-decoration: none;
+                margin-bottom: 2px;
+                transition: .2s ease;
+                font-size: .88rem;
+            }
+
+                .sidebar-link:hover {
+                    background: rgba(79, 140, 255, .12);
+                    color: #fff;
+                }
+
+                .sidebar-link.active {
+                    background: linear-gradient(90deg, rgba(79, 140, 255, .28), rgba(125, 227, 255, .08));
+                    color: #fff;
+                    font-weight: 600;
+                }
+
+                    .sidebar-link.active::before {
+                        content: "";
+                        position: absolute;
+                        right: 0;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        width: 3px;
+                        height: 60%;
+                        border-radius: 3px;
+                        background: linear-gradient(180deg, #4f8cff, #7de3ff);
+                        box-shadow: 0 0 10px rgba(79, 140, 255, .9);
+                    }
+
+            .sidebar-icon {
+                width: 24px;
+                flex: 0 0 auto;
+                text-align: center;
+                font-size: 1.06rem;
+                color: inherit;
+            }
+
+            /* ===== User panel ===== */
+            .sidebar-user {
+                position: relative;
+                margin-top: 14px;
+                padding: 12px 10px 0;
+                border-top: 1px solid rgba(125, 227, 255, .10);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .sidebar-avatar {
+                width: 38px;
+                height: 38px;
+                flex: 0 0 auto;
+                border-radius: 12px;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(135deg, #a06bff, #7de3ff);
+                color: #fff;
+                font-size: 17px;
+                box-shadow: 0 6px 16px rgba(160, 107, 255, .3);
+                overflow: hidden;
+                text-decoration: none;
+                transition: .18s ease;
+            }
+
+            .sidebar-avatar:hover {
+                box-shadow: 0 6px 20px rgba(160, 107, 255, .5);
+                transform: translateY(-1px);
+            }
+
+            .sidebar-avatar img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+            .sidebar-user-name {
+                color: #fff;
+                font-size: 13px;
+                font-weight: 700;
+                line-height: 1.3;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 150px;
+                display: block;
+                text-decoration: none;
+                transition: .15s ease;
+            }
+
+            .sidebar-user-name:hover {
+                color: #7de3ff;
+            }
+
+            .sidebar-user-role {
+                color: #8494c8;
+                font-size: 11px;
+            }
+
+            .sidebar-user .sidebar-logout {
+                margin-right: auto;
+            }
+
+            .sidebar-logout {
+                display: grid;
+                place-items: center;
+                width: 36px;
+                height: 36px;
+                flex: 0 0 auto;
+                border: 0;
+                border-radius: 10px;
+                background: rgba(255, 122, 138, .10);
+                color: #ffb4bd;
+                cursor: pointer;
+                transition: .2s ease;
+                font-size: 15px;
+            }
+
+                .sidebar-logout:hover {
+                    background: #dc2626;
+                    color: #fff;
+                }
+
+            /* ===== Overlay & Close ===== */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, .45);
+                z-index: 1090;
+            }
+
+                .sidebar-overlay.open {
+                    display: block;
+                }
+
+            .sidebar-close {
+                display: none;
+            }
+
+            /* ===== Content ===== */
+            .app-content {
+                flex: 1;
+                min-width: 0;
+                padding: 24px;
+                background: #f5f7fa;
+            }
+
+            .app-container {
+                width: 100%;
+                max-width: 1600px;
+                margin: 0 auto;
+            }
+
+            /* ===== Footer ===== */
+            .app-footer {
+                background: linear-gradient(185deg, #111a3f 0%, #0c1129 100%);
+                border-top: 1px solid rgba(125, 227, 255, .10);
+                padding: 14px 20px;
+                text-align: center;
+                color: #8494c8;
+                font-size: .85rem;
+            }
+
+            /* ===== Mobile ===== */
+            @@media (max-width: 991.98px) {
+                .sidebar-toggle {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .app-body {
+                    display: block;
+                }
+
+                .app-sidebar {
+                    position: fixed;
+                    top: 0;
+                    right: -300px;
+                    width: 290px;
+                    height: 100vh;
+                    max-height: 100vh;
+                    z-index: 1100;
+                    border-left: 0;
+                    box-shadow: -8px 0 30px rgba(0, 0, 0, .4);
+                    transition: right .25s ease;
+                    padding-top: 0;
+                }
+
+                    .app-sidebar.open {
+                        right: 0;
+                    }
+
+                .sidebar-close {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 36px;
+                    height: 36px;
+                    border: 0;
+                    background: rgba(255, 255, 255, .08);
+                    color: #fff;
+                    border-radius: 10px;
+                    margin: 12px 10px 6px auto;
+                    font-size: 1.3rem;
+                }
+
+                .app-content {
+                    padding: 16px;
+                }
+
+                .app-topbar {
+                    padding: 0 12px;
+                }
+
+                .topbar-brand {
+                    font-size: 1rem;
+                }
+
+                .role-badge {
+                    display: none;
+                }
+            }
+
+            @@media (max-width: 575.98px) {
+                .app-topbar {
+                    height: 58px;
+                }
+
+                .app-content {
+                    padding: 12px;
+                }
+
+                .app-footer {
+                    padding: 12px;
+                    font-size: .78rem;
+                }
+
+                .topbar-brand {
+                    max-width: 180px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            }
+    </style>
+</head>
+
+<body>
+
+    <!-- Preloader -->
+    <div class="app-preloader" id="appPreloader">
+        <div class="preloader-logo"><i class="bi bi-wallet2"></i></div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="app-shell">
+
+        <!-- ===== Topbar ===== -->
+        <header class="app-topbar">
+            <a asp-controller="Home" asp-action="Index" class="topbar-brand">
+                <i class="bi bi-wallet2"></i>
+                <span>AccountingSystem</span>
+            </a>
+
+            <button type="button" class="sidebar-toggle" id="sidebarOpenBtn" aria-label="فتح القائمة">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="topbar-spacer"></div>
+
+            @if (isAuthenticated && !string.IsNullOrWhiteSpace(roleCode))
+            {
+                <span class="role-badge">@roleCode</span>
+            }
+
+            @if (isAuthenticated)
+            {
+                @await Component.InvokeAsync("NotificationBell")
+
+                <!-- Avatar في الـ Topbar -->
+                <a asp-controller="Profile"
+                   asp-action="Edit"
+                   class="topbar-avatar ms-2"
+                   title="الملف الشخصي">
+                    @if (!string.IsNullOrEmpty(currentUserImage))
+                    {
+                        <img src="@currentUserImage" alt="avatar" />
+                    }
+                    else
+                    {
+                        <i class="bi bi-person-fill"></i>
+                    }
+                </a>
+            }
+        </header>
+
+        <div class="app-body">
+
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+            <!-- ===== Sidebar ===== -->
+            <aside class="app-sidebar" id="appSidebar">
+
+                <button type="button" class="sidebar-close" id="sidebarCloseBtn" aria-label="إغلاق">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+
+                <div class="sidebar-status">
+                    <span class="sidebar-status-dot"></span>
+                    <span>النظام متصل — جلسة آمنة</span>
+                </div>
+
+                @if (isAuthenticated)
+                {
+                    <div class="sidebar-title">القائمة الرئيسية</div>
+                }
+
+                @if (isAdminArea)
+                {
+                    <!-- لوحة التحكم -->
+                    <a asp-controller="Home" asp-action="Index"
+                       class="sidebar-link @isActive("Home", "Index")">
+                        <span class="sidebar-icon"><i class="bi bi-speedometer2"></i></span>
+                        <span>لوحة التحكم</span>
+                    </a>
+
+                    <!-- الهيكل التنظيمي -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-org"
+                                aria-expanded="@(sectionHasActive(new[] { "Company", "Branch", "Store" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-diagram-3"></i></span>
+                            <span>الهيكل التنظيمي</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "Company", "Branch", "Store" }) ? "show" : "")" id="section-org">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="Company" asp-action="Index" class="sidebar-link @isActive("Company", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-buildings"></i></span>الشركات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Branch" asp-action="Index" class="sidebar-link @isActive("Branch", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-diagram-2"></i></span>الفروع
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Store" asp-action="Index" class="sidebar-link @isActive("Store", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-boxes"></i></span>المخازن
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- المحاسبة والدفتر -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-accounting"
+                                aria-expanded="@(sectionHasActive(new[] { "Accounting" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-calculator"></i></span>
+                            <span>المحاسبة والدفتر</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "Accounting" }) ? "show" : "")" id="section-accounting">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="Accounting" asp-action="Accounts" class="sidebar-link @isActive("Accounting", "Accounts")">
+                                        <span class="sidebar-icon"><i class="bi bi-diagram-3"></i></span>شجرة الحسابات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Accounting" asp-action="Journal" class="sidebar-link @isActive("Accounting", "Journal")">
+                                        <span class="sidebar-icon"><i class="bi bi-journal-richtext"></i></span>القيود المحاسبية
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Accounting" asp-action="Create" class="sidebar-link @isActive("Accounting", "Create")">
+                                        <span class="sidebar-icon"><i class="bi bi-pencil-square"></i></span>قيد جديد
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Accounting" asp-action="Ledger" class="sidebar-link @isActive("Accounting", "Ledger")">
+                                        <span class="sidebar-icon"><i class="bi bi-book"></i></span>دفتر الأستاذ
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Accounting" asp-action="TrialBalance" class="sidebar-link @isActive("Accounting", "TrialBalance")">
+                                        <span class="sidebar-icon"><i class="bi bi-list-check"></i></span>ميزان المراجعة
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Accounting" asp-action="IncomeStatement" class="sidebar-link @isActive("Accounting", "IncomeStatement")">
+                                        <span class="sidebar-icon"><i class="bi bi-graph-up"></i></span>قائمة الدخل
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Accounting" asp-action="BalanceSheet" class="sidebar-link @isActive("Accounting", "BalanceSheet")">
+                                        <span class="sidebar-icon"><i class="bi bi-columns-gap"></i></span>الميزانية العمومية
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- الأطراف -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-parties"
+                                aria-expanded="@(sectionHasActive(new[] { "Customer", "Supplier", "Employee", "HrSetup", "EmployeeDeduction", "Attendance", "LeaveRequest", "Payroll", "EmployeeAdvance" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-people"></i></span>
+                            <span>الأطراف والحسابات المساعدة</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "Customer", "Supplier", "Employee", "HrSetup", "EmployeeDeduction", "Attendance", "LeaveRequest", "Payroll", "EmployeeAdvance" }) ? "show" : "")" id="section-parties">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="Customer" asp-action="Index" class="sidebar-link @isActive("Customer", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-person-badge"></i></span>العملاء
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Customer" asp-action="PortalRequests" class="sidebar-link @isActive("Customer", "PortalRequests")">
+                                        <span class="sidebar-icon"><i class="bi bi-person-vcard"></i></span>بوابة العملاء
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Supplier" asp-action="Index" class="sidebar-link @isActive("Supplier", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-truck"></i></span>الموردون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Supplier" asp-action="PortalRequests" class="sidebar-link @isActive("Supplier", "PortalRequests")">
+                                        <span class="sidebar-icon"><i class="bi bi-truck-flatbed"></i></span>بوابة الموردين
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Employee" asp-action="Index" class="sidebar-link @isActive("Employee", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-person-workspace"></i></span>الموظفون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Employee" asp-action="PortalRequests" class="sidebar-link @isActive("Employee", "PortalRequests")">
+                                        <span class="sidebar-icon"><i class="bi bi-person-gear"></i></span>بوابة الموظفين
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="HrSetup" asp-action="Index" class="sidebar-link @isActive("HrSetup", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-gear"></i></span>الأقسام والمسميات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="EmployeeDeduction" asp-action="Index" class="sidebar-link @isActive("EmployeeDeduction", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-cash-stack"></i></span>خصومات الموظفين
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Attendance" asp-action="Index" class="sidebar-link @isActive("Attendance", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-calendar-check"></i></span>الحضور والانصراف
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="LeaveRequest" asp-action="Index" class="sidebar-link @isActive("LeaveRequest", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-calendar-x"></i></span>الإجازات
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- المنتجات والمخزون -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-products"
+                                aria-expanded="@(sectionHasActive(new[] { "Product", "Category", "Unit" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-box-seam"></i></span>
+                            <span>المنتجات والمخزون</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "Product", "Category", "Unit" }) ? "show" : "")" id="section-products">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="Product" asp-action="Index" class="sidebar-link @isActive("Product", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-box"></i></span>المنتجات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Category" asp-action="Index" class="sidebar-link @isActive("Category", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-tags"></i></span>التصنيفات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Unit" asp-action="Index" class="sidebar-link @isActive("Unit", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-123"></i></span>الوحدات
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- المبيعات والمشتريات -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-trade"
+                                aria-expanded="@(sectionHasActive(new[] { "SalesInvoice", "PurchaseInvoice", "SalesRep" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-cart"></i></span>
+                            <span>المبيعات والمشتريات</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "SalesInvoice", "PurchaseInvoice", "SalesRep", "Shipping", "ShippingCompany" }) ? "show" : "")" id="section-trade">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="SalesInvoice" asp-action="Create" class="sidebar-link @isActive("SalesInvoice", "Create")">
+                                        <span class="sidebar-icon"><i class="bi bi-cart-plus"></i></span>فاتورة بيع جديدة
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="SalesInvoice" asp-action="Pos" class="sidebar-link @isActive("SalesInvoice", "Pos")">
+                                        <span class="sidebar-icon"><i class="bi bi-phone"></i></span>الكاشير (POS)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="SalesInvoice" asp-action="Index" class="sidebar-link @isActive("SalesInvoice", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-receipt"></i></span>فواتير المبيعات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="SalesRep" asp-action="Index" class="sidebar-link @isActive("SalesRep", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-person-badge"></i></span>المناديب
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Shipping" asp-action="Index" class="sidebar-link @isActive("Shipping", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-truck"></i></span>بوالص الشحن
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="ShippingCompany" asp-action="Index" class="sidebar-link @isActive("ShippingCompany", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-building"></i></span>شركات الشحن
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="PurchaseInvoice" asp-action="Create" class="sidebar-link @isActive("PurchaseInvoice", "Create")">
+                                        <span class="sidebar-icon"><i class="bi bi-bag-plus"></i></span>فاتورة شراء جديدة
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="PurchaseInvoice" asp-action="Index" class="sidebar-link @isActive("PurchaseInvoice", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-receipt-cutoff"></i></span>فواتير المشتريات
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- حركات المخزون -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-inventory"
+                                aria-expanded="@(sectionHasActive(new[] { "Inventory" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-box"></i></span>
+                            <span>حركات المخزون</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "Inventory" }) ? "show" : "")" id="section-inventory">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Index" class="sidebar-link @isActive("Inventory", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-clipboard-data"></i></span>أرصدة المخزون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Lots" class="sidebar-link @isActive("Inventory", "Lots")">
+                                        <span class="sidebar-icon"><i class="bi bi-layers"></i></span>دفعات المخزون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Receive" class="sidebar-link @isActive("Inventory", "Receive")">
+                                        <span class="sidebar-icon"><i class="bi bi-box-arrow-in-down"></i></span>استلام مخزون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Issue" class="sidebar-link @isActive("Inventory", "Issue")">
+                                        <span class="sidebar-icon"><i class="bi bi-box-arrow-up"></i></span>صرف مخزون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Transfer" class="sidebar-link @isActive("Inventory", "Transfer")">
+                                        <span class="sidebar-icon"><i class="bi bi-arrow-left-right"></i></span>تحويل بين المخازن
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Adjust" class="sidebar-link @isActive("Inventory", "Adjust")">
+                                        <span class="sidebar-icon"><i class="bi bi-sliders"></i></span>تسوية مخزون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Count" class="sidebar-link @isActive("Inventory", "Count")">
+                                        <span class="sidebar-icon"><i class="bi bi-ui-checks"></i></span>جرد مخزن
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Inventory" asp-action="Transactions" class="sidebar-link @isActive("Inventory", "Transactions")">
+                                        <span class="sidebar-icon"><i class="bi bi-journal-text"></i></span>سجل حركات المخزون
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- الخزينة -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-treasury"
+                                aria-expanded="@(sectionHasActive(new[] { "Treasury" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-piggy-bank"></i></span>
+                            <span>الخزينة</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "Treasury" }) ? "show" : "")" id="section-treasury">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="Treasury" asp-action="Index" class="sidebar-link @isActive("Treasury", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-wallet2"></i></span>المراكز النقدية
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Treasury" asp-action="Receive" class="sidebar-link @isActive("Treasury", "Receive")">
+                                        <span class="sidebar-icon"><i class="bi bi-box-arrow-in-down"></i></span>إيصال قبض
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Treasury" asp-action="Pay" class="sidebar-link @isActive("Treasury", "Pay")">
+                                        <span class="sidebar-icon"><i class="bi bi-box-arrow-up"></i></span>إذن صرف
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Treasury" asp-action="Adjust" class="sidebar-link @isActive("Treasury", "Adjust")">
+                                        <span class="sidebar-icon"><i class="bi bi-sliders"></i></span>تسوية مركز
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Treasury" asp-action="Transactions" class="sidebar-link @isActive("Treasury", "Transactions")">
+                                        <span class="sidebar-icon"><i class="bi bi-journal-text"></i></span>سجل حركات الخزينة
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Treasury" asp-action="DailyClose" class="sidebar-link @isActive("Treasury", "DailyClose")">
+                                        <span class="sidebar-icon"><i class="bi bi-calendar-check"></i></span>الإغلاق اليومي
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- المرتجعات -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-returns"
+                                aria-expanded="@(sectionHasActive(new[] { "SalesReturn", "PurchaseReturn" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-arrow-counterclockwise"></i></span>
+                            <span>المرتجعات</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "SalesReturn", "PurchaseReturn" }) ? "show" : "")" id="section-returns">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="SalesReturn" asp-action="Index" class="sidebar-link @isActive("SalesReturn", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-cart-dash"></i></span>مرتجعات البيع
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="SalesReturn" asp-action="Create" class="sidebar-link @isActive("SalesReturn", "Create")">
+                                        <span class="sidebar-icon"><i class="bi bi-cart-plus"></i></span>مرتجع بيع جديد
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="PurchaseReturn" asp-action="Index" class="sidebar-link @isActive("PurchaseReturn", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-bag-dash"></i></span>مرتجعات الشراء
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="PurchaseReturn" asp-action="Create" class="sidebar-link @isActive("PurchaseReturn", "Create")">
+                                        <span class="sidebar-icon"><i class="bi bi-bag-plus"></i></span>مرتجع شراء جديد
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- التقارير -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-reports"
+                                aria-expanded="@(sectionHasActive(new[] { "Reports" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-file-earmark-bar-graph"></i></span>
+                            <span>التقارير</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "Reports" }) ? "show" : "")" id="section-reports">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="Reports" asp-action="Index" class="sidebar-link @isActive("Reports", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-grid"></i></span>كل التقارير
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Reports" asp-action="ProfitReport" class="sidebar-link @isActive("Reports", "ProfitReport")">
+                                        <span class="sidebar-icon"><i class="bi bi-cash-coin"></i></span>تقرير الأرباح
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Reports" asp-action="ProductProfitReport" class="sidebar-link @isActive("Reports", "ProductProfitReport")">
+                                        <span class="sidebar-icon"><i class="bi bi-pie-chart"></i></span>الربح لكل صنف
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Reports" asp-action="DailySalesReport" class="sidebar-link @isActive("Reports", "DailySalesReport")">
+                                        <span class="sidebar-icon"><i class="bi bi-calendar-day"></i></span>المبيعات اليومية
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- الإعدادات والأمان -->
+                    <div class="sidebar-section">
+                        <button type="button" class="sidebar-section-toggle"
+                                data-bs-toggle="collapse" data-bs-target="#section-settings"
+                                aria-expanded="@(sectionHasActive(new[] { "User", "Role", "Admin" }).ToString().ToLower())">
+                            <span class="sidebar-icon"><i class="bi bi-shield-lock"></i></span>
+                            <span>الإعدادات والأمان</span>
+                            <span class="toggle-icon"><i class="bi bi-chevron-down"></i></span>
+                        </button>
+                        <div class="collapse @(sectionHasActive(new[] { "User", "Role", "Admin" }) ? "show" : "")" id="section-settings">
+                            <ul class="sidebar-submenu">
+                                <li>
+                                    <a asp-controller="User" asp-action="Index" class="sidebar-link @isActive("User", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-people-fill"></i></span>المستخدمون
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Role" asp-action="Index" class="sidebar-link @isActive("Role", "Index")">
+                                        <span class="sidebar-icon"><i class="bi bi-person-gear"></i></span>الأدوار والصلاحيات
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Admin" asp-action="RegistrationRequests" class="sidebar-link @isActive("Admin", "RegistrationRequests")">
+                                        <span class="sidebar-icon"><i class="bi bi-inbox"></i></span>طلبات التسجيل
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Admin" asp-action="PasswordResetRequests" class="sidebar-link @isActive("Admin", "PasswordResetRequests")">
+                                        <span class="sidebar-icon"><i class="bi bi-key"></i></span>طلبات كلمة المرور
+                                    </a>
+                                </li>
+                                <li>
+                                    <a asp-controller="Admin" asp-action="Backups" class="sidebar-link @isActive("Admin", "Backups")">
+                                        <span class="sidebar-icon"><i class="bi bi-database"></i></span>النسخ الاحتياطية
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+
+                @if (isEmployee)
+                {
+                    <div class="sidebar-title">شؤوني</div>
+
+                    <a asp-controller="Attendance"
+                       asp-action="MyAttendance"
+                       class="sidebar-link @isActive("Attendance", "MyAttendance")">
+                        <span class="sidebar-icon"><i class="bi bi-calendar-week"></i></span>
+                        <span>حضوري</span>
+                    </a>
+
+                    <a asp-controller="LeaveRequest"
+                       asp-action="MyLeaves"
+                       class="sidebar-link @isActive("LeaveRequest", "MyLeaves")">
+                        <span class="sidebar-icon"><i class="bi bi-calendar-plus"></i></span>
+                        <span>إجازاتي</span>
+                    </a>
+                    <li>
+                        <a asp-controller="Payroll" asp-action="Index" class="sidebar-link @isActive("Payroll", "Index")">
+                            <span class="sidebar-icon"><i class="bi bi-cash-stack"></i></span>الرواتب
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="EmployeeAdvance" asp-action="Index" class="sidebar-link @isActive("EmployeeAdvance", "Index")">
+                            <span class="sidebar-icon"><i class="bi bi-piggy-bank"></i></span>سلف الموظفين
+                        </a>
+                    </li>
+                    <a asp-controller="EmployeeDeduction"
+                       asp-action="MyDeductions"
+                       class="sidebar-link @isActive("EmployeeDeduction", "MyDeductions")">
+                        <span class="sidebar-icon"><i class="bi bi-cash-coin"></i></span>
+                        <span>خصوماتي</span>
+                    </a>
+                }
+
+                @if (isCustomer)
+                {
+                    <div class="sidebar-title">حسابي</div>
+                    <a asp-controller="CustomerPortal" asp-action="Index" class="sidebar-link @isActive("CustomerPortal", "Index")">
+                        <span class="sidebar-icon"><i class="bi bi-house-door"></i></span><span>حسابي</span>
+                    </a>
+                    <a asp-controller="CustomerPortal" asp-action="Statement" class="sidebar-link @isActive("CustomerPortal", "Statement")">
+                        <span class="sidebar-icon"><i class="bi bi-file-earmark-text"></i></span><span>كشف الحساب</span>
+                    </a>
+                    <a asp-controller="CustomerPortal" asp-action="Invoices" class="sidebar-link @isActive("CustomerPortal", "Invoices")">
+                        <span class="sidebar-icon"><i class="bi bi-receipt"></i></span><span>الفواتير</span>
+                    </a>
+                }
+
+                @if (isSupplier)
+                {
+                    <div class="sidebar-title">حساب المورد</div>
+                    <a asp-controller="SupplierPortal" asp-action="Index" class="sidebar-link @isActive("SupplierPortal", "Index")">
+                        <span class="sidebar-icon"><i class="bi bi-house-door"></i></span><span>حسابي</span>
+                    </a>
+                    <a asp-controller="SupplierPortal" asp-action="Statement" class="sidebar-link @isActive("SupplierPortal", "Statement")">
+                        <span class="sidebar-icon"><i class="bi bi-file-earmark-text"></i></span><span>كشف الحساب</span>
+                    </a>
+                    <a asp-controller="SupplierPortal" asp-action="Invoices" class="sidebar-link @isActive("SupplierPortal", "Invoices")">
+                        <span class="sidebar-icon"><i class="bi bi-receipt"></i></span><span>الفواتير</span>
+                    </a>
+                }
+
+                @if (isAuthenticated)
+                {
+                    <div class="sidebar-user">
+                        <a asp-controller="Profile"
+                           asp-action="Edit"
+                           class="sidebar-avatar"
+                           title="الملف الشخصي">
+                            @if (!string.IsNullOrEmpty(currentUserImage))
+                            {
+                                <img src="@currentUserImage" alt="avatar" />
+                            }
+                            else
+                            {
+                                <i class="bi bi-person-fill"></i>
+                            }
+                        </a>
+                        <div style="min-width:0; flex:1;">
+                            <a asp-controller="Profile"
+                               asp-action="Edit"
+                               class="sidebar-user-name"
+                               title="الملف الشخصي">
+                                @displayName
+                            </a>
+                            <div class="sidebar-user-role">@roleCode</div>
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="sidebar-logout" aria-label="تسجيل الخروج">
+                                <i class="bi bi-box-arrow-left"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </aside>
+
+            <!-- ===== Content ===== -->
+            <main class="app-content">
+                <div class="app-container">
+                    @RenderBody()
+                </div>
+            </main>
+        </div>
+
+        <footer class="app-footer">
+            <div class="d-flex justify-content-between align-items-center" style="flex-wrap:wrap; gap:8px;">
+                <span>&copy; <span id="footYear"></span> — <strong>AccountingSystem</strong></span>
+                <span class="small">نظام محاسبي متكامل</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+            (function() {
+                var sidebar = document.getElementById("appSidebar");
+                var overlay = document.getElementById("sidebarOverlay");
+                var openBtn = document.getElementById("sidebarOpenBtn");
+                var closeBtn = document.getElementById("sidebarCloseBtn");
+
+                if (!sidebar) return;
+
+                function isNarrow() { return window.innerWidth <= 991; }
+
+                function openSidebar() {
+                    sidebar.classList.add("open");
+                    overlay.classList.add("open");
+                    document.body.style.overflow = "hidden";
+                }
+
+                function closeSidebar() {
+                    sidebar.classList.remove("open");
+                    overlay.classList.remove("open");
+                    document.body.style.overflow = "";
+                }
+
+                function toggleSidebar() {
+                    if (isNarrow()) {
+                        sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+                    }
+                    // على الشاشات الكبيرة: القائمة ثابتة دائمًا (لا حاجة للطيّ)
+                }
+
+                if (openBtn) openBtn.addEventListener("click", toggleSidebar);
+                if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
+                if (overlay) overlay.addEventListener("click", closeSidebar);
+
+                document.querySelectorAll(".sidebar-link").forEach(function(link) {
+                    link.addEventListener("click", function() {
+                        if (isNarrow()) closeSidebar();
+                    });
+                });
+
+                window.addEventListener("resize", function() {
+                    if (!isNarrow() && sidebar.classList.contains("open")) closeSidebar();
+                });
+            })();
+
+            // سنة التذييل
+            document.getElementById('footYear').textContent = new Date().getFullYear();
+
+            // إخفاء المُحمّل
+            (function() {
+                var pre = document.getElementById('appPreloader');
+                if (!pre) return;
+                function hide() {
+                    pre.classList.add('hidden');
+                    setTimeout(function() { if (pre.parentNode) pre.parentNode.removeChild(pre); }, 600);
+                }
+                window.addEventListener('load', hide);
+                setTimeout(hide, 1200);
+            })();
+
+            // إخفاء تنبيهات TempData تلقائيًا
+            (function() {
+                document.querySelectorAll('.alert-dismissible').forEach(function(a) {
+                    setTimeout(function() { a.classList.add('out'); }, 4800);
+                    setTimeout(function() { if (a.parentNode) a.parentNode.removeChild(a); }, 5400);
+                });
+            })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

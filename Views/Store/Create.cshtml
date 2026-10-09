@@ -1,0 +1,103 @@
+﻿@model AccountingSystem.Models.Store
+
+@{
+	ViewData["Title"] = "إضافة مخزن";
+
+	var branches =
+		ViewBag.Branches as IEnumerable<AccountingSystem.Models.Branch>
+		?? Enumerable.Empty<AccountingSystem.Models.Branch>();
+}
+
+<div class="container mt-4">
+
+	<h2 class="mb-4">إضافة مخزن جديد</h2>
+
+	<div class="card shadow-sm">
+
+		<div class="card-body">
+
+			<form asp-action="Create"
+				  method="post">
+
+				@Html.AntiForgeryToken()
+
+				<div asp-validation-summary="ModelOnly"
+					 class="text-danger mb-3">
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="BranchId"
+						   class="form-label">
+						الفرع
+					</label>
+
+					<select asp-for="BranchId"
+							class="form-select"
+							required>
+
+						<option value="">
+							-- اختر الفرع --
+						</option>
+
+						@foreach (var branch in branches)
+						{
+							<option value="@branch.Id">
+								@branch.Name
+							</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="BranchId"
+						  class="text-danger">
+					</span>
+
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="Name"
+						   class="form-label">
+						اسم المخزن
+					</label>
+
+					<input asp-for="Name"
+						   class="form-control"
+						   required />
+
+					<span asp-validation-for="Name"
+						  class="text-danger">
+					</span>
+
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="Code"
+						   class="form-label">
+						كود المخزن
+					</label>
+
+					<input asp-for="Code"
+						   class="form-control" />
+
+				</div>
+
+				<button type="submit"
+						class="btn btn-success">
+					حفظ المخزن
+				</button>
+
+				<a asp-action="Index"
+				   class="btn btn-secondary">
+					رجوع
+				</a>
+
+			</form>
+
+		</div>
+
+	</div>
+
+</div>

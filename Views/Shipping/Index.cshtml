@@ -1,0 +1,144 @@
+@model AccountingSystem.Models.ViewModels.Shipping.ShippingBillIndexViewModel
+
+@{
+    ViewData["Title"] = "مناديب الشحن";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>مناديب الشحن</h2>
+            <p class="text-muted mb-0">
+                إدارة عمليات التوصيل والشحن
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- فلتر البحث -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label">بحث</label>
+                    <input type="text"
+                           name="search"
+                           value="@Model.Search"
+                           placeholder="رقم المندوب / رقم الفاتورة / العميل..."
+                           class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">الحالة</label>
+                    <select name="status" class="form-select">
+                        <option value="">— الكل —</option>
+                        <option value="1" selected="@(Model.StatusFilter == AccountingSystem.Models.ShippingBillStatus.Pending)">قيد الانتظار</option>
+                        <option value="2" selected="@(Model.StatusFilter == AccountingSystem.Models.ShippingBillStatus.InTransit)">في الطريق</option>
+                        <option value="3" selected="@(Model.StatusFilter == AccountingSystem.Models.ShippingBillStatus.Delivered)">تم التوصيل</option>
+                        <option value="4" selected="@(Model.StatusFilter == AccountingSystem.Models.ShippingBillStatus.Cancelled)">ملغي</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        🔍 بحث
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الرقم</th>
+                            <th>رقم المندوب</th>
+                            <th>الفاتورة</th>
+                            <th>التاريخ</th>
+                            <th>طريقة التوصيل</th>
+                            <th>الحالة</th>
+                            <th>الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var bill in Model.ShippingBills)
+                        {
+                            <tr>
+                                <td>@bill.Id</td>
+                                <td>
+                                    <strong>@bill.BillNumber</strong>
+                                </td>
+                                <td>
+                                    @(bill.SalesInvoice?.InvoiceNumber ?? "-")
+                                </td>
+                                <td>@bill.BillDate.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    @switch (bill.DeliveryMethod)
+                                    {
+                                        case AccountingSystem.Models.DeliveryMethod.InternalDriver:
+                                            <span class="badge bg-info text-dark">مندوب داخلي</span>
+                                            break;
+                                        case AccountingSystem.Models.DeliveryMethod.ExternalCompany:
+                                            <span class="badge bg-secondary">شركة شحن</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    @switch (bill.Status)
+                                    {
+                                        case AccountingSystem.Models.ShippingBillStatus.Pending:
+                                            <span class="badge bg-warning text-dark">قيد الانتظار</span>
+                                            break;
+                                        case AccountingSystem.Models.ShippingBillStatus.InTransit:
+                                            <span class="badge bg-primary">في الطريق</span>
+                                            break;
+                                        case AccountingSystem.Models.ShippingBillStatus.Delivered:
+                                            <span class="badge bg-success">تم التوصيل</span>
+                                            break;
+                                        case AccountingSystem.Models.ShippingBillStatus.Cancelled:
+                                            <span class="badge bg-danger">ملغي</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Details"
+                                       asp-route-id="@bill.Id"
+                                       class="btn btn-info btn-sm">
+                                        👁 تفاصيل
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+
+                        @if (!Model.ShippingBills.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    لا توجد مناديب شحن حاليًا.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>

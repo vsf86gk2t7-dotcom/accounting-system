@@ -1,0 +1,879 @@
+@model AccountingSystem.Models.ViewModels.Sales.SalesInvoiceCreateViewModel
+
+@{
+	ViewData["Title"] = "الكاشير";
+}
+
+<style>
+	.pos-container {
+		max-width: 600px;
+		margin: 0 auto;
+	}
+
+	.pos-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.75rem;
+	}
+
+	.pos-search {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: var(--bs-body-bg, #fff);
+		padding: 0.5rem 0;
+	}
+
+	.pos-body {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.5rem;
+		padding-bottom: 180px;
+	}
+
+	.pos-product {
+		border: 1px solid #dee2e6;
+		border-radius: 0.6rem;
+		padding: 0.6rem;
+		background: #fff;
+		text-align: center;
+		cursor: pointer;
+		transition: transform 0.08s ease;
+	}
+
+	.pos-product:active {
+		transform: scale(0.97);
+	}
+
+	.pos-product .p-name {
+		font-size: 0.8rem;
+		font-weight: 600;
+		margin-bottom: 0.25rem;
+		word-break: break-word;
+	}
+
+	.pos-product .p-price {
+		color: #198754;
+		font-weight: 700;
+	}
+
+	.pos-cart {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: #fff;
+		border-top: 2px solid #0d6efd;
+		padding: 0.6rem;
+		max-height: 45vh;
+		overflow-y: auto;
+		box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+		z-index: 20;
+	}
+
+	.pos-cart-inner {
+		max-width: 600px;
+		margin: 0 auto;
+	}
+
+	.pos-line {
+		display: grid;
+		grid-template-columns: 1fr auto auto;
+		gap: 0.4rem;
+		align-items: center;
+		border-bottom: 1px solid #f0f0f0;
+		padding: 0.3rem 0;
+	}
+
+	.pos-line-loss {
+		background-color: #f8d7da;
+	}
+
+	.pos-line-zero {
+		background-color: #d1e7dd;
+	}
+
+	.pos-line .l-name {
+		font-size: 0.85rem;
+		word-break: break-word;
+	}
+
+	.pos-footer-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 0.4rem;
+		font-size: 1rem;
+	}
+</style>
+
+<div class="pos-container">
+
+	<form asp-action="Pos" method="post" id="posForm">
+		@Html.AntiForgeryToken()
+
+		<div asp-validation-summary="All" class="alert alert-danger" id="valSummary"></div>
+
+		<input asp-for="InvoiceNumber" type="hidden" id="invoiceNumber" />
+
+		<!-- الفرع والمخزن -->
+		<div class="row g-2 mb-2">
+			<div class="col-6">
+				<div class="input-group input-group-sm">
+					<select asp-for="BranchId" class="form-select" id="branchSelect">
+						<option value="">— الفرع —</option>
+						@foreach (var branch in Model.AvailableBranches)
+						{
+							<option value="@branch.Id">@branch.Name</option>
+						}
+					</select>
+					<a asp-controller="Branch" asp-action="Create"
+					   target="_blank" class="btn btn-outline-primary"
+					   title="إضافة فرع جديد">
+						<i class="bi bi-plus-circle"></i>
+					</a>
+				</div>
+			</div>
+			<div class="col-6">
+				<div class="input-group input-group-sm">
+					<select asp-for="StoreId" class="form-select" id="storeSelect">
+						<option value="">— المخزن —</option>
+						@foreach (var store in Model.AvailableStores)
+						{
+							<option value="@store.Id" data-branch="@store.BranchId">@store.Name</option>
+						}
+					</select>
+					<button type="button" class="btn btn-outline-primary"
+							id="quickStoreBtn" title="إضافة مخزن جديد">
+						<i class="bi bi-plus-circle"></i>
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="row g-2 mb-2">
+			<div class="col-6">
+				<div class="input-group input-group-sm">
+					<select asp-for="CustomerId" class="form-select" id="posCustomer" required>
+						<option value="">— اسم العميل (إجباري) —</option>
+						@foreach (var customer in Model.AvailableCustomers)
+						{
+							<option value="@customer.Id">@customer.Name</option>
+						}
+					</select>
+					<button type="button" class="btn btn-outline-primary"
+							id="quickCustomerBtn" title="إضافة عميل جديد">
+						<i class="bi bi-person-plus"></i>
+					</button>
+				</div>
+			</div>
+			<div class="col-6">
+				<select id="posPaymentMethod" name="PaymentMethod" class="form-select" required>
+					<option value="">— طريقة الدفع —</option>
+					<option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Cash)">نقدي</option>
+					<option value="@((int)AccountingSystem.Models.SalesPaymentMethod.BankTransfer)">تحويل بنكي</option>
+					<option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Wallet)">محفظة</option>
+					<option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Credit)">آجل</option>
+					<option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Cheque)">شيك</option>
+				</select>
+			</div>
+		</div>
+
+		<!-- اختيار المركز النقدي (يظهر للدفع النقدي/التحويل/المحفظة) -->
+		<div id="posCashAccountRow"
+			 style="display:none;">
+			<div class="row">
+				<div class="col-12">
+					<select id="posCashAccountId"
+							name="CashAccountId"
+							class="form-select"
+							required>
+						<option value="">— اختر المركز النقدي —</option>
+						@foreach (var acc in Model.AvailableCashAccounts)
+						{
+							<option value="@acc.Key">@acc.Value</option>
+						}
+					</select>
+				</div>
+			</div>
+		</div>
+
+		<!-- البحث بالاسم أو الباركود -->
+		<div class="pos-search">
+			<input type="text"
+				   id="posSearch"
+				   class="form-control form-control-lg"
+				   placeholder="🔍 ابحث باسم المنتج أو امسح الباركود..."
+				   autocomplete="off" />
+		</div>
+
+		<!-- المنتجات -->
+		<div class="pos-body" id="productGrid">
+			@foreach (var product in Model.AvailableProducts)
+			{
+				<div class="pos-product"
+					 data-name="@product.Name.ToLower()"
+					 data-barcode="@(product.Barcode?.ToLower() ?? "")"
+					 data-product-id="@product.Id"
+					 onclick="addProduct(@product.Id)">
+					<div class="p-name">@product.Name</div>
+					<div class="p-price">@product.Units.FirstOrDefault()?.SalePrice.ToString("N2")</div>
+				</div>
+			}
+		</div>
+
+		<!-- سلة المشتريات -->
+		<div class="pos-cart">
+			<div class="pos-cart-inner">
+				<div class="d-flex justify-content-between align-items-center mb-1">
+					<strong>السلة</strong>
+					<button type="button" class="btn btn-sm btn-outline-danger" onclick="clearCart()">🗑️ مسح</button>
+				</div>
+
+				<div id="cartLines"></div>
+
+				<div class="input-group input-group-sm mb-2">
+					<span class="input-group-text">خصم</span>
+					<input type="number" asp-for="DiscountAmount" step="0.01" min="0" id="discountInput" class="form-control text-end" />
+				</div>
+
+				<div class="pos-footer-row">
+					<span>الإجمالي:</span>
+					<strong id="grandTotal">0.00</strong>
+				</div>
+
+				<button type="submit" name="saveAndConfirm" value="false" class="btn btn-primary w-100 mt-2" onclick="return validatePos()">
+					💾 حفظ (مسودة)
+				</button>
+				<button type="submit" name="saveAndConfirm" value="true" class="btn btn-success w-100 mt-2" onclick="return validatePos()">
+					🚀 الترحيل
+				</button>
+			</div>
+		</div>
+	</form>
+</div>
+
+<!-- Modal لاختيار الكمية والسعر -->
+<div class="modal fade" id="qtyModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="qtyModalTitle"></h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mb-3">
+					<label class="form-label">الوحدة (معامل التحويل)</label>
+					<select id="qtyUnit" class="form-select"></select>
+				</div>
+				<div class="mb-3">
+					<label class="form-label">الكمية</label>
+					<input type="number" id="qtyValue" class="form-control form-control-lg" step="0.001" min="0.001" value="1" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">سعر القطعة الواحدة (يُضرب في معامل الوحدة)</label>
+					<input type="number" id="qtyPrice" class="form-control form-control-lg" step="0.01" min="0" />
+				</div>
+				<div id="qtyProfit" class="alert alert-light border small"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+				<button type="button" class="btn btn-primary" onclick="confirmQty()">إضافة للسلة</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- نافذة إضافة عميل سريع -->
+<div class="modal fade" id="quickCustomerModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">إضافة عميل جديد</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mb-3">
+					<label class="form-label">اسم العميل *</label>
+					<input type="text" id="qcName" class="form-control" maxlength="200" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">الهاتف *</label>
+					<input type="text" id="qcPhone" class="form-control" maxlength="50" dir="ltr" />
+				</div>
+				<div id="qcMsg" class="small text-danger"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+				<button type="button" class="btn btn-primary" id="qcSave">حفظ وإضافة</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- نافذة إضافة مخزن سريع -->
+<div class="modal fade" id="quickStoreModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">إضافة مخزن جديد</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mb-3">
+					<label class="form-label">اسم المخزن *</label>
+					<input type="text" id="qsName" class="form-control" maxlength="200" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">الفرع *</label>
+					<select id="qsBranch" class="form-select"></select>
+				</div>
+				<div id="qsMsg" class="small text-danger"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+				<button type="button" class="btn btn-primary" id="qsSave">حفظ وإضافة</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<partial name="_ValidationScriptsPartial" />
+
+	<script>
+		// ✅ Html.Raw ضرورية لمنع Razor من ترميز JSON إلى HTML entities (&quot; &amp;)
+		const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+					Model.AvailableProducts,
+					new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+		// ✅ نفس الإصلاح لـ stores — نقلناها خارج event handler ليعرَّف مرة واحدة فقط
+		const stores = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+					Model.AvailableStores,
+					new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+		// =========================================
+		// فلترة المخازن حسب الفرع
+		// =========================================
+
+		const branchSelect = document.getElementById("branchSelect");
+		const storeSelect = document.getElementById("storeSelect");
+
+		branchSelect.addEventListener("change", function () {
+			const branchId = parseInt(this.value);
+			storeSelect.innerHTML = '<option value="">— المخزن —</option>';
+
+			if (!branchId) return;
+
+			stores.filter(s => s.BranchId === branchId).forEach(s => {
+				const opt = document.createElement("option");
+				opt.value = s.Id;
+				opt.textContent = s.Name;
+				storeSelect.appendChild(opt);
+			});
+		});
+
+		// =========================================
+		// البحث
+		// =========================================
+
+		const posSearch = document.getElementById("posSearch");
+
+		posSearch.addEventListener("input", function () {
+			const q = this.value.trim().toLowerCase();
+			document.querySelectorAll(".pos-product").forEach(el => {
+				const name = el.dataset.name;
+				const barcode = el.dataset.barcode;
+				const visible = !q || name.includes(q) || barcode.includes(q);
+				el.style.display = visible ? "" : "none";
+			});
+		});
+
+		posSearch.addEventListener("keydown", function (event) {
+			if (event.key !== "Enter") return;
+			event.preventDefault();
+			const q = this.value.trim().toLowerCase();
+			if (!q) return;
+			const match = Array.from(document.querySelectorAll(".pos-product"))
+				.find(el => el.dataset.barcode && el.dataset.barcode === q);
+			if (match) {
+				addProduct(parseInt(match.dataset.productId));
+				this.value = "";
+			}
+		});
+
+		// =========================================
+		// إضافة منتج
+		// =========================================
+
+		let cart = new Map(); // productId -> {unitId, qty, price, name, unitName, factor}
+
+		const qtyModal = new bootstrap.Modal(document.getElementById("qtyModal"));
+		let pendingProductId = 0;
+
+		function addProduct(productId) {
+			const product = products.find(p => p.Id === productId);
+			if (!product) return;
+
+			if (!storeSelect.value) {
+				alert("اختر الفرع والمخزن أولًا.");
+				return;
+			}
+
+			pendingProductId = productId;
+
+			document.getElementById("qtyModalTitle").textContent = product.Name;
+
+			const unitSelect = document.getElementById("qtyUnit");
+			unitSelect.innerHTML = "";
+
+			(product.Units || []).forEach(u => {
+				const factor = parseFloat(u.ConversionFactor) || 1;
+				const opt = document.createElement("option");
+				opt.value = u.UnitId;
+				opt.textContent = u.UnitName + " (" + posFormat(factor) + " ق)";
+				opt.dataset.price = u.SalePrice;
+				opt.dataset.factor = factor;
+				unitSelect.appendChild(opt);
+			});
+
+			// لو المنتج موجود في السلة، اعرض نفس الوحدة والسعر
+			const existing = cart.get(productId);
+			if (existing) {
+				unitSelect.value = existing.unitId;
+				document.getElementById("qtyValue").value = existing.qty;
+				document.getElementById("qtyPrice").value = existing.price;
+			} else {
+				unitSelect.selectedIndex = 0;
+				unitSelect.dispatchEvent(new Event("change"));
+				document.getElementById("qtyValue").value = "1";
+			}
+
+			qtyModal.show();
+			updatePosProfit();
+		}
+
+		document.getElementById("qtyUnit").addEventListener("change", function () {
+			const opt = this.options[this.selectedIndex];
+			if (opt) {
+				// سعر القطعة الواحدة = سعر الوحدة ÷ معاملها
+				const factor = parseFloat(opt.dataset.factor) || 1;
+				document.getElementById("qtyPrice").value =
+					((parseFloat(opt.dataset.price) || 0) / factor).toFixed(2);
+			}
+			updatePosProfit();
+		});
+
+		const qtyValue = document.getElementById("qtyValue");
+		const qtyPrice = document.getElementById("qtyPrice");
+		qtyValue.addEventListener("input", updatePosProfit);
+		qtyPrice.addEventListener("input", updatePosProfit);
+
+		// =========================================
+		// الربحية الفعلية (FIFO — ليست متوسط)
+		// التكلفة حسب كل دفعة فعلية بأي سعر دخلت
+		// =========================================
+
+		const lotsCache = {}; // "productId:storeId" -> Promise<lots>
+
+		function fetchLots(productId, storeId) {
+			const key = productId + ":" + storeId;
+			if (!lotsCache[key]) {
+				lotsCache[key] = fetch(
+					`/SalesInvoice/GetAvailableLots?productId=${productId}&storeId=${storeId}`)
+					.then(r => (r.ok ? r.json() : []));
+			}
+			return lotsCache[key];
+		}
+
+		function posFormat(n) {
+			return (Math.round(n * 100) / 100).toFixed(2);
+		}
+
+		function posFifoCost(lots, baseQty) {
+			let need = baseQty, cost = 0, consumed = 0, rows = [];
+
+			for (const lot of lots) {
+				if (need <= 0) break;
+				const take = Math.min(lot.quantityRemaining, need);
+				cost += take * lot.unitCost;
+				rows.push(
+					`دفعة ${lot.purchaseDate} (${lot.supplierName}): ${posFormat(take)} × ${posFormat(lot.unitCost)} = ${posFormat(take * lot.unitCost)}`);
+				need -= take;
+				consumed += take;
+			}
+
+			return { cost, consumed, shortfall: need, rows };
+		}
+
+		function updatePosProfit() {
+			const profitDiv = document.getElementById("qtyProfit");
+			const product = products.find(p => p.Id === pendingProductId);
+			const unitSelect = document.getElementById("qtyUnit");
+			const opt = unitSelect.options[unitSelect.selectedIndex];
+			const qty = parseFloat(qtyValue.value) || 0;
+			const price = parseFloat(qtyPrice.value) || 0;
+			const storeId = storeSelect.value;
+			const factor = opt ? (parseFloat(opt.dataset.factor) || 1) : 1;
+
+			if (!product || !opt || !storeId) {
+				profitDiv.innerHTML = "";
+				return;
+			}
+
+			if (qty <= 0) {
+				profitDiv.innerHTML = '<span class="text-muted">أدخل الكمية لعرض الربحية.</span>';
+				return;
+			}
+
+			fetchLots(product.Id, parseInt(storeId))
+				.then(lots => {
+					if (!lots.length) {
+						profitDiv.innerHTML =
+							'<span class="text-muted">لا توجد دفعات متاحة في هذا المخزن (بدون تكلفة تقديرية).</span>';
+						return;
+					}
+
+					const f = posFifoCost(lots, qty * factor);
+					const lineTotal = qty * factor * price;
+					const profit = lineTotal - f.cost;
+					const available = lots.reduce((s, l) => s + l.quantityRemaining, 0);
+
+					let html =
+						`المتوفر بالمخزن: <strong>${posFormat(available)}</strong> قطعة أساسية — ` +
+						`الإجمالي: <strong>${posFormat(lineTotal)}</strong> — ` +
+						`التكلفة الفعلية (FIFO): <strong>${posFormat(f.cost)}</strong> — ` +
+						`<span class="small text-muted">الربح المتوقع: ${posFormat(profit)}</span>`;
+
+					if (f.shortfall > 0) {
+						html =
+							`<div class="text-danger fw-bold mb-1">لا يمكن الإضافة — المطلوب (${posFormat(qty * factor)}) أكبر من المتاح (${posFormat(f.consumed)}) قطعة أساسية.</div>` +
+							html;
+					}
+
+					html +=
+						`<div class="text-muted mt-1" style="max-height: 90px; overflow: auto;">` +
+						f.rows.join("<br>") +
+						`</div>`;
+
+					profitDiv.innerHTML = html;
+				})
+				.catch(() => {
+					profitDiv.innerHTML = "";
+				});
+		}
+
+		function confirmQty() {
+			const productId = pendingProductId;
+			const product = products.find(p => p.Id === productId);
+			const unitSelect = document.getElementById("qtyUnit");
+			const opt = unitSelect.options[unitSelect.selectedIndex];
+			const qty = parseFloat(document.getElementById("qtyValue").value) || 0;
+			const price = parseFloat(document.getElementById("qtyPrice").value) || 0;
+			const storeId = parseInt(storeSelect.value) || 0;
+
+			if (qty <= 0) {
+				alert("الكمية يجب أن تكون أكبر من صفر.");
+				return;
+			}
+
+			fetchLots(product.Id, storeId)
+				.then(lots => {
+					const factor = parseFloat(opt.dataset.factor) || 1;
+					const baseQty = qty * factor;
+					const available = lots.reduce((s, l) => s + l.quantityRemaining, 0);
+					const profitDiv = document.getElementById("qtyProfit");
+
+					// «لا يُضاف»: المطلوب أكبر من المتاح
+					if (!lots.length || baseQty > available) {
+						profitDiv.innerHTML =
+							`<div class="text-danger fw-bold">لا يمكن الإضافة — المطلوب (${posFormat(baseQty)}) أكبر من المتاح (${posFormat(available || 0)}) قطعة أساسية.</div>`;
+						return;
+					}
+
+					const cost = lots.length
+						? posFifoCost(lots, baseQty).cost
+						: 0;
+
+					cart.set(productId, {
+						unitId: parseInt(unitSelect.value),
+						unitName: opt.text,
+						factor: factor,
+						qty: qty,
+						price: price,
+						name: product.Name,
+						cost: cost
+					});
+
+					renderCart();
+					qtyModal.hide();
+				})
+				.catch(() => {
+					alert("تعذر التحقق من المتاح — حاول مرة أخرى.");
+				});
+		}
+
+		function clearCart() {
+			cart.clear();
+			renderCart();
+		}
+
+		// =========================================
+		// عرض السلة
+		// =========================================
+
+		let cartIndex = 0;
+
+		function renderCart() {
+			const container = document.getElementById("cartLines");
+			container.innerHTML = "";
+			cartIndex = 0;
+
+			cart.forEach((item, productId) => {
+				const idx = cartIndex;
+
+				const lineTotal = item.qty * item.factor * item.price;
+				const profit = lineTotal - (item.cost || 0);
+				const rowClass = profit < 0
+					? " pos-line-loss"
+					: (Math.abs(profit) < 0.005 ? " pos-line-zero" : "");
+
+				const line = document.createElement("div");
+				line.className = "pos-line" + rowClass;
+				line.innerHTML = `
+					<div>
+						<div class="l-name fw-semibold">${item.name}</div>
+						<div class="text-muted small">${item.unitName} × <span class="pos-qty">${item.qty}</span> بسعر ${item.price.toFixed(2)} للقطعة</div>
+						<div class="small text-muted">تكلفة ${(item.cost || 0).toFixed(2)} — ربح ${profit.toFixed(2)}</div>
+					</div>
+					<div class="fw-bold text-end">${lineTotal.toFixed(2)}</div>
+					<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${productId})">×</button>
+					<input type="hidden" name="Items[${idx}].ProductId" value="${productId}" />
+					<input type="hidden" name="Items[${idx}].UnitId" value="${item.unitId}" />
+					<input type="hidden" name="Items[${idx}].Quantity" value="${item.qty}" />
+					<input type="hidden" name="Items[${idx}].UnitPrice" value="${(item.price * item.factor).toFixed(2)}" />
+					<input type="hidden" name="Items[${idx}].IssueMethod" value="1" />
+				`;
+				container.appendChild(line);
+				cartIndex++;
+			});
+
+			updateGrandTotal();
+		}
+
+		function removeFromCart(productId) {
+			cart.delete(productId);
+			renderCart();
+		}
+
+		document.getElementById("discountInput").addEventListener("input", updateGrandTotal);
+
+		function updateGrandTotal() {
+			let total = 0;
+			cart.forEach(item => {
+				total += item.qty * item.factor * item.price;
+			});
+			const discount = parseFloat(document.getElementById("discountInput").value) || 0;
+			const grand = Math.max(0, total - discount);
+			document.getElementById("grandTotal").textContent = grand.toFixed(2);
+		}
+
+		function validatePos() {
+			if (!storeSelect.value) {
+				alert("اختر الفرع والمخزن.");
+				return false;
+			}
+			if (!document.getElementById("posCustomer").value) {
+				alert("لابد من اختيار اسم العميل.");
+				return false;
+			}
+			if (!document.getElementById("posPaymentMethod").value) {
+				alert("لابد من اختيار طريقة الدفع.");
+				return false;
+			}
+			const pm = document.getElementById("posPaymentMethod").value;
+			const cashMethods = [
+				"@((int)AccountingSystem.Models.SalesPaymentMethod.Cash)",
+				"@((int)AccountingSystem.Models.SalesPaymentMethod.BankTransfer)",
+				"@((int)AccountingSystem.Models.SalesPaymentMethod.Wallet)"
+			];
+			if (cashMethods.includes(pm) &&
+				!document.getElementById("posCashAccountId").value)
+			{
+				alert("لابد من اختيار المركز النقدي.");
+				return false;
+			}
+			if (cart.size === 0) {
+				alert("أضف منتجًا واحدًا على الأقل.");
+				return false;
+			}
+			return true;
+		}
+
+		// =========================================
+		// اختيار المركز النقدي حسب طريقة الدفع
+		// =========================================
+
+		const posPaymentMethod =
+			document.getElementById("posPaymentMethod");
+		const posCashAccountRow =
+			document.getElementById("posCashAccountRow");
+		const posCashAccountId =
+			document.getElementById("posCashAccountId");
+
+		function updateCashAccountVisibility()
+		{
+			const val = posPaymentMethod.value;
+			if (val == "@((int)AccountingSystem.Models.SalesPaymentMethod.Cash)" ||
+				val == "@((int)AccountingSystem.Models.SalesPaymentMethod.BankTransfer)" ||
+				val == "@((int)AccountingSystem.Models.SalesPaymentMethod.Wallet)")
+			{
+				posCashAccountRow.style.display = "block";
+				posCashAccountId.required = true;
+			}
+			else
+			{
+				posCashAccountRow.style.display = "none";
+				posCashAccountId.required = false;
+				posCashAccountId.value = "";
+			}
+		}
+
+		posPaymentMethod.addEventListener("change", updateCashAccountVisibility);
+		updateCashAccountVisibility();
+
+		// =========================================
+		// إضافة عميل سريع (AJAX)
+		// =========================================
+
+		const quickCustomerModal = new bootstrap.Modal(
+			document.getElementById("quickCustomerModal"));
+		const qcName = document.getElementById("qcName");
+		const qcPhone = document.getElementById("qcPhone");
+		const qcMsg = document.getElementById("qcMsg");
+		const posCustomer = document.getElementById("posCustomer");
+		const formToken = () => {
+			const el = document.querySelector('input[name="__RequestVerificationToken"]');
+			return el ? el.value : "";
+		};
+
+		document.getElementById("quickCustomerBtn").addEventListener("click", () => {
+			qcName.value = "";
+			qcPhone.value = "";
+			qcMsg.textContent = "";
+			quickCustomerModal.show();
+			setTimeout(() => qcName.focus(), 300);
+		});
+
+		async function submitQuickCustomer() {
+			const name = qcName.value.trim();
+			const phone = qcPhone.value.trim();
+
+			if (!name) { qcMsg.textContent = "اسم العميل مطلوب."; return; }
+			if (!phone) { qcMsg.textContent = "رقم الهاتف مطلوب."; return; }
+
+			const body = new URLSearchParams();
+			body.append("__RequestVerificationToken", formToken());
+			body.append("name", name);
+			body.append("phone", phone);
+
+			const res = await fetch("/SalesInvoice/CreateQuickCustomer", {
+				method: "POST",
+				headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+				body: body.toString()
+			});
+
+			const data = await res.json();
+
+			if (!data.ok) {
+				qcMsg.textContent = data.message || "تعذر الحفظ.";
+				return;
+			}
+
+			const opt = document.createElement("option");
+			opt.value = data.id;
+			opt.textContent = data.name;
+			posCustomer.appendChild(opt);
+			posCustomer.value = data.id;
+
+			quickCustomerModal.hide();
+		}
+
+		document.getElementById("qcSave").addEventListener("click", submitQuickCustomer);
+		qcName.addEventListener("keydown", e => { if (e.key === "Enter") submitQuickCustomer(); });
+		qcPhone.addEventListener("keydown", e => { if (e.key === "Enter") submitQuickCustomer(); });
+
+		// =========================================
+		// إضافة مخزن سريع (AJAX)
+		// =========================================
+
+		const quickStoreModal = new bootstrap.Modal(
+			document.getElementById("quickStoreModal"));
+		const qsName = document.getElementById("qsName");
+		const qsBranch = document.getElementById("qsBranch");
+		const qsMsg = document.getElementById("qsMsg");
+
+		document.getElementById("quickStoreBtn").addEventListener("click", () => {
+			qsName.value = "";
+			qsMsg.textContent = "";
+
+			qsBranch.innerHTML = "";
+			Array.from(branchSelect.options)
+				.filter(o => o.value)
+				.forEach(o => {
+					const opt = document.createElement("option");
+					opt.value = o.value;
+					opt.textContent = o.textContent;
+					qsBranch.appendChild(opt);
+				});
+
+			if (branchSelect.value) {
+				qsBranch.value = branchSelect.value;
+			}
+
+			quickStoreModal.show();
+			setTimeout(() => qsName.focus(), 300);
+		});
+
+		async function submitQuickStore() {
+			const name = qsName.value.trim();
+
+			if (!name) { qsMsg.textContent = "اسم المخزن مطلوب."; return; }
+			if (!qsBranch.value) { qsMsg.textContent = "اختر الفرع."; return; }
+
+			const body = new URLSearchParams();
+			body.append("__RequestVerificationToken", formToken());
+			body.append("name", name);
+			body.append("branchId", qsBranch.value);
+
+			const res = await fetch("/SalesInvoice/CreateQuickStore", {
+				method: "POST",
+				headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+				body: body.toString()
+			});
+
+			const data = await res.json();
+
+			if (!data.ok) {
+				qsMsg.textContent = data.message || "تعذر الحفظ.";
+				return;
+			}
+
+			const opt = document.createElement("option");
+			opt.value = data.id;
+			opt.textContent = data.name;
+			opt.dataset.branch = data.branchId;
+			storeSelect.appendChild(opt);
+
+			if (branchSelect.value === String(data.branchId)) {
+				storeSelect.value = data.id;
+			}
+
+			quickStoreModal.hide();
+		}
+
+		document.getElementById("qsSave").addEventListener("click", submitQuickStore);
+		qsName.addEventListener("keydown", e => { if (e.key === "Enter") submitQuickStore(); });
+	</script>
+}

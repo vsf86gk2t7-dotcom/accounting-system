@@ -1,0 +1,121 @@
+﻿@model AccountingSystem.Models.ViewModels.ActivateCustomerAccountViewModel
+
+@{
+	ViewData["Title"] = "تفعيل حساب العميل";
+}
+
+<div class="container mt-5">
+	<div class="row justify-content-center">
+		<div class="col-md-5">
+
+			<div class="card shadow">
+				<div class="card-body p-4">
+
+					<h2 class="text-center mb-4">
+						تفعيل حساب العميل
+					</h2>
+
+					<div class="alert alert-info">
+						تمت الموافقة على حسابك من الإدارة.
+						أدخل كود التفعيل المرسل لك عبر WhatsApp
+						ثم اختر كلمة المرور الخاصة بك.
+					</div>
+
+					@if (TempData["Error"] != null)
+					{
+						<div class="alert alert-danger">
+							@TempData["Error"]
+						</div>
+					}
+
+					<form asp-action="Customer"
+						  method="post">
+
+						@Html.AntiForgeryToken()
+
+						<div asp-validation-summary="ModelOnly"
+							 class="text-danger mb-3">
+						</div>
+
+						<div class="mb-3">
+							<label asp-for="Phone"
+								   class="form-label">
+								رقم الهاتف
+							</label>
+
+							<input asp-for="Phone"
+								   type="tel"
+								   class="form-control"
+								   autocomplete="tel"
+								   required />
+
+							<span asp-validation-for="Phone"
+								  class="text-danger">
+							</span>
+						</div>
+
+						<div class="mb-3">
+							<label asp-for="ActivationCode"
+								   class="form-label">
+								كود التفعيل
+							</label>
+
+							<input asp-for="ActivationCode"
+								   type="text"
+								   inputmode="numeric"
+								   maxlength="6"
+								   class="form-control"
+								   required />
+
+							<span asp-validation-for="ActivationCode"
+								  class="text-danger">
+							</span>
+						</div>
+
+						<div class="mb-3">
+							<label asp-for="Password"
+								   class="form-label">
+								كلمة المرور الجديدة
+							</label>
+
+							<input asp-for="Password"
+								   type="password"
+								   class="form-control"
+								   autocomplete="new-password"
+								   required />
+
+							<span asp-validation-for="Password"
+								  class="text-danger">
+							</span>
+						</div>
+
+						<div class="mb-3">
+							<label asp-for="ConfirmPassword"
+								   class="form-label">
+								تأكيد كلمة المرور
+							</label>
+
+							<input asp-for="ConfirmPassword"
+								   type="password"
+								   class="form-control"
+								   autocomplete="new-password"
+								   required />
+
+							<span asp-validation-for="ConfirmPassword"
+								  class="text-danger">
+							</span>
+						</div>
+
+						<button type="submit"
+								class="btn btn-success w-100">
+							تفعيل الحساب
+						</button>
+
+					</form>
+
+				</div>
+			</div>
+
+		</div>
+	</div>
+</div>

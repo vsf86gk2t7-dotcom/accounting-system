@@ -1,0 +1,98 @@
+@model AccountingSystem.Models.ViewModels.Reports.ProductProfitReportViewModel
+
+@{
+	ViewData["Title"] = "الربح لكل صنف";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>الربح لكل صنف</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">كل التقارير</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+	<div class="card-body">
+		<div class="row g-3 align-items-end">
+			<div class="col-md-3">
+				<label class="form-label fw-semibold">من تاريخ</label>
+				<input type="date"
+					   name="fromDate"
+					   class="form-control"
+					   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+			</div>
+
+			<div class="col-md-3">
+				<label class="form-label fw-semibold">إلى تاريخ</label>
+				<input type="date"
+					   name="toDate"
+					   class="form-control"
+					   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+			</div>
+
+			<div class="col-md-3">
+				<button type="submit" class="btn btn-primary">عرض التقرير</button>
+			</div>
+		</div>
+	</div>
+</form>
+
+<div class="card shadow-sm mb-3">
+	<div class="card-body">
+		<div class="text-muted small mb-1">
+			التكلفة محسوبة من الدفعات الفعلية للصرف (وليست متوسط تكلفة).
+		</div>
+
+		<div class="table-responsive">
+			<table class="table table-striped table-hover mb-0">
+				<thead class="table-dark">
+					<tr>
+						<th>كود</th>
+						<th>الصنف</th>
+						<th class="text-end">الكمية (قطعة)</th>
+						<th class="text-end">الإيراد</th>
+						<th class="text-end">التكلفة</th>
+						<th class="text-end">الربح</th>
+						<th class="text-end">الهامش %</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var row in Model.Rows)
+					{
+						<tr>
+							<td>@row.ProductCode</td>
+							<td>@row.ProductName</td>
+							<td class="text-end">@row.QuantityInBaseUnit.ToString("N2")</td>
+							<td class="text-end">@row.Revenue.ToString("N2")</td>
+							<td class="text-end">@row.Cost.ToString("N2")</td>
+							<td class="text-end fw-bold @(row.Profit < 0 ? "text-danger" : "text-success")">
+								@row.Profit.ToString("N2")
+							</td>
+							<td class="text-end @(row.MarginPercent < 0 ? "text-danger" : "text-success")">
+								@row.MarginPercent.ToString("N2")%
+							</td>
+						</tr>
+					}
+				</tbody>
+				<tfoot>
+					<tr class="table-light fw-bold">
+						<td colspan="2">الإجمالي</td>
+						<td class="text-end">@Model.GrandQuantity.ToString("N2")</td>
+						<td class="text-end">@Model.GrandRevenue.ToString("N2")</td>
+						<td class="text-end">@Model.GrandCost.ToString("N2")</td>
+						<td class="text-end @(Model.GrandProfit < 0 ? "text-danger" : "text-success")">
+							@Model.GrandProfit.ToString("N2")
+						</td>
+						<td></td>
+					</tr>
+				</tfoot>
+			</table>
+		</div>
+
+		@if (!Model.Rows.Any())
+		{
+			<div class="alert alert-info mt-3 mb-0">
+				لا توجد مبيعات مؤكدة في هذه الفترة.
+			</div>
+		}
+	</div>
+</div>

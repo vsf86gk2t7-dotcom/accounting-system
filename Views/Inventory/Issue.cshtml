@@ -1,0 +1,386 @@
+@model AccountingSystem.Models.ViewModels.Inventory.InventoryIssueViewModel
+
+@{
+	ViewData["Title"] = "صرف مخزون";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>صرف مخزون</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للأرصدة
+	</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<form asp-action="Issue"
+	  method="post">
+
+	@Html.AntiForgeryToken()
+
+	<div class="card shadow-sm mb-3">
+
+		<div class="card-header">
+			<h5 class="mb-0">بيانات الصرف</h5>
+		</div>
+
+		<div class="card-body">
+
+			<div class="row g-3">
+
+				<div class="col-md-4">
+
+					<label asp-for="StoreId" class="form-label fw-semibold">
+						المخزن
+					</label>
+
+					<select asp-for="StoreId"
+							class="form-select"
+							id="storeSelect">
+
+						<option value="0">
+							-- اختر المخزن --
+						</option>
+
+						@foreach (var store in Model.Stores)
+						{
+							<option value="@store.Key">@store.Value</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="StoreId" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label asp-for="Reason" class="form-label fw-semibold">
+						السبب
+					</label>
+
+					<input asp-for="Reason"
+						   class="form-control"
+						   placeholder="مثال: تالف، عينات، استخدام داخلي" />
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label asp-for="Notes" class="form-label fw-semibold">
+						ملاحظات
+					</label>
+
+					<input asp-for="Notes"
+						   class="form-control"
+						   placeholder="ملاحظات اختيارية" />
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="card shadow-sm mb-3">
+
+		<div class="card-header d-flex justify-content-between align-items-center">
+
+			<h5 class="mb-0">الأصناف المصروفة</h5>
+
+			<button type="button"
+					class="btn btn-primary btn-sm"
+					id="addItemBtn">
+				+ إضافة صنف
+			</button>
+
+		</div>
+
+		<div class="card-body">
+
+			<div class="table-responsive">
+
+				<table class="table table-bordered align-middle mb-0">
+
+					<thead class="table-light">
+						<tr>
+							<th>المنتج</th>
+							<th style="width:150px">الكمية (وحدة أساسية)</th>
+							<th style="width:80px">إجراء</th>
+						</tr>
+					</thead>
+
+					<tbody id="itemsBody">
+
+						@if (Model.Items != null && Model.Items.Any())
+						{
+							for (var i = 0; i < Model.Items.Count; i++)
+							{
+								<tr class="item-row">
+
+									<td>
+
+										<select name="Items[@i].ProductId"
+												class="form-select product-select">
+
+											<option value="0">
+												-- اختر المنتج --
+											</option>
+
+											@foreach (var product in Model.Products)
+											{
+												<option value="@product.Id"
+														selected=@(product.Id == Model.Items[i].ProductId ? "selected" : null)>
+													@product.Name
+													@(string.IsNullOrWhiteSpace(product.Code)
+														? ""
+														: $" ({product.Code})")
+												</option>
+											}
+
+										</select>
+
+										<div class="available-hint text-muted small mt-1"></div>
+
+									</td>
+
+									<td>
+
+										<input type="number"
+											   name="Items[@i].Quantity"
+											   class="form-control"
+											   value="@Model.Items[i].Quantity"
+											   min="0.000001"
+											   step="0.001" />
+
+									</td>
+
+									<td>
+
+										<button type="button"
+												class="btn btn-outline-danger btn-sm remove-item">
+											حذف
+										</button>
+
+									</td>
+
+								</tr>
+							}
+						}
+
+					</tbody>
+
+				</table>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="d-flex justify-content-end gap-2">
+
+		<a asp-action="Index"
+		   class="btn btn-outline-secondary">
+			إلغاء
+		</a>
+
+		<button type="submit"
+				class="btn btn-success px-4">
+			حفظ الصرف
+		</button>
+
+	</div>
+
+</form>
+
+@section Scripts
+{
+	<partial name="_ValidationScriptsPartial" />
+
+	<script>
+		// ✅ Html.Raw ضرورية لمنع Razor من ترميز JSON إلى HTML entities (&quot; &amp;)
+		const productsJson =
+			@Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+				Model.Products.Select(x => new
+				{
+					id = x.Id,
+					name = x.Name,
+					code = x.Code
+				}),
+				new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }
+			));
+
+		const itemsBody =
+			document.getElementById("itemsBody");
+
+		const addItemBtn =
+			document.getElementById("addItemBtn");
+
+		const storeSelect =
+			document.getElementById("storeSelect");
+
+		function productOptions() {
+			let html =
+				'<option value="0">-- اختر المنتج --</option>';
+
+			productsJson.forEach(
+				p => {
+					const code =
+						p.code
+							? ` (${p.code})`
+							: "";
+
+					html +=
+						`<option value="${p.id}">${p.name}${code}</option>`;
+				}
+			);
+
+			return html;
+		}
+
+		if (addItemBtn) {
+			addItemBtn.addEventListener(
+				"click",
+				function() {
+					const index =
+						itemsBody.querySelectorAll(".item-row").length;
+
+					const tr =
+						document.createElement("tr");
+
+					tr.className = "item-row";
+
+					tr.innerHTML = `
+                        <td>
+                            <select name="Items[${index}].ProductId"
+                                    class="form-select product-select">
+                                ${productOptions()}
+                            </select>
+                            <div class="available-hint text-muted small mt-1"></div>
+                        </td>
+                        <td>
+                            <input type="number"
+                                   name="Items[${index}].Quantity"
+                                   class="form-control"
+                                   value="1"
+                                   min="0.000001"
+                                   step="0.001" />
+                        </td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-outline-danger btn-sm remove-item">
+                                حذف
+                            </button>
+                        </td>
+                    `;
+
+					itemsBody.appendChild(tr);
+				}
+			);
+		}
+
+		if (itemsBody) {
+			itemsBody.addEventListener(
+				"click",
+				function(event) {
+					if (!event.target.classList.contains("remove-item")) {
+						return;
+					}
+
+					const row =
+						event.target.closest(".item-row");
+
+					if (row) {
+						row.remove();
+						reindex();
+					}
+				}
+			);
+
+			itemsBody.addEventListener(
+				"change",
+				function(event) {
+					if (!event.target.classList.contains("product-select")) {
+						return;
+					}
+
+					const row =
+						event.target.closest(".item-row");
+
+					refreshAvailable(row);
+				}
+			);
+		}
+
+		if (storeSelect) {
+			storeSelect.addEventListener(
+				"change",
+				function() {
+					itemsBody
+						.querySelectorAll(".item-row")
+						.forEach(refreshAvailable);
+				}
+			);
+		}
+
+		function refreshAvailable(row) {
+			const hint =
+				row.querySelector(".available-hint");
+
+			const productSelect =
+				row.querySelector(".product-select");
+
+			const productId =
+				parseInt(productSelect.value);
+
+			const storeId =
+				parseInt(storeSelect.value);
+
+			if (!hint || !productId || !storeId) {
+				return;
+			}
+
+			hint.textContent = "جاري التحميل...";
+
+			fetch(
+				`/Inventory/GetProductQuantity?productId=${productId}&storeId=${storeId}`
+			)
+				.then(r => r.json())
+				.then(data => {
+					hint.textContent =
+						`المتاح: ${Number(data.quantity).toFixed(3)}`;
+				})
+				.catch(() => {
+					hint.textContent = "";
+				});
+		}
+
+		function reindex() {
+			const rows =
+				itemsBody.querySelectorAll(".item-row");
+
+			rows.forEach(
+				(row, i) => {
+					row.querySelector("select").name =
+						`Items[${i}].ProductId`;
+
+					const inputs =
+						row.querySelectorAll("input");
+
+					inputs[0].name = `Items[${i}].Quantity`;
+				}
+			);
+		}
+	</script>
+}

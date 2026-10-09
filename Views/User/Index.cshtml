@@ -1,0 +1,249 @@
+﻿@model IEnumerable<AccountingSystem.Models.User>
+
+@{
+	ViewData["Title"] = "المستخدمون";
+
+	var currentUserIdValue = User.FindFirst(
+		System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+	var currentUserId = int.TryParse(
+		currentUserIdValue,
+		out var parsedUserId)
+			? parsedUserId
+			: 0;
+}
+
+<div class="container mt-4">
+
+	<div class="d-flex justify-content-between align-items-center mb-4">
+		<div>
+			<h2>
+				<i class="bi bi-people"></i>
+				المستخدمون
+			</h2>
+
+			<p class="text-muted mb-0">
+				عرض حسابات المستخدمين والأدوار المرتبطة بهم.
+			</p>
+		</div>
+	</div>
+
+	@if (TempData["Success"] != null)
+	{
+		<div class="alert alert-success">
+			@TempData["Success"]
+		</div>
+	}
+
+	@if (TempData["Error"] != null)
+	{
+		<div class="alert alert-danger">
+			@TempData["Error"]
+		</div>
+	}
+
+	<div class="card shadow-sm">
+
+		<div class="card-body p-0">
+
+			@if (!Model.Any())
+			{
+				<div class="p-4 text-center text-muted">
+					لا توجد حسابات مستخدمين.
+				</div>
+			}
+			else
+			{
+				<div class="table-responsive">
+
+					<table class="table table-hover align-middle mb-0">
+
+						<thead>
+							<tr>
+								<th>الرقم</th>
+								<th>الهاتف</th>
+								<th>النوع</th>
+								<th>الدور</th>
+								<th>الحالة</th>
+								<th>نشط</th>
+								<th>الإجراء</th>
+							</tr>
+						</thead>
+
+						<tbody>
+
+							@foreach (var user in Model)
+							{
+								<tr>
+
+									<td>
+										@user.Id
+									</td>
+
+									<td>
+										<strong>
+											@user.Phone
+										</strong>
+									</td>
+
+									<td>
+										@switch (user.UserType)
+										{
+											case UserType.Admin:
+												<span class="badge bg-dark">
+													مدير النظام
+												</span>
+												break;
+
+											case UserType.Employee:
+												<span class="badge bg-primary">
+													موظف
+												</span>
+												break;
+
+											case UserType.Customer:
+												<span class="badge bg-info">
+													عميل
+												</span>
+												break;
+
+											case UserType.Supplier:
+												<span class="badge bg-warning text-dark">
+													مورد
+												</span>
+												break;
+
+											default:
+												<span class="badge bg-secondary">
+													غير معروف
+												</span>
+												break;
+										}
+									</td>
+
+									<td>
+										@if (user.Role != null)
+										{
+											<strong>
+												@user.Role.Name
+											</strong>
+
+											<div class="small text-muted">
+												<code>
+													@user.Role.Code
+												</code>
+											</div>
+										}
+										else
+										{
+											<span class="text-muted">
+												بدون دور
+											</span>
+										}
+									</td>
+
+									<td>
+										@switch (user.Status)
+										{
+											case UserStatus.Approved:
+												<span class="badge bg-success">
+													معتمد
+												</span>
+												break;
+
+											case UserStatus.Pending:
+												<span class="badge bg-warning text-dark">
+													في الانتظار
+												</span>
+												break;
+
+											case UserStatus.Rejected:
+												<span class="badge bg-danger">
+													مرفوض
+												</span>
+												break;
+
+											case UserStatus.Suspended:
+												<span class="badge bg-secondary">
+													موقوف
+												</span>
+												break;
+
+											default:
+												<span class="badge bg-secondary">
+													غير معروف
+												</span>
+												break;
+										}
+									</td>
+
+									<td>
+										@if (user.IsActive)
+										{
+											<span class="badge bg-success">
+												نشط
+											</span>
+										}
+										else
+										{
+											<span class="badge bg-secondary">
+												غير نشط
+											</span>
+										}
+									</td>
+
+									<td>
+
+										@if (user.Id == currentUserId)
+										{
+											<span class="badge bg-secondary">
+												حسابك
+											</span>
+										}
+										else
+										{
+											<form asp-action="ToggleActive"
+												  method="post"
+												  class="d-inline">
+
+												@Html.AntiForgeryToken()
+
+												<input type="hidden"
+													   name="id"
+													   value="@user.Id" />
+
+												@if (user.IsActive)
+												{
+													<button type="submit"
+															class="btn btn-outline-danger btn-sm">
+														تعطيل
+													</button>
+												}
+												else
+												{
+													<button type="submit"
+															class="btn btn-outline-success btn-sm">
+														تفعيل
+													</button>
+												}
+
+											</form>
+										}
+
+									</td>
+
+								</tr>
+							}
+
+						</tbody>
+
+					</table>
+
+				</div>
+			}
+
+		</div>
+
+	</div>
+
+</div>

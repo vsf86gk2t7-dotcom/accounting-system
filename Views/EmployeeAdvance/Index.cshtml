@@ -1,0 +1,108 @@
+﻿@model List<AccountingSystem.Models.EmployeeAdvance>
+
+@{
+ViewData["Title"] = "سلف الموظفين";
+
+var employees = ViewBag.Employees as IEnumerable<dynamic>
+?? Enumerable.Empty<dynamic>();
+
+string StatusBadge(AccountingSystem.Models.AdvanceStatus s) => s switch
+{
+AccountingSystem.Models.AdvanceStatus.Paid => "<span class='badge bg-warning text-dark'>غير مخصومة</span>",
+AccountingSystem.Models.AdvanceStatus.Deducted => "<span class='badge bg-success'>مخصومة</span>",
+AccountingSystem.Models.AdvanceStatus.Cancelled => "<span class='badge bg-secondary'>ملغاة</span>",
+_ => ""
+};
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div>
+<h2 class="mb-1">سلف الموظفين</h2>
+<p class="text-muted mb-0 small">سجل السلف المصروفة</p>
+</div>
+<a asp-action="Create" class="btn btn-primary">
+<i class="bi bi-plus-lg"></i> صرف سلفة
+</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success alert-dismissible fade show">
+@TempData["Success"]
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+@if (TempData["Error"] != null)
+{
+<div class="alert alert-danger alert-dismissible fade show">
+@TempData["Error"]
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+<div class="card shadow-sm border-0 mb-3">
+<div class="card-body">
+<form method="get" class="row g-2 align-items-end">
+<div class="col-md-4">
+<label class="form-label small">الموظف</label>
+<select name="employeeId" class="form-select">
+<option value="">— كل الموظفين —</option>
+@foreach (var e in employees)
+{
+if (ViewBag.EmployeeId == e.Id)
+{
+<option value="@e.Id" selected>@e.Name</option>
+}
+else
+{
+<option value="@e.Id">@e.Name</option>
+}
+}
+</select>
+</div>
+<div class="col-md-2">
+<button type="submit" class="btn btn-outline-primary">بحث</button>
+</div>
+</form>
+</div>
+</div>
+
+<div class="card shadow-sm border-0">
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+<thead>
+<tr>
+<th>الموظف</th>
+<th>المبلغ</th>
+<th>التاريخ</th>
+<th>السبب</th>
+<th>الخزنة</th>
+<th>الحالة</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+@foreach (var a in Model)
+{
+<tr>
+<td><strong>@a.Employee?.Name</strong></td>
+<td>@a.Amount.ToString("N2")</td>
+<td>@a.Date.ToString("yyyy-MM-dd")</td>
+<td class="text-muted small">@a.Reason</td>
+<td class="text-muted small">@a.CashAccount?.Name</td>
+<td>@Html.Raw(StatusBadge(a.Status))</td>
+<td class="text-end">
+<a asp-action="Details" asp-route-id="@a.Id" class="btn btn-sm btn-outline-secondary">
+عرض
+</a>
+</td>
+</tr>
+}
+@if (!Model.Any())
+{
+<tr><td colspan="7" class="text-center text-muted py-4">لا توجد سلف بعد</td></tr>
+}
+</tbody>
+</table>
+</div>
+</div>

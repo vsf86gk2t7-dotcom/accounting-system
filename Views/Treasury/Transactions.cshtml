@@ -1,0 +1,184 @@
+@model AccountingSystem.Models.ViewModels.Treasury.TreasuryTransactionsViewModel
+
+@{
+	ViewData["Title"] = "حركات الخزينة";
+
+	string TypeLabel(AccountingSystem.Models.TreasuryTransactionType t)
+	{
+		return t switch
+		{
+			AccountingSystem.Models.TreasuryTransactionType.Receive => "قبض",
+			AccountingSystem.Models.TreasuryTransactionType.Pay => "صرف",
+			AccountingSystem.Models.TreasuryTransactionType.Transfer => "تحويل",
+			AccountingSystem.Models.TreasuryTransactionType.Adjust => "تسوية",
+			AccountingSystem.Models.TreasuryTransactionType.WalletTransfer => "محفظة",
+			_ => "حركة"
+		};
+	}
+
+	string TypeBadge(AccountingSystem.Models.TreasuryTransactionType t)
+	{
+		return t switch
+		{
+			AccountingSystem.Models.TreasuryTransactionType.Receive => "bg-success",
+			AccountingSystem.Models.TreasuryTransactionType.Pay => "bg-danger",
+			AccountingSystem.Models.TreasuryTransactionType.Transfer => "bg-primary",
+			AccountingSystem.Models.TreasuryTransactionType.Adjust => "bg-warning text-dark",
+			AccountingSystem.Models.TreasuryTransactionType.WalletTransfer => "bg-info text-dark",
+			_ => "bg-dark"
+		};
+	}
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>حركات الخزينة</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للخزينة
+	</a>
+</div>
+
+<form method="get"
+	  asp-action="Transactions"
+	  class="card shadow-sm mb-3">
+	<div class="card-body py-3">
+		<div class="row g-2 align-items-end">
+
+			<div class="col-md-4">
+
+				<label class="form-label mb-1">
+					المركز النقدي
+				</label>
+
+				<select name="accountId"
+						class="form-select">
+
+					<option value="">
+						جميع المراكز
+					</option>
+
+					@foreach (var account in Model.Accounts)
+					{
+						<option value="@account.Key"
+								selected="@(account.Key == Model.AccountId ? "selected" : null)">
+							@account.Value
+						</option>
+					}
+
+				</select>
+
+			</div>
+
+			<div class="col-md-4">
+
+				<label class="form-label mb-1">
+					النوع
+				</label>
+
+				<select name="type"
+						class="form-select">
+
+					<option value="">
+						جميع الحركات
+					</option>
+
+					@foreach (var t in Enum.GetValues<AccountingSystem.Models.TreasuryTransactionType>())
+					{
+						<option value="@((int)t)"
+								selected="@(Model.Type.HasValue && Model.Type.Value == t ? "selected" : null)">
+							@TypeLabel(t)
+						</option>
+					}
+
+				</select>
+
+			</div>
+
+			<div class="col-md-4 d-flex gap-2 align-items-end">
+
+				<button type="submit"
+						class="btn btn-primary w-100">
+					عرض
+				</button>
+
+				<a asp-action="Transactions"
+				   class="btn btn-outline-secondary">
+					مسح
+				</a>
+
+			</div>
+
+		</div>
+	</div>
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد حركات خزينة مطابقة.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>المستند</th>
+					<th>النوع</th>
+					<th>المركز</th>
+					<th>الطرف</th>
+					<th>البيان</th>
+					<th>المستند المرجعي</th>
+					<th>المبلغ</th>
+					<th>بواسطة</th>
+					<th>التاريخ</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var t in Model.Rows)
+				{
+					<tr>
+						<td>
+							<strong>@t.TransactionNumber</strong>
+							<a asp-action="Receipt"
+							   asp-route-id="@t.Id"
+							   class="btn btn-sm btn-outline-primary ms-1"
+							   title="عرض وطباعة الإيصال">
+								إيصال
+							</a>
+						</td>
+						<td>
+							<span class="badge @TypeBadge(t.Type)">
+								@TypeLabel(t.Type)
+							</span>
+						</td>
+						<td>
+							@t.AccountName
+							@if (!string.IsNullOrWhiteSpace(t.TransferToAccountName))
+							{
+								<small class="text-muted d-block">← @t.TransferToAccountName</small>
+							}
+						</td>
+						<td>@(t.PartyName ?? "-")</td>
+						<td>@(t.Reason ?? "-")</td>
+						<td>@(t.ReferenceDocument ?? "-")</td>
+						<td class="@(t.Type == AccountingSystem.Models.TreasuryTransactionType.Pay || t.Type == AccountingSystem.Models.TreasuryTransactionType.WalletTransfer ? "text-danger" : "text-success")">
+							<strong>
+								@(t.Type == AccountingSystem.Models.TreasuryTransactionType.Pay
+									? "-"
+									: t.Type == AccountingSystem.Models.TreasuryTransactionType.Adjust && t.Amount < 0
+									? "-"
+									: t.Type == AccountingSystem.Models.TreasuryTransactionType.WalletTransfer
+									? "-"
+									: "+")@Math.Abs(t.Amount).ToString("N2")
+							</strong>
+						</td>
+						<td>@(t.CreatedByUserName ?? "-")</td>
+						<td>@t.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

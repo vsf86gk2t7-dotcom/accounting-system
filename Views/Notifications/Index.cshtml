@@ -1,0 +1,99 @@
+@using AccountingSystem.Models
+@model AccountingSystem.ViewModels.NotificationsViewModel
+@{
+	ViewData["Title"] = "Notifications";
+}
+
+<div class="page-toolbar">
+	<h1 class="page-title">Notifications</h1>
+	<div class="page-actions">
+		@if (Model.UnreadCount > 0)
+		{
+			<form asp-action="MarkAllRead" method="post" class="d-inline">
+				@Html.AntiForgeryToken()
+				<button type="submit" class="btn btn-outline-primary btn-sm">
+					<i class="bi bi-check2-all"></i> Mark all as read
+				</button>
+			</form>
+		}
+		<form asp-action="DeleteRead" method="post" class="d-inline">
+			@Html.AntiForgeryToken()
+			<button type="submit" class="btn btn-outline-secondary btn-sm">
+				<i class="bi bi-trash"></i> Delete read
+			</button>
+		</form>
+	</div>
+</div>
+
+@if (Model.Items.Count == 0)
+{
+	<div class="empty-state">
+		<i class="bi bi-bell-slash"></i>
+		<p>You have no notifications.</p>
+	</div>
+}
+else
+{
+	<ul class="notification-list">
+		@foreach (var item in Model.Items)
+		{
+			var levelClass = item.Level switch
+			{
+				NotificationLevel.Critical => "level-critical",
+				NotificationLevel.Medium => "level-medium",
+				_ => "level-normal"
+			};
+
+			<li class="notification-item @(item.IsRead ? "is-read" : "is-unread") @levelClass">
+
+				<span class="notification-icon">
+					<i class="bi @item.Icon"></i>
+				</span>
+
+				<div class="notification-body">
+
+					<div class="notification-title">
+						@item.Title
+
+						@if (item.Level == NotificationLevel.Critical)
+						{
+							<span class="badge bg-danger ms-2">Critical</span>
+						}
+						else if (item.Level == NotificationLevel.Medium)
+						{
+							<span class="badge bg-warning text-dark ms-2">Medium</span>
+						}
+					</div>
+
+					@if (!string.IsNullOrWhiteSpace(item.Message))
+					{
+						<div class="notification-message">@item.Message</div>
+					}
+
+					<div class="notification-time" title="@item.CreatedAt.ToString("u")">
+						@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+					</div>
+
+				</div>
+
+				<div class="notification-actions">
+
+					@if (!item.IsRead)
+					{
+						<form asp-action="MarkRead" asp-route-id="@item.Id" method="post">
+							@Html.AntiForgeryToken()
+							<button type="submit" class="btn btn-sm btn-link">Mark read</button>
+						</form>
+					}
+
+					@if (!string.IsNullOrWhiteSpace(item.Url))
+					{
+						<a class="btn btn-sm btn-link" href="@item.Url">Open</a>
+					}
+
+				</div>
+
+			</li>
+		}
+	</ul>
+}

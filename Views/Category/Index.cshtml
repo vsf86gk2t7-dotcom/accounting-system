@@ -1,0 +1,177 @@
+﻿@model List<AccountingSystem.Models.Category>
+
+@{
+    ViewData["Title"] = "التصنيفات";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                التصنيفات
+            </h2>
+
+            <p class="text-muted mb-0">
+                إدارة تصنيفات المنتجات
+            </p>
+        </div>
+
+        <a asp-controller="Category"
+           asp-action="Create"
+           class="btn btn-primary">
+            إضافة تصنيف
+        </a>
+
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            لا توجد تصنيفات حتى الآن.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+
+            <div class="card-body p-0">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>
+                                    #
+                                </th>
+
+                                <th>
+                                    اسم التصنيف
+                                </th>
+
+                                <th>
+                                    الوصف
+                                </th>
+
+                                <th>
+                                    الحالة
+                                </th>
+
+                                <th>
+                                    الإجراء
+                                </th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var category in Model)
+                            {
+                                <tr>
+
+                                    <td>
+                                        @category.Id
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            @category.Name
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        @(string.IsNullOrWhiteSpace(category.Description)
+                                            ? "-"
+                                            : category.Description)
+                                    </td>
+
+                                    <td>
+
+                                        @if (category.IsActive)
+                                        {
+                                            <span class="badge bg-success">
+                                                نشط
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                غير نشط
+                                            </span>
+                                        }
+
+                                    </td>
+
+                                    <td>
+
+                                        <a asp-controller="Category"
+                                           asp-action="Edit"
+                                           asp-route-id="@category.Id"
+                                           class="btn btn-warning btn-sm">
+                                            ✏ تعديل
+                                        </a>
+
+                                        <form asp-controller="Category"
+                                              asp-action="ToggleActive"
+                                              method="post"
+                                              class="d-inline">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@category.Id" />
+
+                                            @if (category.IsActive)
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-outline-danger btn-sm">
+                                                    تعطيل
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-outline-success btn-sm">
+                                                    تفعيل
+                                                </button>
+                                            }
+
+                                        </form>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+</div>

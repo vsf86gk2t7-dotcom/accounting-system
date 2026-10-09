@@ -1,0 +1,145 @@
+@model AccountingSystem.Models.ViewModels.Admin.FactoryResetDataViewModel
+
+@{
+	ViewData["Title"] = "بيانات إعادة ضبط المصنع";
+}
+
+<style>
+	.fr-card-r {
+		border: 1px solid #e3e6ef;
+		border-radius: 14px;
+		background: #fff;
+		transition: box-shadow .2s ease, transform .12s ease;
+	}
+
+	.fr-card-r:hover {
+		box-shadow: 0 8px 22px rgba(17, 26, 63, .10);
+		transform: translateY(-2px);
+	}
+
+	.fr-icon-r {
+		width: 40px;
+		height: 40px;
+		border-radius: 11px;
+		display: grid;
+		place-items: center;
+		font-size: 18px;
+		color: #fff;
+	}
+
+	.fr-num-r {
+		font-size: 1.4rem;
+		font-weight: 800;
+		line-height: 1.15;
+	}
+
+	.fr-ico-sm {
+		font-size: 13px;
+		opacity: .75;
+	}
+</style>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+	<div>
+		<h1 class="h4 mb-1">بيانات إعادة ضبط المصنع</h1>
+		<p class="text-muted small mb-0">
+			ملخص شامل (قراءة فقط) لكل ما سيتم مسحه عند إعادة ضبط المصنع،
+			مع بقاء حساب الأدمن والأدوار والصلاحيات فقط.
+		</p>
+	</div>
+	<a asp-action="Index" class="btn btn-outline-primary btn-sm">
+		<i class="bi bi-arrow-right"></i> عودة للوحة التحكم
+	</a>
+</div>
+
+<div class="alert alert-warning small">
+	<i class="bi bi-exclamation-triangle"></i>
+	هذه الصفحة <strong>قراءة فقط</strong> — لا تحذف أي شيء. تحت كل بطاقة رابط
+	لإدارة البيانات المعنية إن وُجد، ليُمكنك مراجعة المحتوى قبل الضبط.
+</div>
+
+@{
+	// =========================================
+	// دوال مساعدة محلية للبطاقات
+	// =========================================
+
+	string Card(string label, string plural, int count, string icon, string bg, string? href = null)
+	{
+		var link = href != null
+			? $"<a href=\"{href}\" class=\"stretched-link\"></a>"
+			: string.Empty;
+
+		var arrow = href != null
+			? "<i class=\"bi bi-arrow-left-short\"></i>"
+			: string.Empty;
+
+		return
+			$@"
+			<div class=""col-6 col-lg-3 col-xl-2"">
+				<div class=""fr-card-r p-3 h-100 position-relative"">
+					<div class=""d-flex align-items-center gap-2 mb-2"">
+						<div class=""fr-icon-r"" style=""background:{bg}"">{icon}</div>
+						<span class=""fw-semibold small"">{label}</span>
+					</div>
+					<div class=""fr-num-r"">{count.ToString("N0")}</div>
+					<div class=""text-muted small"">{plural} {arrow}</div>
+					{link}
+				</div>
+			</div>";
+	}
+}
+
+<div class="row g-3">
+
+	<!-- ============ الأساسيات ============ -->
+	@Html.Raw(Card("شركات", "شركة", Model.Companies, "🏛️", "linear-gradient(135deg,#e07b9a,#c85979)", "/Admin/Companies/Index"))
+	@Html.Raw(Card("الفروع", "فرع", Model.Branches, "🏢", "linear-gradient(135deg,#4f8cff,#2f66d6)", "/Admin/Branches/Index"))
+	@Html.Raw(Card("المخازن", "مخزن", Model.Stores, "📦", "linear-gradient(135deg,#27c08b,#1ca06f)", "/Admin/Stores/Index"))
+	@Html.Raw(Card("خزن/بنوك", "مركز نقدي", Model.CashAccounts, "💰", "linear-gradient(135deg,#8b7bff,#6b57f0)", "/Admin/Treasury/Index"))
+
+	<!-- ============ شجرة الحسابات (تشمل حسابات عملاء/موردين) ============ -->
+	@Html.Raw(Card("شجرة الحسابات", "حساب (منها حسابات العملاء والموردين)", Model.ChartAccounts, "🧾", "linear-gradient(135deg,#f0a04b,#e0821f)", "/Admin/Accounting/Index"))
+	@Html.Raw(Card("قيود يومية", "قيد", Model.JournalEntries, "📒", "linear-gradient(135deg,#34c9e0,#1fa9c4)", "/Admin/Accounting/JournalEntries"))
+
+	<!-- ============ الأطراف ============ -->
+	@Html.Raw(Card("عملاء", "عميل", Model.Customers, "👤", "linear-gradient(135deg,#34c9e0,#1fa9c4)", "/Admin/Customers/Index"))
+	@Html.Raw(Card("موردون", "مورد", Model.Suppliers, "🚚", "linear-gradient(135deg,#e07b9a,#c85979)", "/Admin/Suppliers/Index"))
+	@Html.Raw(Card("موظفون", "موظف", Model.Employees, "👷", "linear-gradient(135deg,#4f8cff,#2f66d6)", "/Admin/Employees/Index"))
+	@Html.Raw(Card("مستخدمون", "مستخدم", Model.Users, "🔐", "linear-gradient(135deg,#27c08b,#1ca06f)", "/Admin/Users/Index"))
+
+	<!-- ============ المنتجات والمخزون ============ -->
+	@Html.Raw(Card("منتجات", "صنف", Model.Products, "📦", "linear-gradient(135deg,#f0a04b,#e0821f)", "/Admin/Products/Index"))
+	@Html.Raw(Card("فئات", "فئة", Model.Categories, "🏷️", "linear-gradient(135deg,#8b7bff,#6b57f0)", "/Admin/Categories/Index"))
+	@Html.Raw(Card("وحدات قياس", "وحدة", Model.Units, "📐", "linear-gradient(135deg,#34c9e0,#1fa9c4)", "/Admin/Units/Index"))
+	@Html.Raw(Card("دفعات مخزنية", "دفعة", Model.StockLots, "🎯", "linear-gradient(135deg,#e07b9a,#c85979)", "/Admin/Inventory/Index"))
+
+	<!-- ============ الفواتير والحركات ============ -->
+	@Html.Raw(Card("فواتير بيع", "فاتورة", Model.SalesInvoices, "🧾", "linear-gradient(135deg,#4f8cff,#2f66d6)", "/SalesInvoice/Index"))
+	@Html.Raw(Card("فواتير شراء", "فاتورة", Model.PurchaseInvoices, "🛒", "linear-gradient(135deg,#27c08b,#1ca06f)", "/PurchaseInvoice/Index"))
+	@Html.Raw(Card("حركات خزينة", "حركة", Model.TreasuryTransactions, "💸", "linear-gradient(135deg,#f0a04b,#e0821f)", "/Admin/Treasury/Transactions"))
+	@Html.Raw(Card("حركات مخزون", "حركة", Model.StockTransactions, "🔄", "linear-gradient(135deg,#8b7bff,#6b57f0)", "/Admin/Inventory/Transactions"))
+</div>
+
+<hr />
+
+<div class="alert alert-info d-flex align-items-start gap-2">
+	<i class="bi bi-info-circle-fill mt-1"></i>
+	<div class="small">
+		<strong>ملاحظة بخصوص «البنوك» و«حسابات العملاء/الموردين»:</strong>
+		في سكيمة المصنع الحالية لا توجد جداول مستقلة للبنوك أو للذمم (حسابات عملاء/موردين)؛
+		يُمثَّل كلٌّ منها بسجل داخل <strong>«شجرة الحسابات»</strong> أو <strong>«المراكز النقدية»</strong> أعلاه.
+		ولهذا لا تظهر هنا كبطاقات منفصلة، ومسح شجرة الحسابات والمراكز يعني مسح حسابات
+		العملاء والموردين والبنوك المرتبطة بها في نفس الوقت.
+	</div>
+</div>
+
+<div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2">
+	<span class="text-muted small">
+		المجموع الكلي للسجلات المُشمولة:
+		<strong class="text-danger">@Model.TotalCount.ToString("N0")</strong> سجلًا
+		(تُحذف عند التنفيذ، مع بقاء الأدمن والأدوار والصلاحيات).
+	</span>
+
+	<a asp-action="FactoryReset" asp-route-confirm="@AccountingSystem.Controllers.HomeController.ResetConfirmationWord"
+	   class="btn btn-outline-danger btn-sm">تنفيذ إعادة ضبط المصنع</a>
+</div>

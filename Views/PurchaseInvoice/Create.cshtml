@@ -1,0 +1,2152 @@
+﻿@model AccountingSystem.Models.ViewModels.Purchases.PurchaseInvoiceCreateViewModel
+
+@{
+    ViewData["Title"] = "فاتورة شراء جديدة";
+}
+
+<style>
+    /* ══════════════════════════════════════════════════════════
+               Purchase Invoice — Clean Layout + Dual Tax
+               ══════════════════════════════════════════════════════════ */
+    .pi-shell {
+        --pi-bg: #f4f6fa;
+        --pi-surface: #fff;
+        --pi-line: #e4e8f0;
+        --pi-line-soft: #eef1f7;
+        --pi-ink: #0f172a;
+        --pi-body: #475569;
+        --pi-muted: #94a3b8;
+        --pi-primary: #2563eb;
+        --pi-primary-dark: #1d4ed8;
+        --pi-primary-soft: #eff6ff;
+        --pi-green: #059669;
+        --pi-amber: #d97706;
+        --pi-red: #dc2626;
+        --pi-cyan: #0891b2;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 12px;
+        font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+        color: var(--pi-ink);
+    }
+
+        .pi-shell * {
+            box-sizing: border-box;
+        }
+
+    .pi-actionbar {
+        position: sticky;
+        top: 12px;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 18px;
+        margin-bottom: 16px;
+        background: rgba(255,255,255,.94);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--pi-line);
+        border-radius: 14px;
+        box-shadow: 0 6px 22px rgba(15,23,42,.06);
+    }
+
+    .pi-actionbar-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .pi-actionbar-title .pi-ico {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, var(--pi-primary), #60a5fa);
+            color: #fff;
+            font-size: 1.05rem;
+            overflow: hidden;
+        }
+
+        .pi-actionbar-title h1 {
+            margin: 0;
+            font-size: .98rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .pi-actionbar-title p {
+            margin: 0;
+            font-size: .72rem;
+            color: var(--pi-muted);
+        }
+
+    .pi-actionbar-spacer {
+        flex: 1;
+    }
+
+    .pi-actionbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .pi-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        padding: 8px 15px;
+        font-size: .84rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition: .16s;
+        white-space: nowrap;
+    }
+
+        .pi-btn:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+    .pi-btn-primary {
+        background: var(--pi-primary);
+        color: #fff;
+    }
+
+        .pi-btn-primary:hover {
+            background: var(--pi-primary-dark);
+            color: #fff;
+        }
+
+    .pi-btn-dark {
+        background: #0f172a;
+        color: #fff;
+    }
+
+        .pi-btn-dark:hover {
+            background: #1e293b;
+            color: #fff;
+        }
+
+    .pi-btn-light {
+        background: #fff;
+        color: var(--pi-body);
+        border-color: var(--pi-line);
+    }
+
+        .pi-btn-light:hover {
+            background: var(--pi-bg);
+            color: var(--pi-ink);
+        }
+
+    .pi-topgrid {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .pi-panel {
+        background: var(--pi-surface);
+        border: 1px solid var(--pi-line);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .pi-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        background: #fafbfd;
+        border-bottom: 1px solid var(--pi-line-soft);
+    }
+
+        .pi-panel-head h2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: .85rem;
+            font-weight: 800;
+            color: var(--pi-ink);
+        }
+
+            .pi-panel-head h2 i {
+                color: var(--pi-primary);
+            }
+
+    .pi-panel-body {
+        padding: 16px 18px;
+    }
+
+    .pi-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .pi-field label {
+            font-size: .74rem;
+            font-weight: 700;
+            color: var(--pi-body);
+        }
+
+            .pi-field label .req {
+                color: var(--pi-red);
+            }
+
+        .pi-field .form-control,
+        .pi-field .form-select {
+            border-radius: 9px;
+            border: 1.5px solid #dbe3f0;
+            font-size: .88rem;
+            padding: 8px 11px;
+            transition: .16s;
+        }
+
+            .pi-field .form-control:focus,
+            .pi-field .form-select:focus {
+                border-color: var(--pi-primary);
+                box-shadow: 0 0 0 .2rem rgba(37,99,235,.14);
+                outline: none;
+            }
+
+            .pi-field .form-control[readonly] {
+                background: var(--pi-bg);
+                color: var(--pi-muted);
+            }
+
+    .pi-inputgroup {
+        display: flex;
+        gap: 6px;
+    }
+
+        .pi-inputgroup > select,
+        .pi-inputgroup > input {
+            flex: 1;
+            min-width: 0;
+        }
+
+    .pi-icon-btn {
+        flex: 0 0 auto;
+        width: 38px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        color: var(--pi-primary);
+        border: 1.5px solid #dbe3f0;
+        border-radius: 9px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: .16s;
+    }
+
+        .pi-icon-btn:hover {
+            background: var(--pi-primary-soft);
+            border-color: var(--pi-primary);
+            color: var(--pi-primary);
+        }
+
+    .pi-supplier-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px dashed var(--pi-line);
+    }
+
+    .pi-stat {
+        padding: 10px 12px;
+        background: var(--pi-bg);
+        border-radius: 10px;
+        border: 1px solid var(--pi-line-soft);
+    }
+
+    .pi-stat-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .68rem;
+        font-weight: 700;
+        color: var(--pi-muted);
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        margin-bottom: 4px;
+    }
+
+    .pi-stat-val {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--pi-ink);
+        font-family: 'Consolas', monospace;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+        .pi-stat-val small {
+            font-size: .68rem;
+            font-weight: 700;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .pi-stat-val.is-debit {
+            color: var(--pi-amber);
+        }
+
+        .pi-stat-val.is-credit {
+            color: var(--pi-cyan);
+        }
+
+    .pi-portal-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .78rem;
+        font-weight: 700;
+    }
+
+    .pi-metagrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .pi-quickbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 12px 18px;
+        background: #fafbfd;
+        border-bottom: 1px solid var(--pi-line-soft);
+    }
+
+    .pi-quickbar-search {
+        position: relative;
+        flex: 1 1 320px;
+        min-width: 220px;
+    }
+
+        .pi-quickbar-search i {
+            position: absolute;
+            inset-inline-start: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--pi-primary);
+            pointer-events: none;
+        }
+
+        .pi-quickbar-search input {
+            width: 100%;
+            border: 1.5px solid #cddcf7;
+            border-radius: 10px;
+            padding: 9px 36px 9px 12px;
+            font-size: .87rem;
+            font-weight: 600;
+            background: #fff;
+        }
+
+            .pi-quickbar-search input:focus {
+                outline: none;
+                border-color: var(--pi-primary);
+                box-shadow: 0 0 0 .2rem rgba(37,99,235,.14);
+            }
+
+    .pi-quickbar-num {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        flex: 0 0 92px;
+    }
+
+        .pi-quickbar-num label {
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--pi-body);
+        }
+
+        .pi-quickbar-num input {
+            border: 1.5px solid #dbe3f0;
+            border-radius: 9px;
+            padding: 8px 9px;
+            font-size: .85rem;
+            text-align: center;
+            width: 100%;
+        }
+
+            .pi-quickbar-num input:focus {
+                outline: none;
+                border-color: var(--pi-primary);
+                box-shadow: 0 0 0 .18rem rgba(37,99,235,.14);
+            }
+
+    .pi-table-wrap {
+        overflow-x: auto;
+    }
+
+    .pi-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+        .pi-table thead th {
+            background: #f8fafc;
+            color: var(--pi-body);
+            font-size: .7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            padding: 10px 10px;
+            border-bottom: 1.5px solid var(--pi-line);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .pi-table tbody td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--pi-line-soft);
+            vertical-align: middle;
+            font-size: .85rem;
+        }
+
+        .pi-table tbody tr:hover {
+            background: #fafbfd;
+        }
+
+        .pi-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+    .pi-idx {
+        color: var(--pi-muted);
+        font-weight: 700;
+        font-size: .72rem;
+        text-align: center;
+    }
+
+    .pi-table input,
+    .pi-table select {
+        width: 100%;
+        border: 1px solid transparent;
+        background: transparent;
+        border-radius: 7px;
+        padding: 5px 7px;
+        font-size: .85rem;
+        color: var(--pi-ink);
+        transition: .14s;
+    }
+
+        .pi-table input:hover,
+        .pi-table select:hover {
+            border-color: var(--pi-line);
+            background: #fff;
+        }
+
+        .pi-table input:focus,
+        .pi-table select:focus {
+            outline: none;
+            border-color: var(--pi-primary);
+            background: #fff;
+            box-shadow: 0 0 0 .16rem rgba(37,99,235,.14);
+        }
+
+        .pi-table input[readonly] {
+            background: #f4f6fa;
+            color: var(--pi-muted);
+        }
+
+        /* ✅ جديد: تمييز بصري للوحدات المتغيرة */
+        .pi-table input.conversion-factor.is-variable {
+            background: #fffbeb;
+            border-color: #fcd34d;
+            color: #78350f;
+            font-weight: 700;
+        }
+
+            .pi-table input.conversion-factor.is-variable:focus {
+                border-color: var(--pi-amber);
+                box-shadow: 0 0 0 .16rem rgba(217,119,6,.15);
+            }
+
+    .pi-table .pi-linetotal {
+        font-weight: 800;
+        color: var(--pi-primary-dark);
+        font-family: 'Consolas', monospace;
+        direction: ltr;
+        text-align: left;
+        display: block;
+    }
+
+    .pi-table .pi-del {
+        width: 26px;
+        height: 26px;
+        border: 0;
+        border-radius: 7px;
+        background: #fef2f2;
+        color: var(--pi-red);
+        cursor: pointer;
+        font-weight: 800;
+        line-height: 1;
+        transition: .16s;
+    }
+
+        .pi-table .pi-del:hover {
+            background: #fee2e2;
+        }
+
+    .pi-table-empty {
+        text-align: center;
+        padding: 40px 16px !important;
+        color: var(--pi-muted);
+        font-size: .85rem;
+    }
+
+        .pi-table-empty i {
+            display: block;
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+            opacity: .4;
+        }
+
+    /* ═══════════ Tax switches ═══════════ */
+    .pi-tax-block {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed var(--pi-line);
+        animation: piFadeIn .25s ease;
+    }
+
+        .pi-tax-block:first-of-type {
+            border-top: 0;
+            padding-top: 0;
+        }
+
+    @@keyframes piFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .pi-tax-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+        .pi-tax-head .form-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            min-width: 0;
+        }
+
+        .pi-tax-head .form-check-input {
+            width: 2.6em;
+            height: 1.4em;
+            cursor: pointer;
+            margin: 0;
+            border-color: #cbd5e1;
+            flex: 0 0 auto;
+        }
+
+            .pi-tax-head .form-check-input:checked {
+                background-color: var(--pi-primary);
+                border-color: var(--pi-primary);
+            }
+
+        .pi-tax-head label {
+            font-size: .86rem;
+            font-weight: 700;
+            color: var(--pi-ink);
+            cursor: pointer;
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .pi-tax-head label i {
+                color: var(--pi-primary);
+            }
+
+    .pi-tax-rate {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .78rem;
+        color: var(--pi-body);
+    }
+
+        .pi-tax-rate input {
+            width: 70px;
+            text-align: center;
+            border: 1.5px solid #dbe3f0;
+            border-radius: 7px;
+            padding: 4px 6px;
+            font-size: .82rem;
+        }
+
+            .pi-tax-rate input:focus {
+                outline: none;
+                border-color: var(--pi-primary);
+                box-shadow: 0 0 0 .16rem rgba(37,99,235,.14);
+            }
+
+    .pi-tax-amount {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0 0;
+        font-size: .84rem;
+        color: var(--pi-body);
+    }
+
+        .pi-tax-amount b {
+            font-family: 'Consolas', monospace;
+            color: var(--pi-primary-dark);
+        }
+
+    .pi-tax-body {
+        display: none;
+        margin-top: 6px;
+    }
+
+        .pi-tax-body.is-on {
+            display: block;
+        }
+
+    .pi-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 0 18px;
+        border-bottom: 1px solid var(--pi-line);
+        background: #fafbfd;
+    }
+
+    .pi-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 12px 14px;
+        font-size: .84rem;
+        font-weight: 700;
+        color: var(--pi-body);
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: .16s;
+        margin-bottom: -1px;
+    }
+
+        .pi-tab:hover {
+            color: var(--pi-ink);
+        }
+
+        .pi-tab.is-active {
+            color: var(--pi-primary);
+            border-bottom-color: var(--pi-primary);
+        }
+
+    .pi-tab-content {
+        padding: 16px 18px;
+    }
+
+    .pi-tab-panel {
+        display: none;
+    }
+
+        .pi-tab-panel.is-active {
+            display: block;
+        }
+
+    .pi-footer {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .pi-totals {
+        background: var(--pi-surface);
+        border: 1px solid var(--pi-line);
+        border-radius: 14px;
+        padding: 18px;
+    }
+
+        .pi-totals h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 14px;
+            font-size: .88rem;
+            font-weight: 800;
+        }
+
+            .pi-totals h3 i {
+                color: var(--pi-primary);
+            }
+
+    .pi-total-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 0;
+        font-size: .88rem;
+        color: var(--pi-body);
+        gap: 12px;
+    }
+
+        .pi-total-row > span:first-child {
+            font-weight: 600;
+        }
+
+        .pi-total-row input {
+            width: 120px;
+            text-align: center;
+            border: 1.5px solid #dbe3f0;
+            border-radius: 8px;
+            padding: 6px 9px;
+            font-size: .86rem;
+        }
+
+            .pi-total-row input:focus {
+                outline: none;
+                border-color: var(--pi-primary);
+                box-shadow: 0 0 0 .18rem rgba(37,99,235,.14);
+            }
+
+        .pi-total-row .pi-num {
+            font-family: 'Consolas', monospace;
+            font-weight: 800;
+        }
+
+    .pi-total-grand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding-top: 14px;
+        border-top: 2px solid var(--pi-line);
+    }
+
+        .pi-total-grand span {
+            font-weight: 800;
+            font-size: .95rem;
+        }
+
+        .pi-total-grand strong {
+            font-size: 1.55rem;
+            font-weight: 900;
+            color: var(--pi-primary);
+            font-family: 'Segoe UI', sans-serif;
+            direction: ltr;
+        }
+
+    .pi-save-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: var(--pi-surface);
+        border: 1px solid var(--pi-line);
+        border-radius: 14px;
+        padding: 18px;
+    }
+
+        .pi-save-actions .pi-btn {
+            padding: 11px 15px;
+            font-size: .88rem;
+        }
+
+    .pi-loading {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: piPulse 1.2s infinite;
+        vertical-align: middle;
+    }
+
+    @@keyframes piPulse {
+        0%, 100% {
+            opacity: .3;
+        }
+
+        50% {
+            opacity: 1;
+        }
+    }
+
+    @@media (max-width: 991.98px) {
+        .pi-topgrid {
+            grid-template-columns: 1fr;
+        }
+
+        .pi-footer {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .pi-actionbar {
+            padding: 10px 12px;
+        }
+
+        .pi-actionbar-title h1 {
+            font-size: .9rem;
+        }
+
+        .pi-btn {
+            padding: 7px 12px;
+            font-size: .8rem;
+        }
+
+        .pi-metagrid {
+            grid-template-columns: 1fr;
+        }
+
+        .pi-quickbar-num {
+            flex: 1 1 90px;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .pi-shell {
+            padding: 8px;
+        }
+
+        .pi-panel-body, .pi-footer {
+            padding: 14px;
+        }
+
+        .pi-supplier-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media print {
+        .app-sidebar, .app-topbar, .app-footer,
+        .pi-actionbar, .pi-quickbar, .pi-save-actions,
+        .pi-tabs, .pi-icon-btn, .pi-del {
+            display: none !important;
+        }
+
+        .pi-shell {
+            padding: 0;
+            max-width: 100%;
+        }
+
+        .pi-panel, .pi-totals {
+            box-shadow: none;
+            border-color: #ddd;
+        }
+
+        .pi-table input, .pi-table select {
+            border: none !important;
+            background: transparent !important;
+        }
+    }
+</style>
+
+<div class="pi-shell">
+    <form asp-action="Create" method="post" id="invoiceForm" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <!-- ═══════════ Action Bar ═══════════ -->
+        <header class="pi-actionbar">
+            <div class="pi-actionbar-title">
+                <div class="pi-ico">
+                    @if (!string.IsNullOrEmpty(Model.CompanyLogoPath))
+                    {
+                        <img src="@Model.CompanyLogoPath" alt="Logo"
+                             style="width:100%; height:100%; object-fit:contain; background:#fff;" />
+                    }
+                    else
+                    {
+                        <i class="bi bi-cart-plus"></i>
+                    }
+                </div>
+                <div>
+                    <h1>فاتورة شراء جديدة</h1>
+                    <p>رقم: <span dir="ltr">@Model.InvoiceNumber</span></p>
+                </div>
+            </div>
+
+            <div class="pi-actionbar-spacer"></div>
+
+            <div class="pi-actionbar-actions">
+                <button type="button" class="pi-btn pi-btn-light" onclick="window.print();">
+                    <i class="bi bi-printer"></i> طباعة
+                </button>
+                <button type="submit" class="pi-btn pi-btn-dark">
+                    <i class="bi bi-file-earmark"></i> حفظ كمسودة
+                </button>
+                <button type="submit" name="saveAndConfirm" value="true" class="pi-btn pi-btn-primary">
+                    <i class="bi bi-check2-circle"></i> حفظ وترحيل
+                </button>
+            </div>
+        </header>
+
+        <!-- ═══════════ Top grid ═══════════ -->
+        <div class="pi-topgrid">
+
+            <section class="pi-panel">
+                <div class="pi-panel-head">
+                    <h2><i class="bi bi-person-badge"></i> بيانات المورد</h2>
+                </div>
+                <div class="pi-panel-body">
+                    <div class="pi-field">
+                        <label asp-for="SupplierId">المورد <span class="req">*</span></label>
+                        <div class="pi-inputgroup">
+                            <select asp-for="SupplierId" class="form-select" id="supplierSelect">
+                                <option value="">— اختر المورد —</option>
+                                @foreach (var supplier in Model.AvailableSuppliers)
+                                {
+                                    <option value="@supplier.Id" data-phone="@supplier.Phone">
+                                        @supplier.Name@(string.IsNullOrWhiteSpace(supplier.Phone) ? "" : $" — {supplier.Phone}")
+                                    </option>
+                                }
+                            </select>
+                            <button type="button" class="pi-icon-btn" id="quickSupplierBtn" title="مورد جديد">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="SupplierId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="pi-supplier-stats" id="supplierStats" style="display:none;">
+                        <div class="pi-stat">
+                            <div class="pi-stat-label">
+                                <i class="bi bi-wallet2"></i> الرصيد الحالي
+                            </div>
+                            <div class="pi-stat-val" id="supplierBalance">0.00</div>
+                        </div>
+                        <div class="pi-stat">
+                            <div class="pi-stat-label">
+                                <i class="bi bi-shield-check"></i> بوابة المورد
+                            </div>
+                            <div class="pi-stat-val" id="supplierPortal">
+                                <span class="pi-portal-badge" style="color:var(--pi-muted);">
+                                    <i class="bi bi-dash-circle"></i> غير مُفعّل
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pi-panel">
+                <div class="pi-panel-head">
+                    <h2><i class="bi bi-file-earmark-text"></i> تفاصيل الفاتورة</h2>
+                </div>
+                <div class="pi-panel-body">
+                    <div class="pi-metagrid">
+                        <div class="pi-field">
+                            <label asp-for="InvoiceDate">التاريخ</label>
+                            <input asp-for="InvoiceDate" type="date" class="form-control"
+                                   value="@Model.InvoiceDate.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="InvoiceDate" class="text-danger small"></span>
+                        </div>
+
+                        <div class="pi-field">
+                            <label asp-for="DueDate">تاريخ الاستحقاق</label>
+                            <input asp-for="DueDate" type="date" class="form-control" />
+                            <span asp-validation-for="DueDate" class="text-danger small"></span>
+                        </div>
+
+                        <div class="pi-field">
+                            <label asp-for="BranchId">الفرع</label>
+                            <div class="pi-inputgroup">
+                                <select asp-for="BranchId" class="form-select" id="branchSelect">
+                                    <option value="">— كل الفروع —</option>
+                                    @foreach (var branch in Model.AvailableBranches)
+                                    {
+                                        <option value="@branch.Id">@branch.Name</option>
+                                    }
+                                </select>
+                                <a asp-controller="Branch" asp-action="Create" target="_blank"
+                                   class="pi-icon-btn" title="فرع جديد">
+                                    <i class="bi bi-plus-lg"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="pi-field">
+                            <label asp-for="StoreId">المخزن <span class="req">*</span></label>
+                            <div class="pi-inputgroup">
+                                <select asp-for="StoreId" class="form-select" id="storeSelect">
+                                    <option value="">— اختر المخزن —</option>
+                                    @foreach (var store in Model.AvailableStores)
+                                    {
+                                        <option value="@store.Id" data-branch="@store.BranchId">
+                                            @store.BranchName — @store.Name
+                                        </option>
+                                    }
+                                </select>
+                                <button type="button" class="pi-icon-btn" id="quickStoreBtn" title="مخزن جديد">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="StoreId" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <input asp-for="InvoiceNumber" type="hidden" />
+                </div>
+            </section>
+        </div>
+
+        <!-- ═══════════ Items ═══════════ -->
+        <section class="pi-panel" style="margin-bottom: 16px;">
+            <div class="pi-panel-head">
+                <h2>
+                    <i class="bi bi-box-seam"></i> البنود
+                    <span class="text-muted" id="itemsCount"
+                          style="font-weight:600; font-size:.8rem;">(0)</span>
+                </h2>
+            </div>
+
+            <div class="pi-quickbar">
+                <div class="pi-quickbar-search">
+                    <i class="bi bi-upc-scan"></i>
+                    <input type="text" id="barcodeInput" autocomplete="off"
+                           placeholder="امسح الباركود أو اكتب اسم الصنف ثم Enter..." />
+                </div>
+                <div class="pi-quickbar-num">
+                    <label>الكمية</label>
+                    <input type="number" id="quickQty" value="1" step="0.001" min="0" />
+                </div>
+                <div class="pi-quickbar-num">
+                    <label>سعر القطعة</label>
+                    <input type="number" id="quickPrice" step="0.0001" min="0" placeholder="تلقائي" />
+                </div>
+                <button type="button" class="pi-btn pi-btn-primary" id="addItemBtn">
+                    <i class="bi bi-plus-lg"></i> إضافة بند
+                </button>
+            </div>
+
+            <div class="pi-table-wrap">
+                <table class="pi-table" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th style="width:44px;">#</th>
+                            <th style="min-width:200px;">المنتج</th>
+                            <th style="width:130px;">الوحدة</th>
+                            <th style="width:90px;">الكمية</th>
+                            <th style="width:120px;" title="عدد القطع داخل الوحدة (12 للدستة مثلاً)">
+                                قطع/وحدة
+                            </th>
+                            <th style="width:110px;">سعر القطعة</th>
+                            <th style="width:120px;">الإجمالي</th>
+                            <th style="width:44px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        <tr class="pi-table-empty-row" id="emptyRow">
+                            <td colspan="8" class="pi-table-empty">
+                                <i class="bi bi-inboxes"></i>
+                                لا توجد بنود بعد — استخدم شريط الإضافة السريعة أعلاه
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div asp-validation-for="Items" class="text-danger small p-2"></div>
+        </section>
+
+        <!-- ═══════════ Tabs ═══════════ -->
+        <section class="pi-panel" style="margin-bottom: 16px;">
+            <div class="pi-tabs">
+                <button type="button" class="pi-tab is-active" data-tab="notes">
+                    <i class="bi bi-journal-text"></i> ملاحظات
+                </button>
+                <button type="button" class="pi-tab" data-tab="shipping">
+                    <i class="bi bi-truck"></i> تفاصيل إضافية
+                </button>
+            </div>
+
+            <div class="pi-tab-content">
+                <div class="pi-tab-panel is-active" data-tab-panel="notes">
+                    <textarea asp-for="Notes" class="form-control" rows="4"
+                              placeholder="أي ملاحظات تُطبع على الفاتورة..."></textarea>
+                </div>
+
+                <div class="pi-tab-panel" data-tab-panel="shipping">
+                    <p class="text-muted mb-0" style="font-size:.86rem;">
+                        <i class="bi bi-info-circle"></i>
+                        هذه النسخة لا تحتوي على حقول شحن/مستندات في الموديل الحالي.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════ Footer ═══════════ -->
+        <div class="pi-footer">
+            <div class="pi-totals">
+                <h3><i class="bi bi-receipt"></i> ملخص الفاتورة</h3>
+
+                <div class="pi-total-row">
+                    <span>المجموع الفرعي</span>
+                    <b id="subTotal" class="pi-num" style="color:var(--pi-ink);">0.00</b>
+                </div>
+
+                <div class="pi-total-row">
+                    <span>الخصم</span>
+                    <input asp-for="DiscountAmount" type="number" step="0.01" min="0"
+                           id="discountInput" value="0" />
+                </div>
+
+                <!-- ═══ ضريبة المبيعات ═══ -->
+                <div class="pi-tax-block">
+                    <div class="pi-tax-head">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="salesTaxToggle" />
+                            <label for="salesTaxToggle">
+                                <i class="bi bi-percent"></i> تفعيل ضريبة المبيعات
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pi-tax-body" id="salesTaxBody">
+                        <div class="pi-tax-amount">
+                            <div class="pi-tax-rate">
+                                <span>النسبة</span>
+                                <input asp-for="SalesTaxRate" type="number"
+                                       step="0.01" min="0" max="100" value="0"
+                                       id="salesTaxRateInput" />
+                                <span>%</span>
+                            </div>
+                            <span>
+                                القيمة: <b id="salesTaxAmountDisplay">0.00</b>
+                            </span>
+                        </div>
+                        <input asp-for="SalesTaxAmount" type="hidden" id="salesTaxInput" value="0" />
+                    </div>
+                </div>
+
+                <!-- ═══ ضريبة القيمة المضافة ═══ -->
+                <div class="pi-tax-block">
+                    <div class="pi-tax-head">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="vatToggle" />
+                            <label for="vatToggle">
+                                <i class="bi bi-percent"></i> تفعيل ضريبة القيمة المضافة
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="pi-tax-body" id="vatBody">
+                        <div class="pi-tax-amount">
+                            <div class="pi-tax-rate">
+                                <span>النسبة</span>
+                                <input asp-for="TaxRate" type="number"
+                                       step="0.01" min="0" max="100" value="0"
+                                       id="taxRateInput" />
+                                <span>%</span>
+                            </div>
+                            <span>
+                                القيمة: <b id="taxAmountDisplay">0.00</b>
+                            </span>
+                        </div>
+                        <input asp-for="TaxAmount" type="hidden" id="taxInput" value="0" />
+                    </div>
+                </div>
+
+                <div class="pi-total-grand">
+                    <span>الإجمالي النهائي</span>
+                    <strong id="grandTotal">0.00</strong>
+                </div>
+            </div>
+
+            <aside class="pi-save-actions">
+                <button type="submit" name="saveAndConfirm" value="true" class="pi-btn pi-btn-primary">
+                    <i class="bi bi-check2-circle"></i> حفظ وترحيل الفاتورة
+                </button>
+                <button type="submit" class="pi-btn pi-btn-dark">
+                    <i class="bi bi-file-earmark"></i> حفظ كمسودة
+                </button>
+                <a asp-action="Index" class="pi-btn pi-btn-light">
+                    <i class="bi bi-x-lg"></i> إلغاء
+                </a>
+                <p class="text-muted text-center m-0" style="font-size:.72rem; margin-top:6px;">
+                    جميع المبالغ بعملة النظام
+                </p>
+            </aside>
+        </div>
+    </form>
+</div>
+
+<!-- ═══════════ Modals ═══════════ -->
+
+<div class="modal fade" id="quickSupplierModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px; border:0;">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة مورد جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اسم المورد *</label>
+                    <input type="text" id="qsName" class="form-control" maxlength="200" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الهاتف *</label>
+                    <input type="text" id="qsPhone" class="form-control" maxlength="50" dir="ltr" />
+                </div>
+                <div id="qsMsg" class="small text-danger"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="qsSave">حفظ وإضافة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quickStoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px; border:0;">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة مخزن جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اسم المخزن *</label>
+                    <input type="text" id="qsStoreName" class="form-control" maxlength="200" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الفرع *</label>
+                    <select id="qsStoreBranch" class="form-select"></select>
+                </div>
+                <div id="qsStoreMsg" class="small text-danger"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="qsStoreSave">حفظ وإضافة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addUnitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px; border:0;">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة وحدة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="addUnitProductId" />
+
+                <div class="mb-3">
+                    <label class="form-label">نوع الوحدة</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="addUnitKind"
+                               id="addUnitKindVariable" value="1" checked
+                               onchange="toggleAddUnitFactor()" />
+                        <label class="form-check-label" for="addUnitKindVariable">
+                            <strong>متغيرة</strong>
+                            <small class="text-muted d-block">
+                                كرتونة، طقم — عدد القطع يختلف حسب المورد/الصنف
+                            </small>
+                        </label>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="radio" name="addUnitKind"
+                               id="addUnitKindStandard" value="0"
+                               onchange="toggleAddUnitFactor()" />
+                        <label class="form-check-label" for="addUnitKindStandard">
+                            <strong>ثابتة</strong>
+                            <small class="text-muted d-block">
+                                قطعة، دستة — عدد القطع ثابت دائماً
+                            </small>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">اسم الوحدة</label>
+                    <input id="addUnitName" class="form-control" />
+                    <div class="form-text">مثال: طقم، كرتونة، رول، دستة...</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">الاختصار (اختياري)</label>
+                    <input id="addUnitShort" class="form-control" />
+                </div>
+
+                <div class="mb-3" id="addUnitFactorWrap">
+                    <label class="form-label" id="addUnitFactorLabel">عدد القطع (افتراضي للوحدة المتغيرة)</label>
+                    <input id="addUnitFactor" type="number" step="0.0001" min="0" value="1"
+                           class="form-control" />
+                    <div class="form-text" id="addUnitFactorHelp">
+                        للوحدات المتغيرة: قيمة اقتراحية تُستخدم عند عدم وجود تعبئة سابقة (يمكن تعديلها في كل فاتورة).
+                        للوحدات الثابتة: القيمة الفعلية (12 للدستة مثلاً).
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">سعر البيع (اختياري)</label>
+                    <input id="addUnitPrice" type="number" step="0.01" min="0" value="0"
+                           class="form-control" />
+                </div>
+
+                <div id="addUnitMsg" class="text-danger mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" id="addUnitSaveBtn">إضافة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ═══════════ Server data ═══════════
+            const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                            Model.AvailableProducts,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+            const stores = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                            Model.AvailableStores,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+            // ═══════════ Elements ═══════════
+            const itemsBody = document.getElementById('itemsBody');
+            const emptyRow = document.getElementById('emptyRow');
+            const addItemBtn = document.getElementById('addItemBtn');
+            const barcodeInput = document.getElementById('barcodeInput');
+            const quickQty = document.getElementById('quickQty');
+            const quickPrice = document.getElementById('quickPrice');
+
+            const supplierSelect = document.getElementById('supplierSelect');
+            const branchSelect = document.getElementById('branchSelect');
+            const storeSelect = document.getElementById('storeSelect');
+
+            const discountInput = document.getElementById('discountInput');
+
+            const salesTaxToggle = document.getElementById('salesTaxToggle');
+            const salesTaxBody = document.getElementById('salesTaxBody');
+            const salesTaxRateInput = document.getElementById('salesTaxRateInput');
+            const salesTaxInput = document.getElementById('salesTaxInput');
+            const salesTaxAmountDisplay = document.getElementById('salesTaxAmountDisplay');
+
+            const vatToggle = document.getElementById('vatToggle');
+            const vatBody = document.getElementById('vatBody');
+            const taxRateInput = document.getElementById('taxRateInput');
+            const taxInput = document.getElementById('taxInput');
+            const taxAmountDisplay = document.getElementById('taxAmountDisplay');
+
+            const subTotalEl = document.getElementById('subTotal');
+            const grandTotalEl = document.getElementById('grandTotal');
+            const itemsCountEl = document.getElementById('itemsCount');
+
+            const supplierStats = document.getElementById('supplierStats');
+            const supplierBalance = document.getElementById('supplierBalance');
+            const supplierPortal = document.getElementById('supplierPortal');
+
+            const token = () => {
+                const el = document.querySelector('input[name="__RequestVerificationToken"]');
+                return el ? el.value : '';
+            };
+
+            // ═══════════ Supplier info ═══════════
+            async function loadSupplierInfo(supplierId) {
+                if (!supplierId || parseInt(supplierId) <= 0) {
+                    supplierStats.style.display = 'none';
+                    return;
+                }
+
+                supplierStats.style.display = 'grid';
+                supplierBalance.innerHTML = '<span class="pi-loading"></span>';
+                supplierPortal.innerHTML = '<span class="pi-loading"></span>';
+
+                try {
+                    const res = await fetch(`/PurchaseInvoice/GetSupplierInfo?id=${supplierId}`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+
+                    if (!data.ok) {
+                        supplierStats.style.display = 'none';
+                        return;
+                    }
+
+                    const bal = parseFloat(data.balance) || 0;
+                    if (bal > 0.005) {
+                        supplierBalance.className = 'pi-stat-val is-credit';
+                        supplierBalance.innerHTML =
+                            bal.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+                            ' <small>دائن (له عندنا)</small>';
+                    } else if (bal < -0.005) {
+                        supplierBalance.className = 'pi-stat-val is-debit';
+                        supplierBalance.innerHTML =
+                            Math.abs(bal).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+                            ' <small>مدين (لنا عنده)</small>';
+                    } else {
+                        supplierBalance.className = 'pi-stat-val';
+                        supplierBalance.textContent = '0.00';
+                    }
+
+                    if (data.hasPortalAccount) {
+                        supplierPortal.innerHTML =
+                            '<span class="pi-portal-badge" style="color:var(--pi-green);">' +
+                            '<i class="bi bi-check-circle-fill"></i> مُفعّل</span>';
+                    } else if (data.portalApproved) {
+                        supplierPortal.innerHTML =
+                            '<span class="pi-portal-badge" style="color:var(--pi-amber);">' +
+                            '<i class="bi bi-clock-history"></i> بانتظار الإنشاء</span>';
+                    } else if (data.portalRequested) {
+                        supplierPortal.innerHTML =
+                            '<span class="pi-portal-badge" style="color:var(--pi-muted);">' +
+                            '<i class="bi bi-hourglass-split"></i> قيد المراجعة</span>';
+                    } else {
+                        supplierPortal.innerHTML =
+                            '<span class="pi-portal-badge" style="color:var(--pi-muted);">' +
+                            '<i class="bi bi-dash-circle"></i> غير مُفعّل</span>';
+                    }
+                } catch {
+                    supplierBalance.textContent = '—';
+                    supplierPortal.textContent = '—';
+                }
+            }
+
+            supplierSelect.addEventListener('change', function() {
+                loadSupplierInfo(this.value);
+                // إعادة حساب كل السطور لأن آخر تعبئة تعتمد على المورد
+                document.querySelectorAll('tr.pi-row').forEach(tr => {
+                    if (tr.querySelector('.product-select').value) {
+                        syncConversionFactor(tr);
+                    }
+                });
+            });
+
+            // ═══════════ Stores filter ═══════════
+            function populateStores(branchId) {
+                const current = storeSelect.value;
+                storeSelect.innerHTML = '<option value="">— اختر المخزن —</option>';
+                stores.filter(s => !branchId || s.BranchId === branchId).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.Id;
+                    opt.textContent = (s.BranchName ? s.BranchName + ' — ' : '') + s.Name;
+                    opt.dataset.branch = s.BranchId;
+                    storeSelect.appendChild(opt);
+                });
+                if (current && storeSelect.querySelector(`option[value="${current}"]`)) {
+                    storeSelect.value = current;
+                }
+            }
+
+            branchSelect.addEventListener('change', function() {
+                populateStores(parseInt(this.value) || 0);
+            });
+
+            storeSelect.addEventListener('change', function() {
+                const st = stores.find(s => s.Id === parseInt(this.value));
+                if (st && String(st.BranchId) !== branchSelect.value) {
+                    branchSelect.value = st.BranchId;
+                    populateStores(st.BranchId);
+                    storeSelect.value = st.Id;
+                }
+            });
+
+            // ═══════════ Rows ═══════════
+            let rowIndex = 0;
+
+            function renumber() {
+                const rows = itemsBody.querySelectorAll('tr.pi-row');
+                rows.forEach((tr, i) => {
+                    const idx = tr.querySelector('.pi-idx');
+                    if (idx) idx.textContent = i + 1;
+                    tr.querySelectorAll('[name]').forEach(el => {
+                        el.name = el.name.replace(/Items\[\d+\]/, `Items[${i}]`);
+                    });
+                });
+                const n = rows.length;
+                itemsCountEl.textContent = `(${n})`;
+                emptyRow.style.display = n ? 'none' : '';
+            }
+
+            function buildRowHtml(idx) {
+                let productOpts = '<option value="">— اختر —</option>';
+                products.forEach(p => {
+                    productOpts += `<option value="${p.Id}">${p.Name}</option>`;
+                });
+                return `
+                                    <td class="pi-idx">${idx + 1}</td>
+                                    <td>
+                                        <select name="Items[${idx}].ProductId" class="product-select" data-idx="${idx}">
+                                            ${productOpts}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="Items[${idx}].UnitId" class="unit-select" data-idx="${idx}">
+                                            <option value="">— اختر —</option>
+                                        </select>
+                                        <button type="button" class="btn btn-sm btn-link p-0 add-unit-btn"
+                                                data-idx="${idx}" style="font-size:.7rem; text-decoration:none;">
+                                            <i class="bi bi-plus-circle"></i> وحدة
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.001" min="0" value="1"
+                                               name="Items[${idx}].Quantity" class="qty-input" data-idx="${idx}" />
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.0001" min="0" value="1"
+                                               name="Items[${idx}].ConversionFactor" class="conversion-factor" data-idx="${idx}"
+                                               title="عدد القطع داخل الوحدة (12 للدستة)" />
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.0001" min="0" value="0"
+                                               name="Items[${idx}].UnitPrice" class="price-input" data-idx="${idx}" />
+                                    </td>
+                                    <td><span class="pi-linetotal">0.00</span></td>
+                                    <td><button type="button" class="pi-del" title="حذف">&times;</button></td>`;
+            }
+
+            function fillUnits(tr, product) {
+                const unitSel = tr.querySelector('.unit-select');
+                unitSel.innerHTML = '<option value="">— اختر —</option>';
+                (product?.Units || []).forEach(u => {
+                    const o = document.createElement('option');
+                    o.value = u.UnitId;
+                    o.textContent = u.UnitName;
+                    o.dataset.factor = u.ConversionFactor ?? 1;
+                    o.dataset.kind = u.Kind ?? 1;                 // 0=Standard, 1=Variable
+                    o.dataset.pieces = u.PiecesPerUnit ?? '';     // للوحدات الثابتة
+                    unitSel.appendChild(o);
+                });
+
+                // افتراضياً: اختر "قطعة" إن وُجدت، وإلا أول وحدة
+                const idx = (product?.Units || []).findIndex(u => (u.UnitName || '').trim() === 'قطعة');
+                if (idx >= 0) unitSel.selectedIndex = idx + 1;
+                else if (product?.Units?.length) unitSel.selectedIndex = 1;
+
+                syncConversionFactor(tr);
+            }
+
+            // ✅ جديد: مزامنة عمود "قطع/وحدة" حسب نوع الوحدة
+            function syncConversionFactor(tr) {
+                const sel = tr.querySelector('.unit-select');
+                const cfInp = tr.querySelector('.conversion-factor');
+                const opt = sel.selectedOptions[0];
+
+                if (!opt || !opt.value) {
+                    cfInp.value = 1;
+                    cfInp.readOnly = true;
+                    cfInp.classList.remove('is-variable');
+                    recalcRow(tr);
+                    return;
+                }
+
+                const kind = parseInt(opt.dataset.kind);          // 0=Standard, 1=Variable
+                const pieces = parseFloat(opt.dataset.pieces);
+                const factor = parseFloat(opt.dataset.factor) || 0;
+
+                if (kind === 0) {
+                    // ═══ وحدة ثابتة (قطعة، دستة) ═══
+                    // القيمة من PiecesPerUnit
+                    cfInp.value = (pieces > 0) ? pieces : 1;
+                    cfInp.readOnly = true;
+                    cfInp.classList.remove('is-variable');
+                    recalcRow(tr);
+                } else {
+                    // ═══ وحدة متغيرة (كرتونة، طقم) ═══
+                    // قابل للتعديل + تمييز بصري
+                    cfInp.readOnly = false;
+                    cfInp.classList.add('is-variable');
+
+                    // ابدأ بـ ProductUnit.ConversionFactor
+                    cfInp.value = (factor > 0) ? factor : 1;
+
+                    // اطلب آخر تعبئة من السيرفر
+                    const supplierId = parseInt(supplierSelect.value) || 0;
+                    const productId = parseInt(tr.querySelector('.product-select').value) || 0;
+                    const unitId = parseInt(opt.value) || 0;
+
+                    if (supplierId > 0 && productId > 0 && unitId > 0) {
+                        fetch(`/PurchaseInvoice/GetLastPacking?supplierId=${supplierId}&productId=${productId}&unitId=${unitId}`)
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.ok && d.conversionFactor > 0) {
+                                    cfInp.value = d.conversionFactor;
+                                    recalcRow(tr);
+                                }
+                            })
+                            .catch(() => { /* تجاهل */ });
+                    }
+
+                    recalcRow(tr);
+                }
+            }
+
+            function recalcRow(tr) {
+                const qty = parseFloat(tr.querySelector('.qty-input').value) || 0;
+                const cf = parseFloat(tr.querySelector('.conversion-factor').value) || 0;
+                const price = parseFloat(tr.querySelector('.price-input').value) || 0;
+                const total = qty * cf * price;
+                tr.dataset.total = total;
+                tr.querySelector('.pi-linetotal').textContent = total.toFixed(2);
+                updateTotals();
+            }
+
+            function setRowProduct(tr, product) {
+                const sel = tr.querySelector('.product-select');
+                const priceInp = tr.querySelector('.price-input');
+                sel.value = product.Id;
+                fillUnits(tr, product);
+                if (!parseFloat(priceInp.value)) {
+                    const dp = product.LastPurchasePrice ?? product.PurchasePrice ?? product.CostPrice ?? 0;
+                    priceInp.value = Number(dp) ? Number(dp).toFixed(2) : '0';
+                }
+                recalcRow(tr);
+            }
+
+            function createRow() {
+                const idx = rowIndex++;
+                const tr = document.createElement('tr');
+                tr.className = 'pi-row';
+                tr.dataset.total = 0;
+                tr.innerHTML = buildRowHtml(idx);
+                itemsBody.appendChild(tr);
+
+                const productSel = tr.querySelector('.product-select');
+                const unitSel = tr.querySelector('.unit-select');
+                const qtyInp = tr.querySelector('.qty-input');
+                const cfInp = tr.querySelector('.conversion-factor');
+                const priceInp = tr.querySelector('.price-input');
+
+                productSel.addEventListener('change', function() {
+                    const p = products.find(x => x.Id === parseInt(this.value));
+                    if (p) {
+                        fillUnits(tr, p);
+                        if (!parseFloat(priceInp.value)) {
+                            const dp = p.LastPurchasePrice ?? p.PurchasePrice ?? p.CostPrice ?? 0;
+                            priceInp.value = Number(dp) ? Number(dp).toFixed(2) : '0';
+                        }
+                    } else {
+                        unitSel.innerHTML = '<option value="">— اختر —</option>';
+                        cfInp.value = 1;
+                        cfInp.readOnly = true;
+                        cfInp.classList.remove('is-variable');
+                    }
+                    recalcRow(tr);
+                });
+
+                unitSel.addEventListener('change', function() {
+                    syncConversionFactor(tr);
+                });
+
+                [qtyInp, cfInp, priceInp].forEach(inp => {
+                    inp.addEventListener('input', () => recalcRow(tr));
+                });
+
+                tr.querySelector('.add-unit-btn').addEventListener('click', () => {
+                    const pid = parseInt(productSel.value) || 0;
+                    if (pid <= 0) { alert('اختر الصنف أولًا.'); return; }
+                    document.getElementById('addUnitProductId').value = pid;
+                    document.getElementById('addUnitName').value = '';
+                    document.getElementById('addUnitShort').value = '';
+                    document.getElementById('addUnitFactor').value = '1';
+                    document.getElementById('addUnitPrice').value = '0';
+                    document.getElementById('addUnitMsg').textContent = '';
+                    document.getElementById('addUnitKindVariable').checked = true;
+                    toggleAddUnitFactor();
+                    new bootstrap.Modal(document.getElementById('addUnitModal')).show();
+                });
+
+                tr.querySelector('.pi-del').addEventListener('click', () => {
+                    tr.remove();
+                    renumber();
+                    updateTotals();
+                });
+
+                [qtyInp, cfInp, priceInp].forEach(inp => {
+                    inp.addEventListener('keydown', e => {
+                        if (e.key !== 'Enter') return;
+                        e.preventDefault();
+                        const fields = [qtyInp, cfInp, priceInp].filter(f => !f.readOnly);
+                        const i = fields.indexOf(e.target);
+                        if (i > -1 && i < fields.length - 1) {
+                            fields[i + 1].focus(); fields[i + 1].select();
+                        } else {
+                            barcodeInput.focus();
+                        }
+                    });
+                });
+
+                // في البداية: لا منتج محدد → disabled
+                cfInp.readOnly = true;
+
+                renumber();
+                return tr;
+            }
+
+            // ═══════════ Quick add ═══════════
+            function findProductByBarcode(code) {
+                code = (code || '').trim().toLowerCase();
+                if (!code) return null;
+                return products.find(p => (p.Barcode || '').trim().toLowerCase() === code);
+            }
+            function findProductByName(name) {
+                name = (name || '').trim().toLowerCase();
+                if (!name) return null;
+                return products.find(p => (p.Name || '').trim().toLowerCase() === name);
+            }
+
+            function addProduct(product) {
+                if (!product) return false;
+                const qty = parseFloat(quickQty.value) || 1;
+                const pInput = parseFloat(quickPrice.value);
+                const price = isNaN(pInput)
+                    ? Number(product.LastPurchasePrice ?? product.PurchasePrice ?? product.CostPrice ?? 0)
+                    : pInput;
+
+                const tr = createRow();
+                setRowProduct(tr, product);
+                tr.querySelector('.qty-input').value = qty;
+                tr.querySelector('.price-input').value = price;
+                recalcRow(tr);
+
+                quickQty.value = '1';
+                quickPrice.value = '';
+                barcodeInput.focus();
+                return true;
+            }
+
+            barcodeInput.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const val = this.value.trim();
+                if (!val) return;
+
+                const p = findProductByBarcode(val) || findProductByName(val);
+                if (p) {
+                    addProduct(p);
+                    this.value = '';
+                    this.classList.remove('is-invalid');
+                } else {
+                    this.classList.add('is-invalid');
+                    this.setAttribute('title', 'لا يوجد منتج بهذا الاسم/الباركود');
+                    setTimeout(() => this.classList.remove('is-invalid'), 1500);
+                }
+            });
+
+            quickQty.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); barcodeInput.focus(); }
+            });
+            quickPrice.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); barcodeInput.focus(); }
+            });
+
+            addItemBtn.addEventListener('click', () => {
+                const val = barcodeInput.value.trim();
+                if (val) {
+                    const p = findProductByBarcode(val) || findProductByName(val);
+                    if (p) {
+                        addProduct(p);
+                        barcodeInput.value = '';
+                        return;
+                    }
+                }
+                createRow();
+            });
+
+            // ═══════════ Totals ═══════════
+            function parseNum(v) {
+                const n = parseFloat(String(v ?? '').replace(',', '.'));
+                return isNaN(n) ? 0 : n;
+            }
+
+            function updateTotals() {
+                let sub = 0;
+                itemsBody.querySelectorAll('tr.pi-row').forEach(tr => {
+                    sub += parseFloat(tr.dataset.total) || 0;
+                });
+
+                const discount = Math.max(0, parseNum(discountInput.value));
+                const taxable = Math.max(0, sub - discount);
+
+                let salesTaxAmount = 0;
+                if (salesTaxToggle.checked) {
+                    const rate = parseNum(salesTaxRateInput.value);
+                    salesTaxAmount = Math.round(taxable * rate * 100) / 10000;
+                }
+                salesTaxInput.value = salesTaxAmount.toFixed(2);
+                salesTaxAmountDisplay.textContent = salesTaxAmount.toFixed(2);
+
+                let vatAmount = 0;
+                if (vatToggle.checked) {
+                    const rate = parseNum(taxRateInput.value);
+                    vatAmount = Math.round(taxable * rate * 100) / 10000;
+                }
+                taxInput.value = vatAmount.toFixed(2);
+                taxAmountDisplay.textContent = vatAmount.toFixed(2);
+
+                const grand = taxable + salesTaxAmount + vatAmount;
+                subTotalEl.textContent = sub.toFixed(2);
+                grandTotalEl.textContent = grand.toFixed(2);
+            }
+
+            discountInput.addEventListener('input', updateTotals);
+            salesTaxRateInput.addEventListener('input', updateTotals);
+            taxRateInput.addEventListener('input', updateTotals);
+
+            salesTaxToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    salesTaxBody.classList.add('is-on');
+                    if (!parseNum(salesTaxRateInput.value)) {
+                        salesTaxRateInput.value = '0';
+                    }
+                    salesTaxRateInput.focus();
+                } else {
+                    salesTaxBody.classList.remove('is-on');
+                    salesTaxRateInput.value = '0';
+                    salesTaxInput.value = '0';
+                }
+                updateTotals();
+            });
+
+            vatToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    vatBody.classList.add('is-on');
+                    if (!parseNum(taxRateInput.value)) {
+                        taxRateInput.value = '14';
+                    }
+                    taxRateInput.focus();
+                } else {
+                    vatBody.classList.remove('is-on');
+                    taxRateInput.value = '0';
+                    taxInput.value = '0';
+                }
+                updateTotals();
+            });
+
+            // ═══════════ Tabs ═══════════
+            document.querySelectorAll('.pi-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.dataset.tab;
+                    document.querySelectorAll('.pi-tab').forEach(t =>
+                        t.classList.toggle('is-active', t === tab));
+                    document.querySelectorAll('.pi-tab-panel').forEach(p =>
+                        p.classList.toggle('is-active', p.dataset.tabPanel === target));
+                });
+            });
+
+            // ═══════════ Quick Supplier ═══════════
+            const quickSupplierModal = new bootstrap.Modal(document.getElementById('quickSupplierModal'));
+            const qsName = document.getElementById('qsName');
+            const qsPhone = document.getElementById('qsPhone');
+            const qsMsg = document.getElementById('qsMsg');
+
+            document.getElementById('quickSupplierBtn').addEventListener('click', () => {
+                qsName.value = ''; qsPhone.value = ''; qsMsg.textContent = '';
+                quickSupplierModal.show();
+                setTimeout(() => qsName.focus(), 300);
+            });
+
+            async function submitQuickSupplier() {
+                const name = qsName.value.trim();
+                const phone = qsPhone.value.trim();
+                if (!name) { qsMsg.textContent = 'اسم المورد مطلوب.'; return; }
+                if (!phone) { qsMsg.textContent = 'رقم الهاتف مطلوب.'; return; }
+
+                const body = new URLSearchParams();
+                body.append('__RequestVerificationToken', token());
+                body.append('name', name);
+                body.append('phone', phone);
+
+                try {
+                    const res = await fetch('@Url.Action("CreateQuickSupplier", "PurchaseInvoice")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: body.toString()
+                    });
+                    const data = await res.json();
+                    if (!data.ok) { qsMsg.textContent = data.message || 'تعذر الحفظ.'; return; }
+
+                    const opt = document.createElement('option');
+                    opt.value = data.id;
+                    opt.textContent = data.name + (data.phone ? ' — ' + data.phone : '');
+                    opt.dataset.phone = data.phone || '';
+                    supplierSelect.appendChild(opt);
+                    supplierSelect.value = data.id;
+                    loadSupplierInfo(data.id);
+                    quickSupplierModal.hide();
+                } catch {
+                    qsMsg.textContent = 'تعذر الاتصال بالخادم.';
+                }
+            }
+            document.getElementById('qsSave').addEventListener('click', submitQuickSupplier);
+            qsName.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuickSupplier(); });
+            qsPhone.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuickSupplier(); });
+
+            // ═══════════ Quick Store ═══════════
+            const quickStoreModal = new bootstrap.Modal(document.getElementById('quickStoreModal'));
+            const qsStoreName = document.getElementById('qsStoreName');
+            const qsStoreBranch = document.getElementById('qsStoreBranch');
+            const qsStoreMsg = document.getElementById('qsStoreMsg');
+
+            document.getElementById('quickStoreBtn').addEventListener('click', () => {
+                qsStoreName.value = ''; qsStoreMsg.textContent = '';
+                qsStoreBranch.innerHTML = '';
+                Array.from(branchSelect.options).filter(o => o.value).forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.value; opt.textContent = o.textContent;
+                    qsStoreBranch.appendChild(opt);
+                });
+                if (branchSelect.value) qsStoreBranch.value = branchSelect.value;
+                quickStoreModal.show();
+                setTimeout(() => qsStoreName.focus(), 300);
+            });
+
+            async function submitQuickStore() {
+                const name = qsStoreName.value.trim();
+                if (!name) { qsStoreMsg.textContent = 'اسم المخزن مطلوب.'; return; }
+                if (!qsStoreBranch.value) { qsStoreMsg.textContent = 'اختر الفرع.'; return; }
+
+                const body = new URLSearchParams();
+                body.append('__RequestVerificationToken', token());
+                body.append('name', name);
+                body.append('branchId', qsStoreBranch.value);
+
+                try {
+                    const res = await fetch('@Url.Action("CreateQuickStore", "PurchaseInvoice")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: body.toString()
+                    });
+                    const data = await res.json();
+                    if (!data.ok) { qsStoreMsg.textContent = data.message || 'تعذر الحفظ.'; return; }
+
+                    const opt = document.createElement('option');
+                    opt.value = data.id;
+                    opt.textContent = (data.branchName ? data.branchName + ' — ' : '') + data.name;
+                    opt.dataset.branch = data.branchId;
+                    storeSelect.appendChild(opt);
+                    storeSelect.value = data.id;
+                    quickStoreModal.hide();
+                } catch {
+                    qsStoreMsg.textContent = 'تعذر الاتصال بالخادم.';
+                }
+            }
+            document.getElementById('qsStoreSave').addEventListener('click', submitQuickStore);
+            qsStoreName.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuickStore(); });
+
+            // ═══════════ Add Unit Modal ═══════════
+            window.toggleAddUnitFactor = function() {
+                const kind = parseInt(document.querySelector('input[name="addUnitKind"]:checked').value);
+                const label = document.getElementById('addUnitFactorLabel');
+                const help = document.getElementById('addUnitFactorHelp');
+                const input = document.getElementById('addUnitFactor');
+
+                if (kind === 0) {
+                    // Standard
+                    label.textContent = 'عدد القطع (ثابت) *';
+                    help.textContent = 'مثال: 12 للدستة. القيمة ثابتة ولا يمكن تعديلها في الفواتير.';
+                    input.min = '0.0001';
+                } else {
+                    // Variable
+                    label.textContent = 'عدد القطع (افتراضي)';
+                    help.textContent = 'قيمة اقتراحية تُستخدم عند عدم وجود تعبئة سابقة. يمكن تعديلها في كل فاتورة.';
+                    input.min = '0';
+                }
+            };
+
+            let addUnitInFlight = false;
+            document.getElementById('addUnitSaveBtn').addEventListener('click', async function() {
+                if (addUnitInFlight) return;
+                const btn = this;
+                const pid = parseInt(document.getElementById('addUnitProductId').value) || 0;
+                const unitName = document.getElementById('addUnitName').value.trim();
+                const unitShort = document.getElementById('addUnitShort').value.trim();
+                const factor = parseFloat(document.getElementById('addUnitFactor').value) || 0;
+                const price = parseFloat(document.getElementById('addUnitPrice').value) || 0;
+                const unitKind = parseInt(document.querySelector('input[name="addUnitKind"]:checked').value);
+                const msg = document.getElementById('addUnitMsg');
+
+                if (!unitName) { msg.textContent = 'اسم الوحدة مطلوب.'; return; }
+                if (unitKind === 0 && factor <= 0) {
+                    msg.textContent = 'الوحدة الثابتة يجب أن يكون لها عدد قطع > 0.';
+                    return;
+                }
+
+                const body = new URLSearchParams();
+                body.append('productId', pid);
+                body.append('unitName', unitName);
+                body.append('unitShort', unitShort);
+                body.append('conversionFactor', factor);
+                body.append('salePrice', price);
+                body.append('unitKind', unitKind);
+
+                try {
+                    addUnitInFlight = true;
+                    btn.disabled = true;
+                    const res = await fetch('@Url.Action("AddUnitForProduct")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token()
+                        },
+                        body: body.toString()
+                    });
+                    const result = await res.json();
+                    if (!result.ok) { msg.textContent = result.message || 'حدث خطأ.'; return; }
+
+                    const product = products.find(p => p.Id === pid);
+                    if (product) {
+                        product.Units = product.Units || [];
+                        if (!product.Units.some(u => u.UnitId === result.unitId)) {
+                            product.Units.push({
+                                UnitId: result.unitId,
+                                UnitName: result.unitName,
+                                ConversionFactor: result.conversionFactor,
+                                Kind: result.kind ?? 1,
+                                PiecesPerUnit: result.piecesPerUnit ?? null
+                            });
+                        }
+                    }
+
+                    document.querySelectorAll('.product-select').forEach(sel => {
+                        if (parseInt(sel.value) === pid) {
+                            const tr = sel.closest('tr');
+                            const unitSel = tr.querySelector('.unit-select');
+                            const keep = unitSel.value;
+                            fillUnits(tr, product);
+                            if (keep) {
+                                unitSel.value = keep;
+                                syncConversionFactor(tr);
+                            }
+                            recalcRow(tr);
+                        }
+                    });
+
+                    bootstrap.Modal.getInstance(document.getElementById('addUnitModal')).hide();
+                } catch {
+                    msg.textContent = 'تعذر الاتصال بالخادم.';
+                } finally {
+                    addUnitInFlight = false;
+                    btn.disabled = false;
+                }
+            });
+
+            // ═══════════ Restore state on POST-back ═══════════
+            const serverSalesTaxRate = @(Model.SalesTaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            const serverSalesTaxAmount = @(Model.SalesTaxAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            const serverVatRate = @(Model.TaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            const serverVatAmount = @(Model.TaxAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            const serverDiscount = @(Model.DiscountAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+            if (serverSalesTaxRate > 0) {
+                salesTaxToggle.checked = true;
+                salesTaxBody.classList.add('is-on');
+                salesTaxRateInput.value = serverSalesTaxRate;
+                salesTaxInput.value = serverSalesTaxAmount.toFixed(2);
+                salesTaxAmountDisplay.textContent = serverSalesTaxAmount.toFixed(2);
+            }
+
+            if (serverVatRate > 0) {
+                vatToggle.checked = true;
+                vatBody.classList.add('is-on');
+                taxRateInput.value = serverVatRate;
+                taxInput.value = serverVatAmount.toFixed(2);
+                taxAmountDisplay.textContent = serverVatAmount.toFixed(2);
+            }
+
+            if (serverDiscount > 0) {
+                discountInput.value = serverDiscount;
+            }
+
+            @if (Model.SupplierId > 0)
+                {
+                    <text>supplierSelect.value = '@Model.SupplierId';</text>
+            }
+                @if (Model.BranchId.HasValue && Model.BranchId.Value > 0)
+                {
+                    <text>branchSelect.value = '@Model.BranchId.Value';</text>
+            }
+                @if (Model.StoreId > 0)
+                {
+                    <text>storeSelect.value = '@Model.StoreId';</text>
+            }
+
+                // ═══════════ Init ═══════════
+                populateStores(parseInt(branchSelect.value) || 0);
+
+            @if (Model.StoreId > 0)
+                {
+                    <text>storeSelect.value = '@Model.StoreId';</text>
+            }
+
+                // ✅ في البداية: أضف سطر فارغ واحد للاستخدام
+                // (يمكن للمستخدم إضافة باقي السطور من شريط الإضافة)
+
+                updateTotals();
+
+            if (supplierSelect.value) {
+                loadSupplierInfo(supplierSelect.value);
+            }
+
+            barcodeInput.focus();
+
+            // ═══════════ Keyboard shortcuts ═══════════
+            document.addEventListener('keydown', e => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    const btn = document.querySelector('button[name="saveAndConfirm"]');
+                    if (btn) btn.click();
+                }
+            });
+
+            // ═══════════ Client-side validation ═══════════
+            document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+                if (!supplierSelect.value) {
+                    e.preventDefault();
+                    alert('اختر المورد أولًا'); supplierSelect.focus(); return false;
+                }
+                if (!storeSelect.value) {
+                    e.preventDefault();
+                    alert('اختر المخزن أولًا'); storeSelect.focus(); return false;
+                }
+                const hasItems = Array.from(itemsBody.querySelectorAll('.product-select'))
+                    .some(s => s.value);
+                if (!hasItems) {
+                    e.preventDefault();
+                    alert('أضف بندًا واحدًا على الأقل'); return false;
+                }
+            });
+        })();
+    </script>
+}

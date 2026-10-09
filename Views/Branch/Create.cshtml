@@ -1,0 +1,78 @@
+﻿@model AccountingSystem.Models.Branch
+
+@{
+	ViewData["Title"] = "إضافة فرع";
+}
+
+<div class="container mt-4">
+
+	<h2 class="mb-4">إضافة فرع جديد</h2>
+
+	<div class="card shadow-sm">
+
+		<div class="card-body">
+
+			<form asp-action="Create"
+				  method="post">
+
+				@Html.AntiForgeryToken()
+
+				<div asp-validation-summary="ModelOnly"
+					 class="text-danger mb-3">
+				</div>
+
+				<div class="mb-3">
+					<label asp-for="Name"
+						   class="form-label">
+						اسم الفرع
+					</label>
+
+					<input asp-for="Name"
+						   class="form-control"
+						   required />
+
+					<span asp-validation-for="Name"
+						  class="text-danger">
+					</span>
+				</div>
+
+				<div class="mb-3">
+					<label asp-for="Phone"
+						   class="form-label">
+						رقم الهاتف
+					</label>
+
+					<input asp-for="Phone"
+						   type="tel"
+						   class="form-control" />
+				</div>
+
+				<div class="mb-3">
+					<label asp-for="Address"
+						   class="form-label">
+						العنوان
+					</label>
+
+					<textarea asp-for="Address"
+							  class="form-control"
+							  rows="3">
+					</textarea>
+				</div>
+
+				<button type="submit"
+						class="btn btn-success">
+					حفظ الفرع
+				</button>
+
+				<a asp-action="Index"
+				   class="btn btn-secondary">
+					رجوع
+				</a>
+
+			</form>
+
+		</div>
+
+	</div>
+
+</div>

@@ -1,0 +1,1524 @@
+﻿@model AccountingSystem.Models.ViewModels.Sales.SalesInvoiceCreateViewModel
+
+@{
+    ViewData["Title"] = "فاتورة بيع جديدة";
+    var formAction = ViewData["FormAction"]?.ToString() ?? "Create";
+    var invoiceId = ViewData["InvoiceId"]?.ToString();
+}
+
+<style>
+    .pi-shell {
+        --pi-bg: #f4f6fa; --pi-surface: #fff; --pi-line: #e4e8f0; --pi-line-soft: #eef1f7;
+        --pi-ink: #0f172a; --pi-body: #475569; --pi-muted: #94a3b8;
+        --pi-primary: #2563eb; --pi-primary-dark: #1d4ed8; --pi-primary-soft: #eff6ff;
+        --pi-green: #059669; --pi-amber: #d97706; --pi-red: #dc2626; --pi-cyan: #0891b2;
+        max-width: 1240px; margin: 0 auto; padding: 12px;
+        font-family: 'Segoe UI', Tahoma, system-ui, sans-serif; color: var(--pi-ink);
+    }
+    .pi-shell * { box-sizing: border-box; }
+
+    .pi-actionbar {
+        position: sticky; top: 12px; z-index: 100; display: flex; align-items: center;
+        gap: 12px; flex-wrap: wrap; padding: 12px 18px; margin-bottom: 16px;
+        background: rgba(255,255,255,.94); backdrop-filter: blur(14px);
+        border: 1px solid var(--pi-line); border-radius: 14px;
+        box-shadow: 0 6px 22px rgba(15,23,42,.06);
+    }
+    .pi-actionbar-title { display: flex; align-items: center; gap: 10px; }
+    .pi-actionbar-title .pi-ico {
+        width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+        background: linear-gradient(135deg, var(--pi-primary), #60a5fa);
+        color: #fff; font-size: 1.05rem; overflow: hidden;
+    }
+    .pi-actionbar-title h1 { margin: 0; font-size: .98rem; font-weight: 800; line-height: 1.2; }
+    .pi-actionbar-title p { margin: 0; font-size: .72rem; color: var(--pi-muted); }
+    .pi-actionbar-spacer { flex: 1; }
+    .pi-actionbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .pi-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+        border: 1px solid transparent; border-radius: 9px;
+        padding: 8px 15px; font-size: .84rem; font-weight: 700;
+        cursor: pointer; text-decoration: none; transition: .16s; white-space: nowrap;
+    }
+    .pi-btn:hover { transform: translateY(-1px); text-decoration: none; }
+    .pi-btn-primary { background: var(--pi-primary); color: #fff; }
+    .pi-btn-primary:hover { background: var(--pi-primary-dark); color: #fff; }
+    .pi-btn-dark { background: #0f172a; color: #fff; }
+    .pi-btn-dark:hover { background: #1e293b; color: #fff; }
+    .pi-btn-light { background: #fff; color: var(--pi-body); border-color: var(--pi-line); }
+    .pi-btn-light:hover { background: var(--pi-bg); color: var(--pi-ink); }
+
+    .pi-topgrid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .pi-panel { background: var(--pi-surface); border: 1px solid var(--pi-line); border-radius: 14px; overflow: hidden; }
+    .pi-panel-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 18px; background: #fafbfd; border-bottom: 1px solid var(--pi-line-soft);
+    }
+    .pi-panel-head h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: .85rem; font-weight: 800; color: var(--pi-ink); }
+    .pi-panel-head h2 i { color: var(--pi-primary); }
+    .pi-panel-body { padding: 16px 18px; }
+
+    .pi-field { display: flex; flex-direction: column; gap: 5px; }
+    .pi-field label { font-size: .74rem; font-weight: 700; color: var(--pi-body); }
+    .pi-field label .req { color: var(--pi-red); }
+    .pi-field .form-control, .pi-field .form-select {
+        border-radius: 9px; border: 1.5px solid #dbe3f0; font-size: .88rem; padding: 8px 11px; transition: .16s;
+    }
+    .pi-field .form-control:focus, .pi-field .form-select:focus {
+        border-color: var(--pi-primary); box-shadow: 0 0 0 .2rem rgba(37,99,235,.14); outline: none;
+    }
+    .pi-field .form-control[readonly] { background: var(--pi-bg); color: var(--pi-muted); }
+
+    .pi-inputgroup { display: flex; gap: 6px; }
+    .pi-inputgroup > select, .pi-inputgroup > input { flex: 1; min-width: 0; }
+    .pi-icon-btn {
+        flex: 0 0 auto; width: 38px; display: grid; place-items: center;
+        background: #fff; color: var(--pi-primary); border: 1.5px solid #dbe3f0;
+        border-radius: 9px; cursor: pointer; text-decoration: none; transition: .16s;
+    }
+    .pi-icon-btn:hover { background: var(--pi-primary-soft); border-color: var(--pi-primary); color: var(--pi-primary); }
+
+    .pi-customer-stats {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--pi-line);
+    }
+    .pi-stat { padding: 10px 12px; background: var(--pi-bg); border-radius: 10px; border: 1px solid var(--pi-line-soft); }
+    .pi-stat-label {
+        display: flex; align-items: center; gap: 5px; font-size: .68rem; font-weight: 700;
+        color: var(--pi-muted); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 4px;
+    }
+    .pi-stat-val {
+        font-size: 1.05rem; font-weight: 800; color: var(--pi-ink); font-family: 'Consolas', monospace;
+        display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+    }
+    .pi-stat-val small { font-size: .68rem; font-weight: 700; font-family: 'Segoe UI', sans-serif; }
+    .pi-stat-val.is-debit { color: var(--pi-amber); }
+    .pi-stat-val.is-credit { color: var(--pi-cyan); }
+    .pi-portal-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 700; }
+
+    .pi-metagrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .pi-quickbar {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        padding: 12px 18px; background: #fafbfd; border-bottom: 1px solid var(--pi-line-soft);
+    }
+    .pi-quickbar-search { position: relative; flex: 1 1 320px; min-width: 220px; }
+    .pi-quickbar-search i {
+        position: absolute; inset-inline-start: 11px; top: 50%; transform: translateY(-50%);
+        color: var(--pi-primary); pointer-events: none;
+    }
+    .pi-quickbar-search input {
+        width: 100%; border: 1.5px solid #cddcf7; border-radius: 10px;
+        padding: 9px 36px 9px 12px; font-size: .87rem; font-weight: 600; background: #fff;
+    }
+    .pi-quickbar-search input:focus { outline: none; border-color: var(--pi-primary); box-shadow: 0 0 0 .2rem rgba(37,99,235,.14); }
+
+    .pi-table-wrap { overflow-x: auto; }
+    .pi-table { width: 100%; margin: 0; border-collapse: collapse; }
+    .pi-table thead th {
+        background: #f8fafc; color: var(--pi-body); font-size: .7rem; font-weight: 800;
+        text-transform: uppercase; letter-spacing: .3px; padding: 10px 10px;
+        border-bottom: 1.5px solid var(--pi-line); text-align: right; white-space: nowrap;
+    }
+    .pi-table tbody td {
+        padding: 6px 10px; border-bottom: 1px solid var(--pi-line-soft);
+        vertical-align: middle; font-size: .85rem;
+    }
+    .pi-table tbody tr:hover { background: #fafbfd; }
+    .pi-table tbody tr:last-child td { border-bottom: 0; }
+
+    .pi-idx { color: var(--pi-muted); font-weight: 700; font-size: .72rem; text-align: center; }
+    .pi-table .pi-linetotal {
+        font-weight: 800; color: var(--pi-primary-dark); font-family: 'Consolas', monospace;
+        direction: ltr; text-align: left; display: block;
+    }
+    .pi-table .pi-cost { font-family: 'Consolas', monospace; color: var(--pi-body); }
+    .pi-table .pi-profit { font-family: 'Consolas', monospace; font-weight: 700; }
+    .pi-table .pi-profit.is-loss { color: var(--pi-red); }
+    .pi-table .pi-profit.is-break { color: var(--pi-green); }
+    .pi-table .pi-del {
+        width: 26px; height: 26px; border: 0; border-radius: 7px;
+        background: #fef2f2; color: var(--pi-red); cursor: pointer; font-weight: 800;
+        line-height: 1; transition: .16s;
+    }
+    .pi-table .pi-del:hover { background: #fee2e2; }
+
+    .pi-table-empty { text-align: center; padding: 40px 16px !important; color: var(--pi-muted); font-size: .85rem; }
+    .pi-table-empty i { display: block; font-size: 1.6rem; margin-bottom: 8px; opacity: .4; }
+
+    .pi-tax-block { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--pi-line); animation: piFadeIn .25s ease; }
+    .pi-tax-block:first-of-type { border-top: 0; padding-top: 0; }
+
+    @@keyframes piFadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .pi-tax-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .pi-tax-head .form-check { display: flex; align-items: center; gap: 10px; margin: 0; min-width: 0; }
+    .pi-tax-head .form-check-input {
+        width: 2.6em; height: 1.4em; cursor: pointer; margin: 0;
+        border-color: #cbd5e1; flex: 0 0 auto;
+    }
+    .pi-tax-head .form-check-input:checked { background-color: var(--pi-primary); border-color: var(--pi-primary); }
+    .pi-tax-head label {
+        font-size: .86rem; font-weight: 700; color: var(--pi-ink); cursor: pointer; margin: 0;
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .pi-tax-head label i { color: var(--pi-primary); }
+    .pi-tax-rate { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--pi-body); }
+    .pi-tax-rate input {
+        width: 70px; text-align: center; border: 1.5px solid #dbe3f0; border-radius: 7px;
+        padding: 4px 6px; font-size: .82rem;
+    }
+    .pi-tax-rate input:focus { outline: none; border-color: var(--pi-primary); box-shadow: 0 0 0 .16rem rgba(37,99,235,.14); }
+    .pi-tax-amount {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 6px 0 0; font-size: .84rem; color: var(--pi-body);
+    }
+    .pi-tax-amount b { font-family: 'Consolas', monospace; color: var(--pi-primary-dark); }
+    .pi-tax-body { display: none; margin-top: 6px; }
+    .pi-tax-body.is-on { display: block; }
+
+    .pi-tabs { display: flex; gap: 4px; padding: 0 18px; border-bottom: 1px solid var(--pi-line); background: #fafbfd; }
+    .pi-tab {
+        display: inline-flex; align-items: center; gap: 7px; padding: 12px 14px;
+        font-size: .84rem; font-weight: 700; color: var(--pi-body);
+        border: 0; background: transparent; cursor: pointer;
+        border-bottom: 2px solid transparent; transition: .16s; margin-bottom: -1px;
+    }
+    .pi-tab:hover { color: var(--pi-ink); }
+    .pi-tab.is-active { color: var(--pi-primary); border-bottom-color: var(--pi-primary); }
+    .pi-tab-content { padding: 16px 18px; }
+    .pi-tab-panel { display: none; }
+    .pi-tab-panel.is-active { display: block; }
+
+    .pi-footer { display: grid; grid-template-columns: 1fr 360px; gap: 16px; margin-top: 16px; }
+    .pi-totals { background: var(--pi-surface); border: 1px solid var(--pi-line); border-radius: 14px; padding: 18px; }
+    .pi-totals h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: .88rem; font-weight: 800; }
+    .pi-totals h3 i { color: var(--pi-primary); }
+
+    .pi-total-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 7px 0; font-size: .88rem; color: var(--pi-body); gap: 12px;
+    }
+    .pi-total-row > span:first-child { font-weight: 600; }
+    .pi-total-row input {
+        width: 120px; text-align: center; border: 1.5px solid #dbe3f0; border-radius: 8px;
+        padding: 6px 9px; font-size: .86rem;
+    }
+    .pi-total-row input:focus { outline: none; border-color: var(--pi-primary); box-shadow: 0 0 0 .18rem rgba(37,99,235,.14); }
+    .pi-total-row .pi-num { font-family: 'Consolas', monospace; font-weight: 800; }
+
+    .pi-total-grand {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: 12px; padding-top: 14px; border-top: 2px solid var(--pi-line);
+    }
+    .pi-total-grand span { font-weight: 800; font-size: .95rem; }
+    .pi-total-grand strong {
+        font-size: 1.55rem; font-weight: 900; color: var(--pi-primary);
+        font-family: 'Segoe UI', sans-serif; direction: ltr;
+    }
+
+    .pi-save-actions {
+        display: flex; flex-direction: column; gap: 10px;
+        background: var(--pi-surface); border: 1px solid var(--pi-line);
+        border-radius: 14px; padding: 18px;
+    }
+    .pi-save-actions .pi-btn { padding: 11px 15px; font-size: .88rem; }
+
+    .pi-loading {
+        display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+        background: currentColor; animation: piPulse 1.2s infinite; vertical-align: middle;
+    }
+    @@keyframes piPulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+    @@media (max-width: 991.98px) {
+        .pi-topgrid { grid-template-columns: 1fr; }
+        .pi-footer  { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 767.98px) {
+        .pi-actionbar { padding: 10px 12px; }
+        .pi-actionbar-title h1 { font-size: .9rem; }
+        .pi-btn { padding: 7px 12px; font-size: .8rem; }
+        .pi-metagrid { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 575.98px) {
+        .pi-shell { padding: 8px; }
+        .pi-panel-body, .pi-footer { padding: 14px; }
+        .pi-customer-stats { grid-template-columns: 1fr; }
+    }
+    @@media print {
+        .app-sidebar, .app-topbar, .app-footer, .pi-actionbar, .pi-quickbar,
+        .pi-save-actions, .pi-tabs, .pi-icon-btn, .pi-del { display: none !important; }
+        .pi-shell { padding: 0; max-width: 100%; }
+        .pi-panel, .pi-totals { box-shadow: none; border-color: #ddd; }
+    }
+</style>
+
+<div class="pi-shell">
+    <form asp-action="@formAction"
+          asp-route-id="@(formAction == "Edit" ? invoiceId : null)"
+          method="post" id="invoiceForm" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <header class="pi-actionbar">
+            <div class="pi-actionbar-title">
+                <div class="pi-ico">
+                    @if (!string.IsNullOrEmpty(Model.CompanyLogoPath))
+                    {
+                        <img src="@Model.CompanyLogoPath" alt="Logo" style="width:100%; height:100%; object-fit:contain; background:#fff;" />
+                    }
+                    else
+                    {
+                        <i class="bi bi-receipt"></i>
+                    }
+                </div>
+                <div>
+                    <h1>@(formAction == "Edit" ? "تعديل فاتورة بيع" : "فاتورة بيع جديدة")</h1>
+                    <p>رقم: <span dir="ltr">@Model.InvoiceNumber</span></p>
+                </div>
+            </div>
+            <div class="pi-actionbar-spacer"></div>
+            <div class="pi-actionbar-actions">
+                <button type="button" class="pi-btn pi-btn-light" onclick="window.print();">
+                    <i class="bi bi-printer"></i> طباعة
+                </button>
+                <button type="submit" name="saveAndConfirm" value="false" class="pi-btn pi-btn-dark">
+                    <i class="bi bi-file-earmark"></i> حفظ كمسودة
+                </button>
+                <button type="submit" name="saveAndConfirm" value="true" class="pi-btn pi-btn-primary">
+                    <i class="bi bi-check2-circle"></i> حفظ وترحيل
+                </button>
+            </div>
+        </header>
+
+        <div class="pi-topgrid">
+            <section class="pi-panel">
+                <div class="pi-panel-head">
+                    <h2><i class="bi bi-person-badge"></i> بيانات العميل</h2>
+                </div>
+                <div class="pi-panel-body">
+                    <div class="pi-field">
+                        <label asp-for="CustomerId">العميل</label>
+                        <div class="pi-inputgroup">
+                            <select asp-for="CustomerId" class="form-select" id="customerSelect">
+                                <option value="">— بدون عميل (بيع نقدي مباشر) —</option>
+                                @foreach (var customer in Model.AvailableCustomers)
+                                {
+                                    <option value="@customer.Id" data-phone="@customer.Phone">
+                                        @customer.Name@(string.IsNullOrWhiteSpace(customer.Phone) ? "" : $" — {customer.Phone}")
+                                    </option>
+                                }
+                            </select>
+                            <button type="button" class="pi-icon-btn" id="quickCustomerBtn" title="عميل جديد">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="CustomerId" class="text-danger small"></span>
+                    </div>
+                    <div class="pi-customer-stats" id="customerStats" style="display:none;">
+                        <div class="pi-stat">
+                            <div class="pi-stat-label"><i class="bi bi-wallet2"></i> الرصيد الحالي</div>
+                            <div class="pi-stat-val" id="customerBalance">0.00</div>
+                        </div>
+                        <div class="pi-stat">
+                            <div class="pi-stat-label"><i class="bi bi-shield-check"></i> بوابة العميل</div>
+                            <div class="pi-stat-val" id="customerPortal">
+                                <span class="pi-portal-badge" style="color:var(--pi-muted);">
+                                    <i class="bi bi-dash-circle"></i> غير مُفعّل
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pi-panel">
+                <div class="pi-panel-head">
+                    <h2><i class="bi bi-file-earmark-text"></i> تفاصيل الفاتورة</h2>
+                </div>
+                <div class="pi-panel-body">
+                    <div class="pi-metagrid">
+                        <div class="pi-field">
+                            <label asp-for="InvoiceDate">التاريخ</label>
+                            <input asp-for="InvoiceDate" type="date" class="form-control"
+                                   value="@Model.InvoiceDate.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="InvoiceDate" class="text-danger small"></span>
+                        </div>
+
+                        <div class="pi-field" id="dueDateField" style="display:none;">
+                            <label asp-for="DueDate">تاريخ الاستحقاق <span class="req">*</span></label>
+                            <input asp-for="DueDate" type="date" class="form-control" id="dueDateInput" />
+                            <span asp-validation-for="DueDate" class="text-danger small"></span>
+                        </div>
+
+                        <div class="pi-field">
+                            <label asp-for="BranchId">الفرع</label>
+                            <div class="pi-inputgroup">
+                                <select asp-for="BranchId" class="form-select" id="branchSelect">
+                                    <option value="">— اختر الفرع —</option>
+                                    @foreach (var branch in Model.AvailableBranches)
+                                    {
+                                        <option value="@branch.Id">@branch.Name</option>
+                                    }
+                                </select>
+                                <a asp-controller="Branch" asp-action="Create" target="_blank"
+                                   class="pi-icon-btn" title="فرع جديد">
+                                    <i class="bi bi-plus-lg"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="pi-field">
+                            <label asp-for="StoreId">المخزن <span class="req">*</span></label>
+                            <div class="pi-inputgroup">
+                                <select asp-for="StoreId" class="form-select" id="storeSelect">
+                                    <option value="">— اختر المخزن —</option>
+                                    @foreach (var store in Model.AvailableStores)
+                                    {
+                                        <option value="@store.Id" data-branch="@store.BranchId">
+                                            @store.Name
+                                        </option>
+                                    }
+                                </select>
+                                <button type="button" class="pi-icon-btn" id="quickStoreBtn" title="مخزن جديد">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="StoreId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="pi-field">
+                            <label for="PaymentMethod">طريقة الدفع <span class="req">*</span></label>
+                            <select id="PaymentMethod" name="PaymentMethod" class="form-select" required>
+                                <option value="">— اختر طريقة الدفع —</option>
+                                <option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Cash)">نقدي</option>
+                                <option value="@((int)AccountingSystem.Models.SalesPaymentMethod.BankTransfer)">تحويل بنكي</option>
+                                <option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Cheque)">شيك</option>
+                                <option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Credit)">آجل</option>
+                                <option value="@((int)AccountingSystem.Models.SalesPaymentMethod.Wallet)">محفظة</option>
+                            </select>
+                            <span class="text-danger small" id="paymentMethodError"></span>
+                        </div>
+
+                        <div class="pi-field" id="cashAccountField" style="display:none;">
+                            <label for="CashAccountId">المركز النقدي <span class="req">*</span></label>
+                            <div class="pi-inputgroup">
+                                <select id="CashAccountId" name="CashAccountId" class="form-select">
+                                    <option value="">— اختر المركز النقدي —</option>
+                                    @foreach (var acc in Model.AvailableCashAccounts)
+                                    {
+                                        <option value="@acc.Key">@acc.Value</option>
+                                    }
+                                </select>
+                                <a asp-controller="Treasury"
+                                   asp-action="Index"
+                                   target="_blank"
+                                   class="pi-icon-btn"
+                                   title="مركز نقدي جديد">
+                                    <i class="bi bi-plus-lg"></i>
+                                </a>
+                            </div>
+                            <span class="text-danger small" asp-validation-for="CashAccountId"></span>
+                        </div>
+
+                        <div class="pi-field">
+                            <label asp-for="PaymentDetails">تفاصيل الدفع</label>
+                            <input asp-for="PaymentDetails" class="form-control" />
+                        </div>
+                    </div>
+                    <input asp-for="InvoiceNumber" type="hidden" />
+                </div>
+            </section>
+        </div>
+
+        <section class="pi-panel" style="margin-bottom: 16px;">
+            <div class="pi-panel-head">
+                <h2>
+                    <i class="bi bi-box-seam"></i> البنود
+                    <span class="text-muted" id="itemsCount" style="font-weight:600; font-size:.8rem;">(0)</span>
+                </h2>
+            </div>
+
+            <div class="pi-quickbar">
+                <div class="pi-quickbar-search">
+                    <i class="bi bi-upc-scan"></i>
+                    <input type="text" id="barcodeInput" autocomplete="off"
+                           placeholder="امسح الباركود أو اكتب اسم الصنف ثم Enter..." />
+                </div>
+                <button type="button" class="pi-btn pi-btn-primary" id="addItemBtn">
+                    <i class="bi bi-plus-lg"></i> إضافة بند
+                </button>
+            </div>
+
+            <div class="pi-table-wrap">
+                <table class="pi-table" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th style="width:44px;">#</th>
+                            <th style="min-width:180px;">المنتج</th>
+                            <th style="width:110px;">الوحدة</th>
+                            <th style="width:90px;">الكمية</th>
+                            <th style="width:110px;">سعر الوحدة</th>
+                            <th style="width:120px;">الإجمالي</th>
+                            <th style="width:110px;">التكلفة</th>
+                            <th style="width:110px;">الربح</th>
+                            <th style="min-width:140px;">الدفعة</th>
+                            <th style="width:44px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        <tr class="pi-table-empty-row" id="emptyRow">
+                            <td colspan="10" class="pi-table-empty">
+                                <i class="bi bi-inboxes"></i>
+                                لا توجد بنود بعد — استخدم شريط الإضافة السريعة أعلاه
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div asp-validation-for="Items" class="text-danger small p-2"></div>
+        </section>
+
+        <section class="pi-panel" style="margin-bottom: 16px;">
+            <div class="pi-tabs">
+                <button type="button" class="pi-tab is-active" data-tab="notes">
+                    <i class="bi bi-journal-text"></i> ملاحظات
+                </button>
+                <button type="button" class="pi-tab" data-tab="shipping">
+                    <i class="bi bi-truck"></i> تفاصيل إضافية
+                </button>
+            </div>
+            <div class="pi-tab-content">
+                <div class="pi-tab-panel is-active" data-tab-panel="notes">
+                    <textarea asp-for="Notes" class="form-control" rows="4"
+                              placeholder="أي ملاحظات تُطبع على الفاتورة..."></textarea>
+                </div>
+                <div class="pi-tab-panel" data-tab-panel="shipping">
+                    <p class="text-muted mb-0" style="font-size:.86rem;">
+                        <i class="bi bi-info-circle"></i>
+                        هذه النسخة لا تحتوي على حقول شحن/مستندات في الموديل الحالي.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <div class="pi-footer">
+            <div class="pi-totals">
+                <h3><i class="bi bi-receipt"></i> ملخص الفاتورة</h3>
+
+                <div class="pi-total-row">
+                    <span>المجموع الفرعي</span>
+                    <b id="subTotal" class="pi-num" style="color:var(--pi-ink);">0.00</b>
+                </div>
+
+                <div class="pi-total-row">
+                    <span>الخصم</span>
+                    <input asp-for="DiscountAmount" type="number" step="0.01" min="0"
+                           id="discountInput" value="0" />
+                </div>
+
+                <div class="pi-tax-block">
+                    <div class="pi-tax-head">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="salesTaxToggle" />
+                            <label for="salesTaxToggle">
+                                <i class="bi bi-percent"></i> تفعيل ضريبة المبيعات
+                            </label>
+                        </div>
+                    </div>
+                    <div class="pi-tax-body" id="salesTaxBody">
+                        <div class="pi-tax-amount">
+                            <div class="pi-tax-rate">
+                                <span>النسبة</span>
+                                <input asp-for="SalesTaxRate" type="number"
+                                       step="0.01" min="0" max="100"
+                                       id="salesTaxRateInput" />
+                                <span>%</span>
+                            </div>
+                            <span>القيمة: <b id="salesTaxAmountDisplay">0.00</b></span>
+                        </div>
+                        <input asp-for="SalesTaxAmount" type="hidden" id="salesTaxInput" />
+                    </div>
+                </div>
+
+                <div class="pi-tax-block">
+                    <div class="pi-tax-head">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="vatToggle" />
+                            <label for="vatToggle">
+                                <i class="bi bi-percent"></i> تفعيل ضريبة القيمة المضافة
+                            </label>
+                        </div>
+                    </div>
+                    <div class="pi-tax-body" id="vatBody">
+                        <div class="pi-tax-amount">
+                            <div class="pi-tax-rate">
+                                <span>النسبة</span>
+                                <input asp-for="TaxRate" type="number"
+                                       step="0.01" min="0" max="100"
+                                       id="taxRateInput" />
+                                <span>%</span>
+                            </div>
+                            <span>القيمة: <b id="taxAmountDisplay">0.00</b></span>
+                        </div>
+                        <input asp-for="TaxAmount" type="hidden" id="taxInput" />
+                    </div>
+                </div>
+
+                <div class="pi-total-grand">
+                    <span>الإجمالي النهائي</span>
+                    <strong id="grandTotal">0.00</strong>
+                </div>
+            </div>
+
+            <aside class="pi-save-actions">
+                <button type="submit" name="saveAndConfirm" value="true" class="pi-btn pi-btn-primary">
+                    <i class="bi bi-check2-circle"></i> حفظ وترحيل الفاتورة
+                </button>
+                <button type="submit" name="saveAndConfirm" value="false" class="pi-btn pi-btn-dark">
+                    <i class="bi bi-file-earmark"></i> حفظ كمسودة
+                </button>
+                <a asp-action="Index" class="pi-btn pi-btn-light">
+                    <i class="bi bi-x-lg"></i> إلغاء
+                </a>
+                <p class="text-muted text-center m-0" style="font-size:.72rem; margin-top:6px;">
+                    جميع المبالغ بعملة النظام
+                </p>
+            </aside>
+        </div>
+    </form>
+</div>
+
+<!-- ═══════════ Modals ═══════════ -->
+
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:14px; border:0;">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة بند</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">المنتج</label>
+                        <input type="text" id="mSearch" class="form-control mb-2"
+                               placeholder="ابحث بالاسم أو الباركود..." autocomplete="off" />
+                        <select id="mProduct" class="form-select" size="6"></select>
+                        <div id="mSearchMsg" class="small text-danger mt-1" style="display:none;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">الوحدة (معامل التحويل)</label>
+                        <select id="mUnit" class="form-select mb-3"></select>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">الكمية</label>
+                                <input type="number" id="mQty" class="form-control" step="0.001" min="0.001" value="1" />
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">سعر القطعة</label>
+                                <input type="number" id="mPrice" class="form-control" step="0.01" min="0" />
+                            </div>
+                        </div>
+                        <label class="form-label">الدفعة المصدرة</label>
+                        <select id="mLot" class="form-select"></select>
+                        <div class="form-text">«تلقائي» يصرف من الأقدم (FIFO)، أو اختر دفعة محددة.</div>
+                    </div>
+                </div>
+                <div id="mProfit" class="alert alert-light border small mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="mConfirm">إضافة للفاتورة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quickCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px; border:0;">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة عميل جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اسم العميل *</label>
+                    <input type="text" id="qcName" class="form-control" maxlength="200" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الهاتف *</label>
+                    <input type="text" id="qcPhone" class="form-control" maxlength="50" dir="ltr" />
+                </div>
+                <div id="qcMsg" class="small text-danger"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="qcSave">حفظ وإضافة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quickStoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px; border:0;">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة مخزن جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">اسم المخزن *</label>
+                    <input type="text" id="qsStoreName" class="form-control" maxlength="200" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الفرع *</label>
+                    <select id="qsStoreBranch" class="form-select"></select>
+                </div>
+                <div id="qsStoreMsg" class="small text-danger"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="qsStoreSave">حفظ وإضافة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            'use strict';
+
+            // ═══════════ Server data ═══════════
+            // ملاحظة مهمة: Html.Raw تمنع Razor من ترميز JSON إلى HTML entities
+            const products = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                Model.AvailableProducts,
+                                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+            const stores = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                Model.AvailableStores,
+                                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+            const serverItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                Model.Items ?? new System.Collections.Generic.List<AccountingSystem.Models.ViewModels.Sales.SalesInvoiceItemCreateViewModel>(),
+                                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+            // ═══════════ Elements ═══════════
+            const itemsBody        = document.getElementById('itemsBody');
+            const emptyRow         = document.getElementById('emptyRow');
+            const addItemBtn       = document.getElementById('addItemBtn');
+            const barcodeInput     = document.getElementById('barcodeInput');
+
+            const customerSelect   = document.getElementById('customerSelect');
+            const branchSelect     = document.getElementById('branchSelect');
+            const storeSelect      = document.getElementById('storeSelect');
+            const paymentSelect    = document.getElementById('PaymentMethod');
+            const cashAccountField = document.getElementById('cashAccountField');
+            const cashAccountSel   = document.getElementById('CashAccountId');
+            const dueDateField     = document.getElementById('dueDateField');
+            const dueDateInput     = document.getElementById('dueDateInput');
+
+            const discountInput    = document.getElementById('discountInput');
+            const subTotalEl       = document.getElementById('subTotal');
+            const grandTotalEl     = document.getElementById('grandTotal');
+            const itemsCountEl     = document.getElementById('itemsCount');
+
+            const customerStats    = document.getElementById('customerStats');
+            const customerBalance  = document.getElementById('customerBalance');
+            const customerPortal   = document.getElementById('customerPortal');
+
+            const salesTaxToggle        = document.getElementById('salesTaxToggle');
+            const salesTaxBody          = document.getElementById('salesTaxBody');
+            const salesTaxRateInput     = document.getElementById('salesTaxRateInput');
+            const salesTaxInput         = document.getElementById('salesTaxInput');
+            const salesTaxAmountDisplay = document.getElementById('salesTaxAmountDisplay');
+
+            const vatToggle        = document.getElementById('vatToggle');
+            const vatBody          = document.getElementById('vatBody');
+            const taxRateInput     = document.getElementById('taxRateInput');
+            const taxInput         = document.getElementById('taxInput');
+            const taxAmountDisplay = document.getElementById('taxAmountDisplay');
+
+            const token = () => {
+                const el = document.querySelector('input[name="__RequestVerificationToken"]');
+                return el ? el.value : '';
+            };
+
+            // ═══════════ Payment method ═══════════
+            const cashMethods = [
+                '@((int)AccountingSystem.Models.SalesPaymentMethod.Cash)',
+                '@((int)AccountingSystem.Models.SalesPaymentMethod.BankTransfer)',
+                '@((int)AccountingSystem.Models.SalesPaymentMethod.Wallet)'
+            ];
+            const creditMethod = '@((int)AccountingSystem.Models.SalesPaymentMethod.Credit)';
+
+            function togglePaymentFields() {
+                const val = paymentSelect.value;
+                const isCash   = cashMethods.includes(val);
+                const isCredit = val === creditMethod;
+
+                if (isCash) {
+                    cashAccountField.style.display = 'block';
+                    if (cashAccountSel) {
+                        cashAccountSel.required = true;
+                        if (window.jQuery && window.jQuery.validator && window.jQuery.validator.unobtrusive) {
+                            window.jQuery(cashAccountSel).rules('add', {
+                                required: true,
+                                messages: { required: 'لابد من اختيار المركز النقدي.' }
+                            });
+                        }
+                    }
+                } else {
+                    cashAccountField.style.display = 'none';
+                    if (cashAccountSel) {
+                        cashAccountSel.required = false;
+                        if (window.jQuery && window.jQuery.validator && window.jQuery.validator.unobtrusive) {
+                            window.jQuery(cashAccountSel).rules('remove', 'required');
+                        }
+                        if (window.jQuery) {
+                            window.jQuery(cashAccountSel).removeClass('input-validation-error');
+                            window.jQuery(cashAccountSel).siblings('.text-danger').text('');
+                        }
+                        cashAccountSel.value = '';
+                    }
+                }
+
+                if (isCredit) {
+                    dueDateField.style.display = 'block';
+                    if (dueDateInput) {
+                        dueDateInput.required = true;
+                        if (window.jQuery && window.jQuery.validator && window.jQuery.validator.unobtrusive) {
+                            window.jQuery(dueDateInput).rules('add', {
+                                required: true,
+                                messages: { required: 'لابد من تحديد تاريخ الاستحقاق.' }
+                            });
+                        }
+                    }
+                } else {
+                    dueDateField.style.display = 'none';
+                    if (dueDateInput) {
+                        dueDateInput.required = false;
+                        if (window.jQuery && window.jQuery.validator && window.jQuery.validator.unobtrusive) {
+                            window.jQuery(dueDateInput).rules('remove', 'required');
+                        }
+                        if (window.jQuery) {
+                            window.jQuery(dueDateInput).removeClass('input-validation-error');
+                            window.jQuery(dueDateInput).siblings('.text-danger').text('');
+                        }
+                        dueDateInput.value = '';
+                    }
+                }
+            }
+            paymentSelect.addEventListener('change', togglePaymentFields);
+
+            // ═══════════ Customer info ═══════════
+            async function loadCustomerInfo(customerId) {
+                if (!customerId || parseInt(customerId) <= 0) {
+                    customerStats.style.display = 'none';
+                    return;
+                }
+                customerStats.style.display = 'grid';
+                customerBalance.innerHTML = '<span class="pi-loading"></span>';
+                customerPortal.innerHTML = '<span class="pi-loading"></span>';
+
+                try {
+                    const res = await fetch(`/SalesInvoice/GetCustomerInfo?id=${customerId}`,
+                        { headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    if (!data.ok) { customerStats.style.display = 'none'; return; }
+
+                    const bal = parseFloat(data.balance) || 0;
+                    if (bal > 0.005) {
+                        customerBalance.className = 'pi-stat-val is-debit';
+                        customerBalance.innerHTML = bal.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' <small>مدين (لنا عنده)</small>';
+                    } else if (bal < -0.005) {
+                        customerBalance.className = 'pi-stat-val is-credit';
+                        customerBalance.innerHTML = Math.abs(bal).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' <small>دائن (له عندنا)</small>';
+                    } else {
+                        customerBalance.className = 'pi-stat-val';
+                        customerBalance.textContent = '0.00';
+                    }
+
+                    if (data.hasPortalAccount) {
+                        customerPortal.innerHTML = '<span class="pi-portal-badge" style="color:var(--pi-green);"><i class="bi bi-check-circle-fill"></i> مُفعّل</span>';
+                    } else if (data.portalApproved) {
+                        customerPortal.innerHTML = '<span class="pi-portal-badge" style="color:var(--pi-amber);"><i class="bi bi-clock-history"></i> بانتظار الإنشاء</span>';
+                    } else if (data.portalRequested) {
+                        customerPortal.innerHTML = '<span class="pi-portal-badge" style="color:var(--pi-muted);"><i class="bi bi-hourglass-split"></i> قيد المراجعة</span>';
+                    } else {
+                        customerPortal.innerHTML = '<span class="pi-portal-badge" style="color:var(--pi-muted);"><i class="bi bi-dash-circle"></i> غير مُفعّل</span>';
+                    }
+                } catch {
+                    customerBalance.textContent = '—';
+                    customerPortal.textContent = '—';
+                }
+            }
+            customerSelect.addEventListener('change', function () { loadCustomerInfo(this.value); });
+
+            // ═══════════ Stores filter ═══════════
+            function populateStores(branchId) {
+                const current = storeSelect.value;
+                storeSelect.innerHTML = '<option value="">— اختر المخزن —</option>';
+                stores.filter(s => !branchId || s.BranchId === branchId).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.Id;
+                    opt.textContent = (s.BranchName ? s.BranchName + ' — ' : '') + s.Name;
+                    opt.dataset.branch = s.BranchId;
+                    storeSelect.appendChild(opt);
+                });
+                if (current && storeSelect.querySelector(`option[value="${current}"]`)) {
+                    storeSelect.value = current;
+                }
+            }
+            branchSelect.addEventListener('change', function () { populateStores(parseInt(this.value) || 0); });
+            storeSelect.addEventListener('change', function () {
+                const st = stores.find(s => s.Id === parseInt(this.value));
+                if (st && String(st.BranchId) !== branchSelect.value) {
+                    branchSelect.value = st.BranchId;
+                    populateStores(st.BranchId);
+                    storeSelect.value = st.Id;
+                }
+            });
+
+            // ═══════════ Helpers ═══════════
+            function formatNumber(n) { return (Math.round(n * 100) / 100).toFixed(2); }
+            function escHtml(s) { const d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+            function parseNum(v) { const n = parseFloat(String(v ?? '').replace(',', '.')); return isNaN(n) ? 0 : n; }
+
+            // ═══════════ Lots cache ═══════════
+            const lotsCache = {};
+            function fetchLots(productId, storeId) {
+                const key = productId + ':' + storeId;
+                if (!lotsCache[key]) {
+                    lotsCache[key] = fetch(`/SalesInvoice/GetAvailableLots?productId=${productId}&storeId=${storeId}`)
+                        .then(r => (r.ok ? r.json() : []));
+                }
+                return lotsCache[key];
+            }
+            function fifoCost(lots, baseQty) {
+                let need = baseQty, cost = 0, rows = [];
+                for (const lot of lots) {
+                    if (need <= 0) break;
+                    const take = Math.min(lot.quantityRemaining, need);
+                    cost += take * lot.unitCost;
+                    rows.push(`دفعة ${lot.purchaseDate} (${lot.supplierName}): ${formatNumber(take)} × ${formatNumber(lot.unitCost)} = ${formatNumber(take * lot.unitCost)}`);
+                    need -= take;
+                }
+                return { cost, rows, shortfall: need };
+            }
+
+            // ═══════════ Item Modal ═══════════
+            const itemModal = new bootstrap.Modal(document.getElementById('itemModal'));
+            const mProduct   = document.getElementById('mProduct');
+            const mUnit      = document.getElementById('mUnit');
+            const mQty       = document.getElementById('mQty');
+            const mPrice     = document.getElementById('mPrice');
+            const mProfit    = document.getElementById('mProfit');
+            const mSearch    = document.getElementById('mSearch');
+            const mSearchMsg = document.getElementById('mSearchMsg');
+            const mLot       = document.getElementById('mLot');
+
+            products.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.Id;
+                opt.textContent = p.Name;
+                mProduct.appendChild(opt);
+            });
+
+            mSearch.addEventListener('input', function () {
+                const q = this.value.trim().toLowerCase();
+                let visibleCount = 0, firstVisible = null;
+                Array.from(mProduct.options).forEach(opt => {
+                    const p = products.find(pr => pr.Id == opt.value);
+                    const name = (p && p.Name || '').toLowerCase();
+                    const barcode = (p && p.Barcode || '').toLowerCase();
+                    const hit = !q || name.includes(q) || barcode.includes(q);
+                    opt.hidden = !hit;
+                    if (hit) { visibleCount++; if (!firstVisible) firstVisible = opt; }
+                });
+                if (q && visibleCount === 1 && firstVisible) {
+                    mProduct.value = firstVisible.value;
+                    mProduct.dispatchEvent(new Event('change'));
+                }
+                mSearchMsg.style.display = (q && visibleCount === 0) ? '' : 'none';
+                mSearchMsg.textContent = 'لا يوجد منتج بهذا الاسم أو الباركود.';
+            });
+
+            function fillUnits() {
+                const product = products.find(p => p.Id == mProduct.value);
+                mUnit.innerHTML = '';
+                if (!product) return;
+                (product.Units || []).forEach(u => {
+                    const factor = parseFloat(u.ConversionFactor) || 1;
+                    const opt = document.createElement('option');
+                    opt.value = u.UnitId;
+                    opt.textContent = u.UnitName + ' (' + formatNumber(factor) + ' ق)';
+                    opt.dataset.price = u.SalePrice;
+                    opt.dataset.factor = factor;
+                    mUnit.appendChild(opt);
+                });
+                if (mUnit.options.length > 0) {
+                    mUnit.selectedIndex = 0;
+                    mUnit.dispatchEvent(new Event('change'));
+                }
+            }
+
+            mProduct.addEventListener('change', () => { mQty.value = '1'; fillUnits(); updateProfit(); });
+
+            mUnit.addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                if (opt) {
+                    const factor = parseFloat(opt.dataset.factor) || 1;
+                    const piecePrice = (parseFloat(opt.dataset.price) || 0) / factor;
+                    mPrice.value = piecePrice.toFixed(2);
+                } else { mPrice.value = ''; }
+                updateProfit();
+            });
+
+            mQty.addEventListener('input', updateProfit);
+            mPrice.addEventListener('input', updateProfit);
+
+            function fillLotOptions(lots) {
+                const prev = mLot.value;
+                mLot.innerHTML = '';
+                const autoOpt = document.createElement('option');
+                autoOpt.value = '0';
+                autoOpt.textContent = 'تلقائي (من الأقدم — FIFO)';
+                mLot.appendChild(autoOpt);
+                lots.forEach(lot => {
+                    const opt = document.createElement('option');
+                    opt.value = lot.id;
+                    opt.textContent = `دفعة ${lot.purchaseDate} (${lot.supplierName}) — متاح ${formatNumber(lot.quantityRemaining)} — تكلفة ${formatNumber(lot.unitCost)}`;
+                    opt.dataset.qty = lot.quantityRemaining;
+                    opt.dataset.cost = lot.unitCost;
+                    mLot.appendChild(opt);
+                });
+                if (prev && Array.from(mLot.options).some(o => o.value === prev)) mLot.value = prev;
+                else mLot.selectedIndex = 0;
+            }
+
+            function currentAvailable(lots) {
+                if (mLot.selectedIndex > 0) return parseFloat(mLot.options[mLot.selectedIndex].dataset.qty) || 0;
+                return lots.reduce((s, l) => s + l.quantityRemaining, 0);
+            }
+
+            function updateProfit() {
+                const product = products.find(p => p.Id == mProduct.value);
+                const opt = mUnit.options[mUnit.selectedIndex];
+                const qty = parseFloat(mQty.value) || 0;
+                const price = parseFloat(mPrice.value) || 0;
+                const storeId = storeSelect.value;
+                const factor = opt ? (parseFloat(opt.dataset.factor) || 1) : 1;
+
+                if (!product || !opt || !storeId) { mProfit.innerHTML = ''; return; }
+                if (qty <= 0) { mProfit.innerHTML = '<span class="text-muted">أدخل الكمية لعرض الربحية.</span>'; return; }
+
+                fetchLots(product.Id, parseInt(storeId)).then(lots => {
+                    fillLotOptions(lots);
+                    if (!lots.length) {
+                        mProfit.innerHTML = '<span class="text-danger fw-bold">لا توجد دفعات متاحة لهذا المنتج في المخزن — لا يمكن الإضافة.</span>';
+                        return;
+                    }
+                    const baseQty = qty * factor;
+                    const lineTotal = baseQty * price;
+                    const available = currentAvailable(lots);
+                    const isManual = mLot.selectedIndex > 0;
+                    let cost = 0, rows = [];
+                    if (isManual) {
+                        const lotObj = lots.find(l => l.id == mLot.value);
+                        const unitCost = lotObj ? lotObj.unitCost : 0;
+                        cost = Math.min(available, baseQty) * unitCost;
+                        rows = lotObj ? [`دفعة ${lotObj.purchaseDate} (${lotObj.supplierName}): ${formatNumber(Math.min(available, baseQty))} × ${formatNumber(unitCost)} = ${formatNumber(cost)}`] : [];
+                    } else {
+                        const f = fifoCost(lots, baseQty);
+                        cost = f.cost; rows = f.rows;
+                    }
+                    const profit = lineTotal - cost;
+                    let html = '';
+                    if (baseQty > available) {
+                        html += `<div class="text-danger fw-bold mb-1">لا يمكن الإضافة — المطلوب (${formatNumber(baseQty)}) أكبر من المتاح (${formatNumber(available)}) قطعة أساسية.</div>`;
+                    }
+                    html += `المتوفر: <strong>${formatNumber(available)}</strong> — الإجمالي: <strong>${formatNumber(lineTotal)}</strong> — التكلفة: <strong>${formatNumber(cost)}</strong> — <span class="small text-muted">الربح: ${formatNumber(profit)}</span>`;
+                    html += `<div class="text-muted mt-1" style="max-height: 90px; overflow: auto;">${rows.join('<br>')}</div>`;
+                    mProfit.innerHTML = html;
+                }).catch(() => { mProfit.innerHTML = ''; });
+            }
+
+            mLot.addEventListener('change', updateProfit);
+
+            function openItemModal(productId) {
+                if (!storeSelect.value) { alert('اختر الفرع والمخزن أولًا.'); return; }
+                mSearch.value = '';
+                mSearchMsg.style.display = 'none';
+                Array.from(mProduct.options).forEach(o => o.hidden = false);
+                mLot.innerHTML = '<option value="0">تلقائي (من الأقدم — FIFO)</option>';
+                if (productId) mProduct.value = productId;
+                if (!mProduct.value) mProduct.selectedIndex = 0;
+                fillUnits();
+                mQty.value = '1';
+                itemModal.show();
+                updateProfit();
+            }
+            addItemBtn.addEventListener('click', () => openItemModal());
+
+            function findProductByBarcode(code) {
+                code = (code || '').trim().toLowerCase();
+                if (!code) return null;
+                return products.find(p => (p.Barcode || '').trim().toLowerCase() === code);
+            }
+            function findProductByName(name) {
+                name = (name || '').trim().toLowerCase();
+                if (!name) return null;
+                return products.find(p => (p.Name || '').trim().toLowerCase() === name);
+            }
+
+            barcodeInput.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const val = this.value.trim();
+                if (!val) return;
+                const p = findProductByBarcode(val) || findProductByName(val);
+                if (p) { openItemModal(p.Id); this.value = ''; }
+                else {
+                    this.classList.add('is-invalid');
+                    this.setAttribute('title', 'لا يوجد منتج بهذا الاسم/الباركود');
+                    setTimeout(() => this.classList.remove('is-invalid'), 1500);
+                }
+            });
+
+            // ═══════════ Add row ═══════════
+            let rowIndex = 0;
+
+            document.getElementById('mConfirm').addEventListener('click', function () {
+                const product = products.find(p => p.Id == mProduct.value);
+                const opt = mUnit.options[mUnit.selectedIndex];
+                const qty = parseFloat(mQty.value) || 0;
+                const price = parseFloat(mPrice.value) || 0;
+                const storeId = parseInt(storeSelect.value) || 0;
+
+                if (!product) { alert('اختر المنتج.'); return; }
+                if (!opt) { alert('اختر الوحدة.'); return; }
+                if (qty <= 0) { alert('الكمية يجب أن تكون أكبر من صفر.'); return; }
+
+                const factor = parseFloat(opt.dataset.factor) || 1;
+                const baseQty = qty * factor;
+                const unitPrice = price * factor;
+                const lineTotal = baseQty * price;
+
+                fetchLots(product.Id, storeId).then(lots => {
+                    fillLotOptions(lots);
+                    const available = currentAvailable(lots);
+                    if (!lots.length || baseQty > available) {
+                        mProfit.innerHTML = `<div class="text-danger fw-bold mb-1">لا يمكن الإضافة — المطلوب (${formatNumber(baseQty)}) أكبر من المتاح (${formatNumber(available || 0)}) قطعة أساسية.</div>`;
+                        return;
+                    }
+                    const isManual = mLot.selectedIndex > 0;
+                    const idx = rowIndex++;
+                    let cost = 0, lotRows = [];
+                    if (isManual) {
+                        const lotObj = lots.find(l => l.id == mLot.value);
+                        cost = baseQty * (lotObj ? lotObj.unitCost : 0);
+                        lotRows = lotObj ? [`دفعة ${lotObj.purchaseDate} (${lotObj.supplierName}): ${formatNumber(baseQty)} × ${formatNumber(lotObj.unitCost)} = ${formatNumber(cost)}`] : [];
+                    } else {
+                        const f = fifoCost(lots, baseQty);
+                        cost = f.cost; lotRows = f.rows;
+                    }
+                    const profit = lineTotal - cost;
+                    const profitClass = profit < 0 ? 'pi-profit is-loss' : (Math.abs(profit) < 0.005 ? 'pi-profit is-break' : 'pi-profit');
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'pi-row';
+                    tr.dataset.total = lineTotal;
+                    tr.innerHTML = `
+                        <td class="pi-idx">${idx + 1}</td>
+                        <td>${escHtml(product.Name)}<input type="hidden" name="Items[${idx}].ProductId" value="${product.Id}" /></td>
+                        <td>${escHtml(opt.textContent)}<input type="hidden" name="Items[${idx}].UnitId" value="${opt.value}" /></td>
+                        <td>${formatNumber(qty)}</td>
+                        <td class="text-end">
+                            <span class="pi-linetotal">${formatNumber(unitPrice)}</span>
+                            <input type="hidden" name="Items[${idx}].Quantity" value="${qty}" />
+                            <input type="hidden" name="Items[${idx}].UnitPrice" value="${unitPrice.toFixed(4)}" />
+                            <input type="hidden" name="Items[${idx}].IssueMethod" value="${isManual ? 2 : 1}" />
+                            ${isManual ? `<input type="hidden" name="Items[${idx}].SelectedStockLotId" value="${mLot.value}" />` : ''}
+                        </td>
+                        <td class="text-end"><span class="pi-linetotal">${formatNumber(lineTotal)}</span></td>
+                        <td class="text-end"><span class="pi-cost">${formatNumber(cost)}</span></td>
+                        <td class="text-end"><span class="${profitClass}">${formatNumber(profit)}</span></td>
+                        <td><div class="small text-muted" style="max-height: 64px; overflow: auto;">${lotRows.join('<br>')}</div></td>
+                        <td><button type="button" class="pi-del" title="حذف">\u00d7</button></td>`;
+
+                    itemsBody.appendChild(tr);
+                    renumber();
+                    updateTotals();
+                    itemModal.hide();
+                }).catch(() => { alert('تعذر التحقق من المتاح — حاول مرة أخرى.'); });
+            });
+
+            // ═══════════ Render existing items (Edit mode) ═══════════
+            function renderExistingItems() {
+                if (!serverItems || !serverItems.length) return;
+
+                serverItems.forEach(item => {
+                    const product = products.find(p => p.Id === item.ProductId);
+                    if (!product) return;
+
+                    const unit = (product.Units || []).find(u => u.UnitId === item.UnitId);
+                    if (!unit) return;
+
+                    const factor    = parseFloat(unit.ConversionFactor) || 1;
+                    const unitPrice = parseFloat(item.UnitPrice) || 0;
+                    const qty       = parseFloat(item.Quantity) || 0;
+                    const lineTotal = qty * unitPrice;
+                    const isManual  = item.IssueMethod === 2;
+                    const idx       = rowIndex++;
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'pi-row';
+                    tr.dataset.total = lineTotal;
+
+                    tr.innerHTML = `
+                        <td class="pi-idx">${idx + 1}</td>
+                        <td>
+                            ${escHtml(product.Name)}
+                            <input type="hidden" name="Items[${idx}].ProductId" value="${product.Id}" />
+                        </td>
+                        <td>
+                            ${escHtml(unit.UnitName + ' (' + formatNumber(factor) + ' ق)')}
+                            <input type="hidden" name="Items[${idx}].UnitId" value="${unit.UnitId}" />
+                        </td>
+                        <td>${formatNumber(qty)}</td>
+                        <td class="text-end">
+                            <span class="pi-linetotal">${formatNumber(unitPrice)}</span>
+                            <input type="hidden" name="Items[${idx}].Quantity" value="${qty}" />
+                            <input type="hidden" name="Items[${idx}].UnitPrice" value="${unitPrice.toFixed(4)}" />
+                            <input type="hidden" name="Items[${idx}].IssueMethod" value="${isManual ? 2 : 1}" />
+                            ${isManual && item.SelectedStockLotId ? `<input type="hidden" name="Items[${idx}].SelectedStockLotId" value="${item.SelectedStockLotId}" />` : ''}
+                        </td>
+                        <td class="text-end"><span class="pi-linetotal">${formatNumber(lineTotal)}</span></td>
+                        <td class="text-end"><span class="pi-cost">—</span></td>
+                        <td class="text-end"><span class="pi-profit">—</span></td>
+                        <td><div class="small text-muted">—</div></td>
+                        <td><button type="button" class="pi-del" title="حذف">\u00d7</button></td>`;
+
+                    itemsBody.appendChild(tr);
+                });
+
+                renumber();
+            }
+
+            // ═══════════ Rows helpers ═══════════
+            function renumber() {
+                const rows = itemsBody.querySelectorAll('tr.pi-row');
+                rows.forEach((tr, i) => {
+                    const idx = tr.querySelector('.pi-idx');
+                    if (idx) idx.textContent = i + 1;
+                    tr.querySelectorAll('[name]').forEach(el => {
+                        el.name = el.name.replace(/Items\[\d+\]/, `Items[${i}]`);
+                    });
+                });
+                const n = rows.length;
+                itemsCountEl.textContent = `(${n})`;
+                emptyRow.style.display = n ? 'none' : '';
+            }
+
+            itemsBody.addEventListener('click', function (e) {
+                if (e.target.classList.contains('pi-del')) {
+                    e.target.closest('tr').remove();
+                    renumber();
+                    updateTotals();
+                }
+            });
+
+            // ═══════════ Totals ═══════════
+            function updateTotals() {
+                let sub = 0;
+                itemsBody.querySelectorAll('tr.pi-row').forEach(tr => {
+                    sub += parseFloat(tr.dataset.total) || 0;
+                });
+
+                const discount = Math.max(0, parseNum(discountInput.value));
+                const taxable  = Math.max(0, sub - discount);
+
+                let salesTaxAmount = 0;
+                if (salesTaxToggle.checked) {
+                    const rate = parseNum(salesTaxRateInput.value);
+                    salesTaxAmount = Math.round(taxable * rate * 100) / 10000;
+                }
+                salesTaxInput.value = salesTaxAmount.toFixed(2);
+                salesTaxAmountDisplay.textContent = salesTaxAmount.toFixed(2);
+
+                let vatAmount = 0;
+                if (vatToggle.checked) {
+                    const rate = parseNum(taxRateInput.value);
+                    vatAmount = Math.round(taxable * rate * 100) / 10000;
+                }
+                taxInput.value = vatAmount.toFixed(2);
+                taxAmountDisplay.textContent = vatAmount.toFixed(2);
+
+                subTotalEl.textContent   = sub.toFixed(2);
+                grandTotalEl.textContent = (taxable + salesTaxAmount + vatAmount).toFixed(2);
+            }
+
+            discountInput.addEventListener('input', updateTotals);
+            salesTaxRateInput.addEventListener('input', updateTotals);
+            taxRateInput.addEventListener('input', updateTotals);
+
+            salesTaxToggle.addEventListener('change', function () {
+                if (this.checked) {
+                    salesTaxBody.classList.add('is-on');
+                    if (!parseNum(salesTaxRateInput.value)) salesTaxRateInput.value = '0';
+                    salesTaxRateInput.focus();
+                } else {
+                    salesTaxBody.classList.remove('is-on');
+                    salesTaxRateInput.value = '0';
+                    salesTaxInput.value = '0';
+                }
+                updateTotals();
+            });
+
+            vatToggle.addEventListener('change', function () {
+                if (this.checked) {
+                    vatBody.classList.add('is-on');
+                    if (!parseNum(taxRateInput.value)) taxRateInput.value = '14';
+                    taxRateInput.focus();
+                } else {
+                    vatBody.classList.remove('is-on');
+                    taxRateInput.value = '0';
+                    taxInput.value = '0';
+                }
+                updateTotals();
+            });
+
+            // ═══════════ Tabs ═══════════
+            document.querySelectorAll('.pi-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.dataset.tab;
+                    document.querySelectorAll('.pi-tab').forEach(t => t.classList.toggle('is-active', t === tab));
+                    document.querySelectorAll('.pi-tab-panel').forEach(p => p.classList.toggle('is-active', p.dataset.tabPanel === target));
+                });
+            });
+
+            // ═══════════ Quick Customer ═══════════
+            const quickCustomerModal = new bootstrap.Modal(document.getElementById('quickCustomerModal'));
+            const qcName  = document.getElementById('qcName');
+            const qcPhone = document.getElementById('qcPhone');
+            const qcMsg   = document.getElementById('qcMsg');
+
+            document.getElementById('quickCustomerBtn').addEventListener('click', () => {
+                qcName.value = ''; qcPhone.value = ''; qcMsg.textContent = '';
+                quickCustomerModal.show();
+                setTimeout(() => qcName.focus(), 300);
+            });
+
+            async function submitQuickCustomer() {
+                const name = qcName.value.trim();
+                const phone = qcPhone.value.trim();
+                if (!name) { qcMsg.textContent = 'اسم العميل مطلوب.'; return; }
+                if (!phone) { qcMsg.textContent = 'رقم الهاتف مطلوب.'; return; }
+
+                const body = new URLSearchParams();
+                body.append('__RequestVerificationToken', token());
+                body.append('name', name);
+                body.append('phone', phone);
+
+                try {
+                    const res = await fetch('@Url.Action("CreateQuickCustomer", "SalesInvoice")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: body.toString()
+                    });
+                    const data = await res.json();
+                    if (!data.ok) { qcMsg.textContent = data.message || 'تعذر الحفظ.'; return; }
+
+                    const opt = document.createElement('option');
+                    opt.value = data.id;
+                    opt.textContent = data.name + (data.phone ? ' — ' + data.phone : '');
+                    opt.dataset.phone = data.phone || '';
+                    customerSelect.appendChild(opt);
+                    customerSelect.value = data.id;
+                    loadCustomerInfo(data.id);
+                    quickCustomerModal.hide();
+                } catch { qcMsg.textContent = 'تعذر الاتصال بالخادم.'; }
+            }
+            document.getElementById('qcSave').addEventListener('click', submitQuickCustomer);
+            qcName.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuickCustomer(); });
+            qcPhone.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuickCustomer(); });
+
+            // ═══════════ Quick Store ═══════════
+            const quickStoreModal = new bootstrap.Modal(document.getElementById('quickStoreModal'));
+            const qsStoreName   = document.getElementById('qsStoreName');
+            const qsStoreBranch = document.getElementById('qsStoreBranch');
+            const qsStoreMsg    = document.getElementById('qsStoreMsg');
+
+            document.getElementById('quickStoreBtn').addEventListener('click', () => {
+                qsStoreName.value = ''; qsStoreMsg.textContent = '';
+                qsStoreBranch.innerHTML = '';
+                Array.from(branchSelect.options).filter(o => o.value).forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.value; opt.textContent = o.textContent;
+                    qsStoreBranch.appendChild(opt);
+                });
+                if (branchSelect.value) qsStoreBranch.value = branchSelect.value;
+                quickStoreModal.show();
+                setTimeout(() => qsStoreName.focus(), 300);
+            });
+
+            async function submitQuickStore() {
+                const name = qsStoreName.value.trim();
+                if (!name) { qsStoreMsg.textContent = 'اسم المخزن مطلوب.'; return; }
+                if (!qsStoreBranch.value) { qsStoreMsg.textContent = 'اختر الفرع.'; return; }
+
+                const body = new URLSearchParams();
+                body.append('__RequestVerificationToken', token());
+                body.append('name', name);
+                body.append('branchId', qsStoreBranch.value);
+
+                try {
+                    const res = await fetch('@Url.Action("CreateQuickStore", "SalesInvoice")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: body.toString()
+                    });
+                    const data = await res.json();
+                    if (!data.ok) { qsStoreMsg.textContent = data.message || 'تعذر الحفظ.'; return; }
+
+                    const opt = document.createElement('option');
+                    opt.value = data.id;
+                    opt.textContent = (data.branchName ? data.branchName + ' — ' : '') + data.name;
+                    opt.dataset.branch = data.branchId;
+                    storeSelect.appendChild(opt);
+                    storeSelect.value = data.id;
+                    quickStoreModal.hide();
+                } catch { qsStoreMsg.textContent = 'تعذر الاتصال بالخادم.'; }
+            }
+            document.getElementById('qsStoreSave').addEventListener('click', submitQuickStore);
+            qsStoreName.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuickStore(); });
+
+            // ═══════════ Init from server Model ═══════════
+            function initFromServer() {
+                // طريقة الدفع
+                const paymentRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PaymentMethod));
+                const paymentMap = {
+                    'Cash':         '@((int)AccountingSystem.Models.SalesPaymentMethod.Cash)',
+                    'BankTransfer': '@((int)AccountingSystem.Models.SalesPaymentMethod.BankTransfer)',
+                    'Cheque':       '@((int)AccountingSystem.Models.SalesPaymentMethod.Cheque)',
+                    'Credit':       '@((int)AccountingSystem.Models.SalesPaymentMethod.Credit)',
+                    'Wallet':       '@((int)AccountingSystem.Models.SalesPaymentMethod.Wallet)'
+                };
+                const paymentVal = paymentMap[paymentRaw] || paymentRaw || '';
+                if (paymentVal) paymentSelect.value = paymentVal;
+                togglePaymentFields();
+
+                // المركز النقدي
+                const cashId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CashAccountId));
+                if (cashId && cashAccountSel) cashAccountSel.value = cashId;
+
+                // العميل / الفرع / المخزن
+                @if (Model.CustomerId > 0)
+                {
+                    <text>customerSelect.value = '@Model.CustomerId';</text>
+                }
+                @if (Model.BranchId > 0)
+                {
+                    <text>branchSelect.value = '@Model.BranchId';</text>
+                }
+
+                populateStores(parseInt(branchSelect.value) || 0);
+
+                @if (Model.StoreId > 0)
+                {
+                    <text>storeSelect.value = '@Model.StoreId';</text>
+                }
+
+                // الخصم
+                const discountVal = @(Model.DiscountAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if (discountVal > 0) discountInput.value = discountVal;
+
+                // ═══ ضريبة المبيعات ═══
+                const sTaxRate = @(Model.SalesTaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                const sTaxAmt  = @(Model.SalesTaxAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if (sTaxRate > 0) {
+                    salesTaxToggle.checked = true;
+                    salesTaxBody.classList.add('is-on');
+                    salesTaxRateInput.value = sTaxRate;
+                    salesTaxInput.value = sTaxAmt.toFixed(2);
+                    salesTaxAmountDisplay.textContent = sTaxAmt.toFixed(2);
+                }
+
+                // ═══ ض.ق.م ═══
+                const vatRate = @(Model.TaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                const vatAmt  = @(Model.TaxAmount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                if (vatRate > 0) {
+                    vatToggle.checked = true;
+                    vatBody.classList.add('is-on');
+                    taxRateInput.value = vatRate;
+                    taxInput.value = vatAmt.toFixed(2);
+                    taxAmountDisplay.textContent = vatAmt.toFixed(2);
+                }
+
+                // ═══ تحميل البنود الموجودة ═══
+                renderExistingItems();
+
+                // ═══ تحديث الإجماليات بعد تحميل البنود ═══
+                updateTotals();
+
+                if (customerSelect.value) loadCustomerInfo(customerSelect.value);
+            }
+
+            initFromServer();
+
+            barcodeInput.focus();
+
+            document.addEventListener('keydown', e => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    const btn = document.querySelector('button[name="saveAndConfirm"][value="true"]');
+                    if (btn) btn.click();
+                }
+            });
+
+            document.getElementById('invoiceForm').addEventListener('submit', function (e) {
+                if (!paymentSelect.value) {
+                    e.preventDefault();
+                    document.getElementById('paymentMethodError').textContent = 'لابد من اختيار طريقة الدفع.';
+                    paymentSelect.focus();
+                    return false;
+                }
+
+                if (cashMethods.includes(paymentSelect.value) && (!cashAccountSel || !cashAccountSel.value)) {
+                    e.preventDefault();
+                    alert('اختر المركز النقدي أولًا.');
+                    if (cashAccountSel) cashAccountSel.focus();
+                    return false;
+                }
+
+                if (paymentSelect.value === creditMethod && (!dueDateInput || !dueDateInput.value)) {
+                    e.preventDefault();
+                    alert('حدد تاريخ الاستحقاق أولًا.');
+                    if (dueDateInput) dueDateInput.focus();
+                    return false;
+                }
+
+                if (!storeSelect.value) {
+                    e.preventDefault();
+                    alert('اختر المخزن أولًا'); storeSelect.focus(); return false;
+                }
+
+                const hasItems = itemsBody.querySelectorAll('tr.pi-row').length > 0;
+                if (!hasItems) {
+                    e.preventDefault();
+                    alert('أضف بندًا واحدًا على الأقل'); return false;
+                }
+            });
+        })();
+    </script>
+}

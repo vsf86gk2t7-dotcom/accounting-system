@@ -1,0 +1,156 @@
+﻿@model AccountingSystem.Models.Company?
+
+@{
+	ViewData["Title"] = "الشركة";
+}
+
+<div class="container mt-4">
+
+	@if (TempData["Success"] != null)
+	{
+		<div class="alert alert-success">
+			@TempData["Success"]
+		</div>
+	}
+
+	@if (TempData["Error"] != null)
+	{
+		<div class="alert alert-danger">
+			@TempData["Error"]
+		</div>
+	}
+
+	@if (Model == null)
+	{
+		<div class="card shadow-sm">
+			<div class="card-body text-center">
+
+				<h3 class="mb-3">
+					لم يتم إنشاء الشركة بعد
+				</h3>
+
+				<a asp-action="Create"
+				   class="btn btn-primary">
+					+ إنشاء الشركة
+				</a>
+
+			</div>
+		</div>
+	}
+	else
+	{
+		<div class="d-flex justify-content-between align-items-center mb-4">
+
+			<div class="d-flex align-items-center gap-3">
+				@if (!string.IsNullOrWhiteSpace(Model.LogoPath))
+				{
+					<img src="@Model.LogoPath"
+						 alt="شعار الشركة"
+						 style="max-height:64px; max-width:200px; object-fit:contain;"
+						 class="border rounded p-1 bg-white" />
+				}
+
+				<div>
+					<h2 class="mb-1">@Model.Name</h2>
+
+					@if (Model.IsActive)
+					{
+						<span class="badge bg-success">
+							نشطة
+						</span>
+					}
+					else
+					{
+						<span class="badge bg-danger">
+							غير نشطة
+						</span>
+					}
+				</div>
+			</div>
+
+			<div>
+				<a asp-action="Edit"
+				   asp-route-id="@Model.Id"
+				   class="btn btn-warning">
+					✏ تعديل
+				</a>
+
+				<form asp-action="ToggleActive"
+					  asp-route-id="@Model.Id"
+					  method="post"
+					  class="d-inline">
+
+					@Html.AntiForgeryToken()
+
+					<button type="submit"
+							class="btn @(Model.IsActive ? "btn-secondary" : "btn-success")">
+
+						@(Model.IsActive
+							? "تعطيل"
+							: "تفعيل")
+
+					</button>
+
+				</form>
+
+				<form asp-action="Delete"
+					  asp-route-id="@Model.Id"
+					  method="post"
+					  class="d-inline"
+					  onsubmit="return confirm('هل أنت متأكد من حذف الشركة؟');">
+
+					@Html.AntiForgeryToken()
+
+					<button type="submit"
+							class="btn btn-danger">
+						🗑 حذف
+					</button>
+
+				</form>
+			</div>
+
+		</div>
+
+		<div class="card shadow-sm">
+
+			<div class="card-body">
+
+				<table class="table table-bordered">
+
+					<tr>
+						<th>اسم الشركة</th>
+						<td>@Model.Name</td>
+					</tr>
+
+					<tr>
+						<th>الهاتف</th>
+						<td>@(Model.Phone ?? "-")</td>
+					</tr>
+
+					<tr>
+						<th>البريد الإلكتروني</th>
+						<td>@(Model.Email ?? "-")</td>
+					</tr>
+
+					<tr>
+						<th>العنوان</th>
+						<td>@(Model.Address ?? "-")</td>
+					</tr>
+
+					<tr>
+						<th>الرقم الضريبي</th>
+						<td>@(Model.TaxNumber ?? "-")</td>
+					</tr>
+
+					<tr>
+						<th>السجل التجاري</th>
+						<td>@(Model.CommercialRegister ?? "-")</td>
+					</tr>
+
+				</table>
+
+			</div>
+
+		</div>
+	}
+</div>

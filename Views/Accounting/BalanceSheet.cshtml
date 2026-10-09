@@ -1,0 +1,164 @@
+@model AccountingSystem.Models.ViewModels.Accounting.BalanceSheetViewModel
+
+@{
+	ViewData["Title"] = "الميزانية العمومية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>الميزانية العمومية</h3>
+
+	<div>
+		<a asp-action="IncomeStatement" class="btn btn-outline-primary">قائمة الدخل</a>
+		<a asp-action="TrialBalance" class="btn btn-outline-secondary">ميزان المراجعة</a>
+	</div>
+</div>
+
+<!-- الفلتر -->
+<form method="get" class="card mb-3">
+	<div class="card-body row g-2 align-items-end">
+		<div class="col-md-4">
+			<label class="form-label">كما في تاريخ</label>
+			<input type="date"
+				   name="asOfDate"
+				   class="form-control"
+				   value="@Model.AsOfDate.ToString("yyyy-MM-dd")" />
+		</div>
+
+		<div class="col-md-4">
+			<button type="submit" class="btn btn-primary">عرض</button>
+		</div>
+	</div>
+</form>
+
+@if (!Model.IsBalanced)
+{
+	<div class="alert alert-warning">
+		الميزانية غير متوازنة — يُرجى مراجعة القيود المحاسبية.
+	</div>
+}
+
+<div class="row">
+	<!-- الأصول -->
+	<div class="col-md-6 mb-3">
+		<div class="card h-100">
+			<div class="card-header bg-primary text-white">
+				الأصول
+			</div>
+			<div class="card-body">
+				@if (Model.Assets.Count == 0)
+				{
+					<p class="text-muted mb-0">لا توجد أصول.</p>
+				}
+				else
+				{
+					<table class="table table-sm mb-0">
+						<tbody>
+							@foreach (var line in Model.Assets)
+							{
+								<tr>
+									<td>
+										@(line.Code != null ? $"[{line.Code}] " : "")
+										@line.Name
+									</td>
+									<td class="text-end @(line.Amount < 0 ? "text-danger" : "")">
+										@line.Amount.ToString("N2")
+									</td>
+								</tr>
+							}
+						</tbody>
+						<tfoot>
+							<tr class="fw-bold table-light">
+								<td>إجمالي الأصول</td>
+								<td class="text-end">@Model.TotalAssets.ToString("N2")</td>
+							</tr>
+						</tfoot>
+					</table>
+				}
+			</div>
+		</div>
+	</div>
+
+	<!-- الالتزامات وحقوق الملكية -->
+	<div class="col-md-6 mb-3">
+		<div class="card h-100">
+			<div class="card-header bg-secondary text-white">
+				الالتزامات وحقوق الملكية
+			</div>
+			<div class="card-body">
+				<h6 class="text-muted">الالتزامات</h6>
+				@if (Model.Liabilities.Count == 0)
+				{
+					<p class="text-muted">لا توجد التزامات.</p>
+				}
+				else
+				{
+					<table class="table table-sm">
+						<tbody>
+							@foreach (var line in Model.Liabilities)
+							{
+								<tr>
+									<td>
+										@(line.Code != null ? $"[{line.Code}] " : "")
+										@line.Name
+									</td>
+									<td class="text-end">@line.Amount.ToString("N2")</td>
+								</tr>
+							}
+						</tbody>
+						<tfoot>
+							<tr class="fw-bold table-light">
+								<td>إجمالي الالتزامات</td>
+								<td class="text-end">@Model.TotalLiabilities.ToString("N2")</td>
+							</tr>
+						</tfoot>
+					</table>
+				}
+
+				<h6 class="text-muted mt-3">حقوق الملكية</h6>
+				<table class="table table-sm mb-0">
+					<tbody>
+						@foreach (var line in Model.Equity)
+						{
+							<tr>
+								<td>
+									@(line.Code != null ? $"[{line.Code}] " : "")
+									@line.Name
+								</td>
+								<td class="text-end">@line.Amount.ToString("N2")</td>
+							</tr>
+						}
+						<tr>
+							<td>صافي ربح الفترة</td>
+							<td class="text-end @(Model.NetIncome < 0 ? "text-danger" : "")">
+								@Model.NetIncome.ToString("N2")
+							</td>
+						</tr>
+					</tbody>
+					<tfoot>
+						<tr class="fw-bold table-light">
+							<td>إجمالي حقوق الملكية</td>
+							<td class="text-end">@Model.TotalEquity.ToString("N2")</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="alert @(Model.IsBalanced ? "alert-success" : "alert-warning")">
+	<div class="row">
+		<div class="col-md-4">
+			<strong>إجمالي الأصول:</strong>
+			@Model.TotalAssets.ToString("N2")
+		</div>
+		<div class="col-md-4">
+			<strong>إجمالي الالتزامات + حقوق الملكية:</strong>
+			@Model.TotalLiabilitiesAndEquity.ToString("N2")
+		</div>
+		<div class="col-md-4">
+			<strong>الحالة:</strong>
+			@(Model.IsBalanced ? "متوازنة" : "غير متوازنة")
+		</div>
+	</div>
+</div>

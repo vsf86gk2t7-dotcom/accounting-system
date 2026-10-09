@@ -1,0 +1,69 @@
+@model List<AccountingSystem.Models.EmployeeDeduction>
+
+@{
+	ViewData["Title"] = "خصوماتي";
+
+	var isAdminView = ViewBag.IsAdminView as bool? ?? false;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">@(isAdminView ? "كل الخصومات" : "سجل خصوماتي")</h2>
+		<p class="text-muted mb-0 small">
+			@(isAdminView
+				? "عرض كل الخصومات المسجلة على الموظفين"
+				: "متابعة الخصومات المسجلة على راتبك")
+		</p>
+	</div>
+
+	@if (isAdminView)
+	{
+		<a asp-action="Create" class="btn btn-primary">
+			<i class="bi bi-plus-lg"></i> إضافة خصم
+		</a>
+	}
+</div>
+
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">
+		<i class="bi bi-info-circle"></i>
+		لا يوجد خصومات مسجلة حتى الآن.
+	</div>
+}
+else
+{
+	<div class="card border-0 shadow-sm">
+		<div class="card-body p-0">
+			<div class="table-responsive">
+				<table class="table table-hover mb-0">
+					<thead class="table-light">
+						<tr>
+							@if (isAdminView)
+							{
+								<th>الموظف</th>
+							}
+							<th>المبلغ</th>
+							<th>السبب</th>
+							<th>التاريخ</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var item in Model)
+						{
+							<tr>
+								@if (isAdminView)
+								{
+									<td>@(item.Employee?.Name ?? "—")</td>
+								}
+								<td>@item.Amount.ToString("N2")</td>
+								<td>@item.Reason</td>
+								<td>@item.Date.ToString("yyyy-MM-dd")</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+}

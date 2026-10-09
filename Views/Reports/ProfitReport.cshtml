@@ -1,0 +1,134 @@
+@model AccountingSystem.Models.ViewModels.Reports.ProfitReportViewModel
+
+@{
+	ViewData["Title"] = "تقرير الأرباح";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تقرير الأرباح</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">كل التقارير</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+	<div class="card-body">
+		<div class="row g-3 align-items-end">
+			<div class="col-md-3">
+				<label class="form-label fw-semibold">من تاريخ</label>
+				<input type="date"
+					   name="fromDate"
+					   class="form-control"
+					   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+			</div>
+
+			<div class="col-md-3">
+				<label class="form-label fw-semibold">إلى تاريخ</label>
+				<input type="date"
+					   name="toDate"
+					   class="form-control"
+					   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+			</div>
+
+			<div class="col-md-3">
+				<button type="submit" class="btn btn-primary">عرض التقرير</button>
+			</div>
+		</div>
+	</div>
+</form>
+
+<div class="row g-3">
+	<div class="col-md-6 col-xl-3">
+		<div class="card text-center h-100">
+			<div class="card-body">
+				<div class="text-muted small">إجمالي المبيعات قبل الضرائب</div>
+				<div class="fs-5 fw-bold text-primary">
+					@Model.SalesBeforeTax.ToString("N2")
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6 col-xl-3">
+		<div class="card text-center h-100">
+			<div class="card-body">
+				<div class="text-muted small">خصومات المبيعات</div>
+				<div class="fs-5 fw-bold text-warning">
+					@Model.Discounts.ToString("N2")
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6 col-xl-3">
+		<div class="card text-center h-100">
+			<div class="card-body">
+				<div class="text-muted small">صافي المبيعات بعد الخصومات وقبل الضرائب</div>
+				<div class="fs-5 fw-bold">
+					@Model.NetSales.ToString("N2")
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6 col-xl-3">
+		<div class="card text-center h-100">
+			<div class="card-body">
+				<div class="text-muted small">تكلفة البضاعة المباعة، وفق تكلفة المخزون actual</div>
+				<div class="fs-5 fw-bold text-danger">
+					@Model.CostOfGoodsSold.ToString("N2")
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="card mt-3">
+	<div class="card-body">
+		<table class="table table-striped mb-0">
+			<tbody>
+				<tr>
+					<td>إجمالي المبيعات قبل الضرائب</td>
+					<td class="text-end">@Model.SalesBeforeTax.ToString("N2")</td>
+				</tr>
+				<tr>
+					<th>(-) خصومات المبيعات</th>
+					<td class="text-end text-warning">
+						@Model.Discounts.ToString("N2")
+					</td>
+				</tr>
+				<tr class="table-light fw-bold">
+					<td>صافي المبيعات بعد الخصومات وقبل الضرائب</td>
+					<td class="text-end">@Model.NetSales.ToString("N2")</td>
+				</tr>
+				<tr>
+					<th>(-) تكلفة البضاعة المباعة، وفق تكلفة المخزون actual</th>
+					<td class="text-end text-danger">
+						@Model.CostOfGoodsSold.ToString("N2")
+					</td>
+				</tr>
+				<tr class="table-light fw-bold">
+					<td>مجمل الربح أو الخسارة</td>
+					<td class="text-end @(Model.GrossProfit < 0 ? "text-danger" : "text-success")">
+						@Model.GrossProfit.ToString("N2")
+					</td>
+				</tr>
+				<tr>
+					<th>(-) المصروفات التشغيلية</th>
+					<td class="text-end text-danger">
+						@Model.Expenses.ToString("N2")
+					</td>
+				</tr>
+				<tr class="table-dark fw-bold">
+					<td>صافي الربح أو الخسارة</td>
+					<td class="text-end">
+						@Model.NetProfit.ToString("N2")
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<p class="text-muted mt-3 mb-0">
+			هامش الربح الإجمالي: <strong>@Model.GrossMarginPercent.ToString("N2")%</strong>
+		</p>
+	</div>
+</div>

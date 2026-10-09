@@ -1,0 +1,116 @@
+@model AccountingSystem.Models.ViewModels.Reports.SalesReportViewModel
+
+@{
+	ViewData["Title"] = "تقرير المبيعات";
+
+	string PaymentMethodLabel(AccountingSystem.Models.SalesPaymentMethod m)
+	{
+		return m switch
+		{
+			AccountingSystem.Models.SalesPaymentMethod.Cash => "نقدي",
+			AccountingSystem.Models.SalesPaymentMethod.BankTransfer => "تحويل بنكي",
+			AccountingSystem.Models.SalesPaymentMethod.Cheque => "شيك",
+			AccountingSystem.Models.SalesPaymentMethod.Credit => "آجل",
+			AccountingSystem.Models.SalesPaymentMethod.Wallet => "محفظة",
+			_ => "-"
+		};
+	}
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تقرير المبيعات</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		كل التقارير
+	</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+
+	<div class="card-body">
+
+		<div class="row g-3 align-items-end">
+
+			<div class="col-md-3">
+
+				<label class="form-label fw-semibold">من تاريخ</label>
+
+				<input type="date"
+					   name="fromDate"
+					   class="form-control"
+					   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-3">
+
+				<label class="form-label fw-semibold">إلى تاريخ</label>
+
+				<input type="date"
+					   name="toDate"
+					   class="form-control"
+					   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-3">
+
+				<button type="submit"
+						class="btn btn-primary">
+					عرض التقرير
+				</button>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد فواتير بيع معتمدة في هذه الفترة.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>رقم الفاتورة</th>
+					<th>التاريخ</th>
+					<th>العميل</th>
+					<th>المخزن</th>
+					<th>طريقة الدفع</th>
+					<th>الإجمالي</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td><strong>@row.InvoiceNumber</strong></td>
+						<td>@row.InvoiceDate.ToString("yyyy-MM-dd")</td>
+						<td>@row.CustomerName</td>
+						<td>@row.StoreName</td>
+						<td>
+							@PaymentMethodLabel(row.PaymentMethod)
+						</td>
+						<td>@row.TotalAmount.ToString("N2")</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot class="table-dark fw-bold">
+				<tr>
+					<td colspan="5">
+						الإجمالي (عدد الفواتير: @Model.InvoiceCount)
+					</td>
+					<td>@Model.GrandTotal.ToString("N2")</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

@@ -1,0 +1,68 @@
+@model AccountingSystem.Models.ViewModels.Returns.ReturnListViewModel
+
+@{
+	ViewData["Title"] = "مرتجعات البيع";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>مرتجعات البيع</h3>
+
+	<a asp-action="Create" class="btn btn-primary">
+		+ مرتجع بيع جديد
+	</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد مرتجعات بيع مسجلة بعد.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>رقم المرتجع</th>
+					<th>التاريخ</th>
+					<th>العميل</th>
+					<th>المخزن</th>
+					<th>عدد الأصناف</th>
+					<th>الإجمالي</th>
+					<th>السبب</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td><strong>@row.InvoiceNumber</strong></td>
+						<td>@row.ReturnDate.ToString("yyyy-MM-dd")</td>
+						<td>@row.PartyName</td>
+						<td>@row.StoreName</td>
+						<td>@row.ItemCount</td>
+						<td>@row.TotalAmount.ToString("N2")</td>
+						<td>@(row.Reason ?? "-")</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

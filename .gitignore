@@ -1,0 +1,60 @@
+# Build results
+bin/
+obj/
+.vs/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+
+# Backups (كبيرة ومش محتاجة تترفع)
+Backups/
+Backup_Dashboard_*/
+
+# App settings (لأمان)
+appsettings.json
+appsettings.Development.json
+appsettings.*.local.json
+
+# Database files
+*.bak
+*.mdf
+*.ldf
+*.ndf
+
+# VS Code
+.vscode/
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# IDE
+*.sln.docstates
+
+# User uploads (real user data — not for version control)
+wwwroot/uploads/profiles/
+wwwroot/uploads/logos/
+
+# ========================================
+# Test outputs (temporary)
+# ========================================
+TestResults/
+Tests/**/TestResults/
+Tests/**/coverage-report/
+Tests/**/coveragereport/
+coverage-report/
+
+# ========================================
+# Duplicate folder (path error)
+# ========================================
+Tests/AccountingSystem.Tests/Tests/appsettings.json
+RotateSecrets.ps1
+*.coverage
+*.cobertura.xml
+*.opencover.xml
+coverage.json
+coverage.lcov
+
+.git-old-backup/

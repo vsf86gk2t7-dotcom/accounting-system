@@ -1,0 +1,124 @@
+@model List<AccountingSystem.Models.LeaveRequest>
+
+@{
+	ViewData["Title"] = "طلبات الإجازات";
+
+	var status = ViewBag.Status as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">طلبات الإجازات</h2>
+		<p class="text-muted mb-0 small">إدارة طلبات إجازات الموظفين</p>
+	</div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div class="card mb-3 shadow-sm border-0">
+	<div class="card-body">
+		<form asp-action="Index" method="get">
+			<div class="row g-2">
+				<div class="col-md-4">
+					<select name="status" class="form-select">
+						<option value="">كل الحالات</option>
+						<option value="Pending" selected="@(status == "Pending")">قيد الانتظار</option>
+						<option value="Approved" selected="@(status == "Approved")">تمت الموافقة</option>
+						<option value="Rejected" selected="@(status == "Rejected")">مرفوض</option>
+					</select>
+				</div>
+				<div class="col-md-2">
+					<button type="submit" class="btn btn-secondary w-100">تصفية</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">لا يوجد طلبات إجازات حتى الآن.</div>
+}
+else
+{
+	<div class="card border-0 shadow-sm">
+		<div class="card-body p-0">
+			<div class="table-responsive">
+				<table class="table table-hover mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>الموظف</th>
+							<th>من تاريخ</th>
+							<th>إلى تاريخ</th>
+							<th>السبب</th>
+							<th>الحالة</th>
+							<th>وافق عليه</th>
+							<th style="width: 120px;">إجراءات</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var request in Model)
+						{
+							<tr>
+								<td>
+									<div class="fw-semibold">@(request.Employee?.Name ?? "-")</div>
+								</td>
+								<td>@request.StartDate.ToString("yyyy-MM-dd")</td>
+								<td>@request.EndDate.ToString("yyyy-MM-dd")</td>
+								<td>@request.Reason</td>
+								<td>
+									@if (request.Status == LeaveStatus.Pending)
+									{
+										<span class="badge bg-warning text-dark">قيد الانتظار</span>
+									}
+									else if (request.Status == LeaveStatus.Approved)
+									{
+										<span class="badge bg-success">تمت الموافقة</span>
+									}
+									else if (request.Status == LeaveStatus.Rejected)
+									{
+										<span class="badge bg-danger">مرفوض</span>
+									}
+								</td>
+								<td>@(request.ApprovedByUser?.FullName ?? "-")</td>
+								<td>
+									@if (request.Status == LeaveStatus.Pending)
+									{
+										<div class="d-flex gap-1">
+											<form asp-action="Approve" asp-route-id="@request.Id" method="post">
+												@Html.AntiForgeryToken()
+												<button type="submit" class="btn btn-sm btn-success">موافقة</button>
+											</form>
+											<form asp-action="Reject" asp-route-id="@request.Id" method="post">
+												@Html.AntiForgeryToken()
+												<button type="submit" class="btn btn-sm btn-danger">رفض</button>
+											</form>
+										</div>
+									}
+									else
+									{
+										<span class="text-muted small">—</span>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+}

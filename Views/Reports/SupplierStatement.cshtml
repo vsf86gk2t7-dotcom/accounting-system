@@ -1,0 +1,218 @@
+@model AccountingSystem.Models.ViewModels.Reports.SupplierStatementViewModel
+
+@{
+    ViewData["Title"] = "كشف حساب مورد";
+}
+
+<style>
+    /* ✅ صفوف كشف الحساب: مؤشر يد + تمييز بصري */
+    #supplierStatementTable tbody tr.stmt-row {
+        cursor: pointer;
+        transition: background-color .15s ease, box-shadow .15s ease;
+    }
+
+        #supplierStatementTable tbody tr.stmt-row:hover {
+            background-color: #eef6ff !important;
+            box-shadow: inset 3px 0 0 0 var(--bs-primary, #0d6efd);
+        }
+
+        #supplierStatementTable tbody tr.stmt-row:active {
+            background-color: #dbeafe !important;
+        }
+
+        /* تمييز خفيف للبيان عند الـ hover */
+        #supplierStatementTable tbody tr.stmt-row:hover td:nth-child(2) {
+            color: var(--bs-primary, #0d6efd);
+            font-weight: 600;
+        }
+
+        /* أيقونة "فتح" تظهر عند الـ hover (اختياري) */
+        #supplierStatementTable tbody tr.stmt-row td:last-child::after {
+            content: "";
+            display: inline-block;
+        }
+
+    .stmt-open-icon {
+        opacity: 0;
+        transition: opacity .15s ease;
+        color: var(--bs-primary, #0d6efd);
+        font-size: .85rem;
+        margin-inline-start: 6px;
+    }
+
+    #supplierStatementTable tbody tr.stmt-row:hover .stmt-open-icon {
+        opacity: 1;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>كشف حساب مورد</h3>
+
+    <a asp-action="SupplierBalancesReport"
+       asp-route-fromDate="@Model.FromDate.ToString("yyyy-MM-dd")"
+       asp-route-toDate="@Model.ToDate.ToString("yyyy-MM-dd")"
+       class="btn btn-outline-secondary">
+        رجوع لأرصدة الموردين
+    </a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+
+    <div class="card-body">
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-md-3">
+
+                <label class="form-label fw-semibold">المورد</label>
+
+                <select name="supplierId"
+                        class="form-select">
+
+                    <option value="">
+                        -- اختر المورد --
+                    </option>
+
+                    @foreach (var supplier in Model.Suppliers)
+                    {
+                        <option value="@supplier.Key"
+                                selected="@(Model.SupplierId == supplier.Key ? "selected" : null)">
+                            @supplier.Value
+                        </option>
+                    }
+
+                </select>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <label class="form-label fw-semibold">من تاريخ</label>
+
+                <input type="date"
+                       name="fromDate"
+                       class="form-control"
+                       value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+
+            </div>
+
+            <div class="col-md-2">
+
+                <label class="form-label fw-semibold">إلى تاريخ</label>
+
+                <input type="date"
+                       name="toDate"
+                       class="form-control"
+                       value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+
+            </div>
+
+            <div class="col-md-2">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    عرض الكشف
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</form>
+
+@if (Model.SupplierId == 0)
+{
+    <div class="alert alert-info">
+        اختر موردا ثم اضغط «عرض الكشف».
+    </div>
+}
+else
+{
+    <h5 class="mb-3">
+        المورد: <strong>@Model.SupplierName</strong>
+    </h5>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" id="supplierStatementTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>التاريخ</th>
+                    <th>البيان</th>
+                    <th>مدين</th>
+                    <th>دائن</th>
+                    <th>الرصيد</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="table-secondary">
+                    <td colspan="2"><strong>رصيد افتتاحي</strong></td>
+                    <td></td>
+                    <td></td>
+                    <td>@Model.OpeningBalance.ToString("N2")</td>
+                </tr>
+
+                @foreach (var row in Model.Rows)
+                {
+                    <tr class="stmt-row"
+                        data-details-url="@row.DetailsUrl"
+                        data-source-type="@row.SourceType"
+                        title="اضغط مرتين لعرض تفاصيل الحركة في تبويب جديد">
+                        <td>@row.Date.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            @row.Description
+                            @if (!string.IsNullOrWhiteSpace(row.DetailsUrl))
+                            {
+                                <i class="bi bi-box-arrow-up-right stmt-open-icon"></i>
+                            }
+                        </td>
+                        <td>@row.Debit.ToString("N2")</td>
+                        <td>@row.Credit.ToString("N2")</td>
+                        <td>@row.Balance.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-dark fw-bold">
+                <tr>
+                    <td colspan="4">الرصيد الختامي</td>
+                    <td>@Model.ClosingBalance.ToString("N2")</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function() {
+            'use strict';
+
+            const table = document.getElementById('supplierStatementTable');
+            if (!table) return;
+
+            // ✅ دبل كليك على أي صف حركة → فتح التفاصيل في تبويب جديد
+            table.addEventListener('dblclick', function(e) {
+                // تجاهل لو المستخدم داس على زر/لينك/فورم
+                if (e.target.closest('a, button, form, input, select, textarea')) return;
+
+                const tr = e.target.closest('tr.stmt-row');
+                if (!tr) return;
+
+                const url = tr.dataset.detailsUrl;
+                if (!url) return;
+
+                // ✅ فتح في تبويب جديد
+                window.open(url, '_blank', 'noopener,noreferrer');
+            });
+
+            // منع تحديد النص عند الدبل كليك السريع (تحسين UX)
+            table.addEventListener('mousedown', function(e) {
+                const tr = e.target.closest('tr.stmt-row');
+                if (tr && e.detail > 1) {
+                    e.preventDefault();
+                }
+            });
+        })();
+    </script>
+}

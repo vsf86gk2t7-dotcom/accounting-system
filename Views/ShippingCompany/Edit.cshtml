@@ -1,0 +1,76 @@
+@model AccountingSystem.Models.ShippingCompany
+
+@{
+    ViewData["Title"] = "تعديل شركة شحن";
+}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">تعديل شركة شحن</h2>
+            <p class="text-muted mb-0">تعديل بيانات شركة شحن قائمة</p>
+        </div>
+
+        <a asp-controller="ShippingCompany" asp-action="Index" class="btn btn-outline-secondary">
+            العودة لشركات الشحن
+        </a>
+    </div>
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-controller="ShippingCompany" asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label fw-semibold">اسم الشركة</label>
+                        <input asp-for="Name" class="form-control" placeholder="مثال: أرامكس" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Phone" class="form-label fw-semibold">الهاتف</label>
+                        <input asp-for="Phone" class="form-control" dir="ltr" />
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label fw-semibold">البريد الإلكتروني</label>
+                        <input asp-for="Email" class="form-control" dir="ltr" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="AccountNumber" class="form-label fw-semibold">رقم الحساب لديهم (اختياري)</label>
+                        <input asp-for="AccountNumber" class="form-control" dir="ltr" />
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Address" class="form-label fw-semibold">العنوان</label>
+                        <input asp-for="Address" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ShippingRate" class="form-label fw-semibold">سعر الشحن الافتراضي</label>
+                        <input asp-for="ShippingRate" type="number" step="0.01" min="0" class="form-control" />
+                        <span asp-validation-for="ShippingRate" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a asp-controller="ShippingCompany" asp-action="Index" class="btn btn-outline-secondary">إلغاء</a>
+                    <button type="submit" class="btn btn-success px-4">حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+}

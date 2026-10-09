@@ -1,0 +1,89 @@
+@model AccountingSystem.Models.Store
+
+@{
+	ViewData["Title"] = "تعديل المخزن";
+}
+
+<div class="container mt-4">
+
+	<h2 class="mb-4">تعديل بيانات المخزن</h2>
+
+	<div class="card shadow-sm">
+
+		<div class="card-body">
+
+			<form asp-action="Edit"
+				  method="post">
+
+				@Html.AntiForgeryToken()
+
+				<input asp-for="Id" type="hidden" />
+
+				<div asp-validation-summary="ModelOnly"
+					 class="text-danger mb-3">
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="BranchId"
+						   class="form-label">
+						الفرع
+					</label>
+
+					<select asp-for="BranchId"
+						asp-items="@(new SelectList((System.Collections.IEnumerable)ViewBag.Branches, "Id", "Name"))"
+						class="form-select">
+					</select>
+
+					<span asp-validation-for="BranchId"
+						  class="text-danger">
+					</span>
+
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="Name"
+						   class="form-label">
+						اسم المخزن
+					</label>
+
+					<input asp-for="Name"
+						   class="form-control"
+						   required />
+
+					<span asp-validation-for="Name"
+						  class="text-danger">
+					</span>
+
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="Code"
+						   class="form-label">
+						كود المخزن
+					</label>
+
+					<input asp-for="Code"
+						   class="form-control" />
+
+				</div>
+
+				<button type="submit"
+						class="btn btn-success">
+					حفظ التعديلات
+				</button>
+
+				<a asp-action="Index"
+				   class="btn btn-secondary">
+					إلغاء
+				</a>
+
+			</form>
+
+		</div>
+
+	</div>
+
+</div>

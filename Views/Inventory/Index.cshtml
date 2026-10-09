@@ -1,0 +1,231 @@
+@model AccountingSystem.Models.ViewModels.Inventory.InventoryIndexViewModel
+
+@{
+    ViewData["Title"] = "أرصدة المخزون";
+}
+
+<style>
+    /* ✅ صفوف المخزون: مؤشر يد + تمييز بصري */
+    #inventoryTable tbody tr.inv-row {
+        cursor: pointer;
+        transition: background-color .15s ease, box-shadow .15s ease;
+    }
+
+        #inventoryTable tbody tr.inv-row:hover {
+            background-color: #eef6ff !important;
+            box-shadow: inset 3px 0 0 0 var(--bs-primary, #0d6efd);
+        }
+
+        #inventoryTable tbody tr.inv-row:active {
+            background-color: #dbeafe !important;
+        }
+
+        /* تمييز خفيف للخلايا اللي فيها اسم المنتج */
+        #inventoryTable tbody tr.inv-row:hover td:first-child strong {
+            color: var(--bs-primary, #0d6efd);
+        }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>أرصدة المخزون</h3>
+
+    <div class="btn-group">
+        <a asp-action="Receive" class="btn btn-primary">+ استلام</a>
+        <a asp-action="Issue" class="btn btn-outline-primary">صرف</a>
+        <a asp-action="Transfer" class="btn btn-outline-primary">تحويل</a>
+        <a asp-action="Adjust" class="btn btn-outline-warning">تسوية</a>
+        <a asp-action="Count" class="btn btn-outline-secondary">جرد</a>
+        <a asp-action="Lots" class="btn btn-outline-secondary">الدفعات</a>
+        <a asp-action="ProductMovement" class="btn btn-outline-secondary">كشف حركة منتج</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="get"
+      asp-action="Index"
+      class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+
+            <div class="col-md-4">
+
+                <label class="form-label mb-1">
+                    المخزن
+                </label>
+
+                <select name="storeId"
+                        class="form-select">
+
+                    <option value="">
+                        جميع المخازن
+                    </option>
+
+                    @foreach (var store in Model.Stores)
+                    {
+                        <option value="@store.Key"
+                                selected=@(store.Key == Model.StoreId ? "selected" : null)>
+                            @store.Value
+                        </option>
+                    }
+
+                </select>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <label class="form-label mb-1">
+                    بحث
+                </label>
+
+                <input type="text"
+                       name="search"
+                       value="@Model.Search"
+                       class="form-control"
+                       placeholder="بحث بالمنتج أو الكود أو المخزن..." />
+
+            </div>
+
+            <div class="col-md-2 d-flex gap-2">
+
+                <button type="submit"
+                        class="btn btn-primary w-100">
+                    عرض
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    مسح
+                </a>
+
+            </div>
+
+        </div>
+    </div>
+</form>
+
+@if (Model.Rows == null || Model.Rows.Count == 0)
+{
+    <div class="alert alert-info">
+        لا توجد أرصدة مخزون مطابقة.
+    </div>
+}
+else
+{
+    @if (Model.Rows.Any(x => x.IsBelowMin))
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            يوجد <strong>@Model.Rows.Count(x => x.IsBelowMin)</strong>
+            أصناف وصلت للحد الأدنى أو أقل.
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" id="inventoryTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>المنتج</th>
+                    <th>المخزن</th>
+                    <th>الكمية (وحدة أساسية)</th>
+                    <th>متوسط التكلفة</th>
+                    <th>القيمة الإجمالية</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr class="inv-row"
+                        data-product-id="@row.ProductId"
+                        data-store-id="@row.StoreId"
+                        title="اضغط مرتين لعرض حركة المنتج">
+                        <td>
+                            <strong>@row.ProductName</strong>
+                            @if (!string.IsNullOrWhiteSpace(row.ProductCode))
+                            {
+                                <small class="text-muted d-block">
+                                    @row.ProductCode
+                                </small>
+                            }
+                        </td>
+                        <td>@row.StoreName</td>
+                        <td>@row.Quantity.ToString("N3")</td>
+                        <td>@row.AverageCost.ToString("N4")</td>
+                        <td>@row.Value.ToString("N2")</td>
+                        <td>
+                            @if (row.IsOutOfStock)
+                            {
+                                <span class="badge bg-secondary">نفذ</span>
+                            }
+                            else if (row.IsBelowMin)
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    تحت الحد الأدنى
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">متوفر</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function() {
+            'use strict';
+
+            // ✅ دبل كليك على أي صف في جدول الأرصدة → فتح كشف حركة المنتج
+            const table = document.getElementById('inventoryTable');
+            if (!table) return;
+
+            const movementUrl = '@Url.Action("ProductMovement", "Inventory")';
+
+            table.addEventListener('dblclick', function(e) {
+                // ابحث عن أقرب صف .inv-row (لأن المستخدم ممكن يدوس على خلية جوه الصف)
+                const tr = e.target.closest('tr.inv-row');
+                if (!tr) return;
+
+                const productId = tr.dataset.productId;
+                const storeId = tr.dataset.storeId;
+
+                if (!productId) return;
+
+                // ✅ تمرير productId + storeId الحالي (مخزن الصف)
+                const url = `${movementUrl}?productId=${encodeURIComponent(productId)}`
+                    + `&storeId=${encodeURIComponent(storeId || '')}`;
+
+                window.location.href = url;
+            });
+
+            // ✅ منع تحديد النص عند الدبل كليك السريع (تحسين UX)
+            table.addEventListener('mousedown', function(e) {
+                const tr = e.target.closest('tr.inv-row');
+                if (tr && e.detail > 1) {
+                    e.preventDefault();
+                }
+            });
+        })();
+    </script>
+}

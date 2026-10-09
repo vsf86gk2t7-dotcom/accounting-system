@@ -1,0 +1,76 @@
+@model AccountingSystem.Models.Category
+
+@{
+	ViewData["Title"] = "تعديل التصنيف";
+}
+
+<div class="container mt-4">
+
+	<h2 class="mb-4">تعديل التصنيف</h2>
+
+	<div class="card shadow-sm">
+
+		<div class="card-body">
+
+			<form asp-action="Edit"
+				  method="post">
+
+				@Html.AntiForgeryToken()
+
+				<input asp-for="Id" type="hidden" />
+
+				<div asp-validation-summary="ModelOnly"
+					 class="text-danger mb-3">
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="Name"
+						   class="form-label">
+						اسم التصنيف
+					</label>
+
+					<input asp-for="Name"
+						   class="form-control"
+						   required />
+
+					<span asp-validation-for="Name"
+						  class="text-danger">
+					</span>
+
+				</div>
+
+				<div class="mb-3">
+
+					<label asp-for="Description"
+						   class="form-label">
+						الوصف
+					</label>
+
+					<textarea asp-for="Description"
+							  class="form-control"
+							  rows="4"></textarea>
+
+					<span asp-validation-for="Description"
+						  class="text-danger">
+					</span>
+
+				</div>
+
+				<button type="submit"
+						class="btn btn-success">
+					حفظ التعديلات
+				</button>
+
+				<a asp-action="Index"
+				   class="btn btn-secondary">
+					إلغاء
+				</a>
+
+			</form>
+
+		</div>
+
+	</div>
+
+</div>

@@ -1,0 +1,142 @@
+@model List<AccountingSystem.Models.ViewModels.Admin.BackupItem>
+
+@{
+	ViewData["Title"] = "النسخ الاحتياطية";
+	var backupFolder = ViewBag.BackupFolder as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<h2>النسخ الاحتياطية</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<!-- إنشاء نسخة -->
+<div class="card mb-4">
+	<div class="card-body">
+		<div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+			<div>
+				<h5 class="mb-1">إنشاء نسخة احتياطية</h5>
+				<p class="text-muted mb-0 small">
+					يتم حفظ النسخة في مجلد: <code>@backupFolder</code>
+				</p>
+			</div>
+
+			<form asp-action="CreateBackup"
+				  method="post"
+				  onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').textContent = '⏳ جارٍ النسخ...';">
+				@Html.AntiForgeryToken()
+				<button type="submit" class="btn btn-primary">
+					💾 إنشاء نسخة الآن
+				</button>
+			</form>
+		</div>
+	</div>
+</div>
+
+@if (!Directory.Exists(backupFolder))
+{
+	<div class="alert alert-warning">
+		⚠️ المجلد <code>@backupFolder</code> غير موجود. اضغط «إنشاء نسخة الآن» لإنشائه أو تأكد من الإعدادات.
+	</div>
+}
+
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">
+		لا توجد نسخ احتياطية حتى الآن.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>اسم الملف</th>
+					<th>الحجم</th>
+					<th>التاريخ</th>
+					<th>إجراءات</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var backup in Model)
+				{
+					<tr>
+						<td style="word-break: break-all;">@backup.FileName</td>
+						<td>@backup.SizeMb.ToString("0.00") م.ب</td>
+						<td>@backup.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+						<td>
+							<a asp-action="DownloadBackup"
+							   asp-route-fileName="@backup.FileName"
+							   class="btn btn-sm btn-success">
+								⬇️ تحميل
+							</a>
+
+							<button type="button"
+									class="btn btn-sm btn-outline-danger"
+									data-bs-toggle="modal"
+									data-bs-target="#deleteBackupModal"
+									data-file-name="@backup.FileName">
+								🗑️ حذف
+							</button>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+<!-- مودال تأكيد الحذف -->
+<div class="modal fade" id="deleteBackupModal" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form asp-action="DeleteBackup" method="post">
+				@Html.AntiForgeryToken()
+				<input type="hidden" name="fileName" id="deleteFileName" value="" />
+
+				<div class="modal-header">
+					<h5 class="modal-title">حذف النسخة الاحتياطية</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+
+				<div class="modal-body">
+					<p>هل أنت متأكد من حذف هذه النسخة الاحتياطية؟</p>
+					<p class="text-muted small mb-0" id="deleteFileNameLabel"></p>
+				</div>
+
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-danger">🗑️ حذف نهائي</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		var deleteModal = document.getElementById('deleteBackupModal');
+		deleteModal.addEventListener('show.bs.modal', function (event) {
+			var button = event.relatedTarget;
+			var fileName = button.getAttribute('data-file-name');
+			document.getElementById('deleteFileName').value = fileName;
+			document.getElementById('deleteFileNameLabel').textContent = fileName;
+		});
+	</script>
+}

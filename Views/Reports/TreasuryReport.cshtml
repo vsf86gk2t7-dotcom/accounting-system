@@ -1,0 +1,122 @@
+@model AccountingSystem.Models.ViewModels.Reports.TreasuryReportViewModel
+
+@{
+	ViewData["Title"] = "تقرير الخزينة";
+
+	string TypeLabel(AccountingSystem.Models.TreasuryTransactionType t)
+	{
+		return t switch
+		{
+			AccountingSystem.Models.TreasuryTransactionType.Receive => "قبض",
+			AccountingSystem.Models.TreasuryTransactionType.Pay => "صرف",
+			AccountingSystem.Models.TreasuryTransactionType.Transfer => "تحويل",
+			AccountingSystem.Models.TreasuryTransactionType.Adjust => "تسوية",
+			_ => "-"
+		};
+	}
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تقرير الخزينة</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		كل التقارير
+	</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+
+	<div class="card-body">
+
+		<div class="row g-3 align-items-end">
+
+			<div class="col-md-3">
+
+				<label class="form-label fw-semibold">من تاريخ</label>
+
+				<input type="date"
+					   name="fromDate"
+					   class="form-control"
+					   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-3">
+
+				<label class="form-label fw-semibold">إلى تاريخ</label>
+
+				<input type="date"
+					   name="toDate"
+					   class="form-control"
+					   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-3">
+
+				<button type="submit"
+						class="btn btn-primary">
+					عرض التقرير
+				</button>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد حركات خزينة في هذه الفترة.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>الرقم</th>
+					<th>التاريخ</th>
+					<th>المركز النقدي</th>
+					<th>النوع</th>
+					<th>الجهة</th>
+					<th>البيان</th>
+					<th>المبلغ</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td><strong>@row.TransactionNumber</strong></td>
+						<td>@row.CreatedAt.ToString("yyyy-MM-dd")</td>
+						<td>@row.AccountName</td>
+						<td>@TypeLabel(row.Type)</td>
+						<td>@(row.PartyName ?? "-")</td>
+						<td>@(row.Reason ?? "-")</td>
+						<td class="@(row.Side == "قبض"
+							? "text-success"
+							: "text-danger")">
+							@row.Amount.ToString("N2")
+						</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot class="table-dark fw-bold">
+				<tr>
+					<td colspan="6">
+						إجمالي القبض / الصرف
+					</td>
+					<td>
+						@Model.GrandIn.ToString("N2") /
+						@Model.GrandOut.ToString("N2")
+					</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

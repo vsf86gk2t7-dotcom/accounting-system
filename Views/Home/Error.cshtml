@@ -1,0 +1,33 @@
+@model ErrorViewModel
+
+@{
+	ViewData["Title"] = "خطأ";
+}
+
+<div class="text-center py-5">
+
+	<h1 class="display-4 text-danger">خطأ</h1>
+
+	<h4 class="mt-3">
+		حدث خطأ غير متوقع أثناء معالجة الطلب.
+	</h4>
+
+	@if (Model?.ShowRequestId == true)
+	{
+		<p class="text-muted mt-3">
+			معرّف الطلب:
+			<code>@Model.RequestId</code>
+		</p>
+	}
+
+	<div class="mt-4">
+
+		<a asp-controller="Home"
+		   asp-action="Index"
+		   class="btn btn-primary">
+			العودة للوحة التحكم
+		</a>
+
+	</div>
+
+</div>

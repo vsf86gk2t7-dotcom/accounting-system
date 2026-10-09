@@ -1,0 +1,155 @@
+@model AccountingSystem.Models.ViewModels.Shipping.ShippingBillCreateViewModel
+
+@{
+    ViewData["Title"] = "مندوب شحن جديد";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>مندوب شحن جديد</h2>
+            <p class="text-muted mb-0">
+                إنشاء مندوب شحن لفاتورة بيع
+            </p>
+        </div>
+
+        <a asp-action="Index" class="btn btn-secondary">
+            ← رجوع
+        </a>
+    </div>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="SalesInvoiceId" />
+        <input type="hidden" asp-for="SalesInvoiceNumber" />
+        <input type="hidden" asp-for="CustomerName" />
+        <input type="hidden" asp-for="InvoiceTotal" />
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <!-- بيانات الفاتورة -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <strong>بيانات الفاتورة</strong>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">رقم الفاتورة</label>
+                        <input class="form-control" value="@Model.SalesInvoiceNumber" readonly />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">العميل</label>
+                        <input class="form-control" value="@Model.CustomerName" readonly />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">إجمالي الفاتورة</label>
+                        <input class="form-control" value="@Model.InvoiceTotal.ToString("N2")" readonly />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- بيانات التوصيل -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <strong>بيانات التوصيل</strong>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="DeliveryMethod" class="form-label">
+                            طريقة التوصيل <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="DeliveryMethod" class="form-select" id="deliveryMethodSelect">
+                            <option value="1">مندوب داخلي</option>
+                            <option value="2">شركة شحن خارجية</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6" id="driverGroup">
+                        <label asp-for="DriverId" class="form-label">المندوب الداخلي</label>
+                        <select asp-for="DriverId" class="form-select">
+                            <option value="">— اختر المندوب —</option>
+                            @foreach (var d in Model.Drivers)
+                            {
+                                <option value="@d.Id">@d.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6" id="companyGroup" style="display:none;">
+                        <label asp-for="ShippingCompanyId" class="form-label">شركة الشحن</label>
+                        <select asp-for="ShippingCompanyId" class="form-select">
+                            <option value="">— اختر الشركة —</option>
+                            @foreach (var c in Model.ShippingCompanies)
+                            {
+                                <option value="@c.Id">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ScheduledDate" class="form-label">التاريخ المجدول</label>
+                        <input asp-for="ScheduledDate" type="date" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ملاحظات -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <strong>ملاحظات</strong>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="Notes" class="form-label">ملاحظات</label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="DeliveryNotes" class="form-label">ملاحظات التوصيل</label>
+                    <textarea asp-for="DeliveryNotes" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                💾 حفظ
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">
+                إلغاء
+            </a>
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var select = document.getElementById('deliveryMethodSelect');
+            var driverGroup = document.getElementById('driverGroup');
+            var companyGroup = document.getElementById('companyGroup');
+
+            function update() {
+                var val = select.value;
+                if (val === '1') {
+                    driverGroup.style.display = '';
+                    companyGroup.style.display = 'none';
+                } else if (val === '2') {
+                    driverGroup.style.display = 'none';
+                    companyGroup.style.display = '';
+                }
+            }
+
+            select.addEventListener('change', update);
+            update();
+        })();
+    </script>
+}

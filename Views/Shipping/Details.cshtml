@@ -1,0 +1,175 @@
+@model AccountingSystem.Models.ViewModels.Shipping.ShippingBillDetailsViewModel
+
+@{
+    ViewData["Title"] = "تفاصيل مندوب الشحن";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>تفاصيل مندوب الشحن</h2>
+            <p class="text-muted mb-0">
+                <strong>@Model.ShippingBill.BillNumber</strong>
+            </p>
+        </div>
+
+        <a asp-action="Index" class="btn btn-secondary">
+            ← رجوع
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- بيانات الفاتورة -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">
+            <strong>بيانات الفاتورة</strong>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="text-muted small">رقم الفاتورة</label>
+                    <div><strong>@Model.InvoiceNumber</strong></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="text-muted small">العميل</label>
+                    <div>@Model.CustomerName</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="text-muted small">إجمالي الفاتورة</label>
+                    <div><strong>@Model.InvoiceTotal.ToString("N2")</strong></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="text-muted small">الفرع</label>
+                    <div>@Model.BranchName</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="text-muted small">المخزن</label>
+                    <div>@Model.StoreName</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="text-muted small">عدد الأصناف</label>
+                    <div>@Model.TotalItems</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- بيانات التوصيل -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">
+            <strong>بيانات التوصيل</strong>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="text-muted small">طريقة التوصيل</label>
+                    <div>
+                        <span class="badge bg-info text-dark">
+                            @Model.DeliveryMethodLabel
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="text-muted small">الحالة الحالية</label>
+                    <div>
+                        @switch (Model.ShippingBill.Status)
+                        {
+                            case AccountingSystem.Models.ShippingBillStatus.Pending:
+                                <span class="badge bg-warning text-dark">قيد الانتظار</span>
+                                break;
+                            case AccountingSystem.Models.ShippingBillStatus.InTransit:
+                                <span class="badge bg-primary">في الطريق</span>
+                                break;
+                            case AccountingSystem.Models.ShippingBillStatus.Delivered:
+                                <span class="badge bg-success">تم التوصيل</span>
+                                break;
+                            case AccountingSystem.Models.ShippingBillStatus.Cancelled:
+                                <span class="badge bg-danger">ملغي</span>
+                                break;
+                        }
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="text-muted small">التاريخ</label>
+                    <div>@Model.ShippingBill.BillDate.ToString("yyyy-MM-dd HH:mm")</div>
+                </div>
+
+                @if (Model.ShippingBill.DeliveredDate.HasValue)
+                {
+                    <div class="col-md-4">
+                        <label class="text-muted small">تاريخ التوصيل</label>
+                        <div>@Model.ShippingBill.DeliveredDate.Value.ToString("yyyy-MM-dd HH:mm")</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.ShippingBill.Notes))
+                {
+                    <div class="col-12">
+                        <label class="text-muted small">ملاحظات</label>
+                        <div>@Model.ShippingBill.Notes</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.ShippingBill.DeliveryNotes))
+                {
+                    <div class="col-12">
+                        <label class="text-muted small">ملاحظات التوصيل</label>
+                        <div>@Model.ShippingBill.DeliveryNotes</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- تحديث الحالة -->
+    @if (Model.ShippingBill.Status != AccountingSystem.Models.ShippingBillStatus.Delivered &&
+         Model.ShippingBill.Status != AccountingSystem.Models.ShippingBillStatus.Cancelled)
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong>تحديث الحالة</strong>
+            </div>
+            <div class="card-body">
+                <form asp-action="UpdateStatus"
+                      asp-route-id="@Model.ShippingBill.Id"
+                      method="post"
+                      class="row g-2 align-items-end">
+                    @Html.AntiForgeryToken()
+
+                    <div class="col-md-8">
+                        <label class="form-label">الحالة الجديدة</label>
+                        <select name="status" class="form-select">
+                            <option value="1">قيد الانتظار</option>
+                            <option value="2" selected="@(Model.ShippingBill.Status == AccountingSystem.Models.ShippingBillStatus.Pending)">في الطريق (خصم المخزون)</option>
+                            <option value="3">تم التوصيل</option>
+                            <option value="4">ملغي</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            🔄 تحديث الحالة
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+</div>

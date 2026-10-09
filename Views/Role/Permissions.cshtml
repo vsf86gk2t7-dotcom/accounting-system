@@ -1,0 +1,153 @@
+﻿@model AccountingSystem.Models.ViewModels.Permissions.RolePermissionsViewModel
+
+@{
+	ViewData["Title"] = "إدارة صلاحيات الدور";
+}
+
+<div class="container mt-4">
+
+	<div class="d-flex justify-content-between align-items-center mb-4">
+
+		<div>
+			<h2>
+				<i class="bi bi-shield-check"></i>
+				إدارة صلاحيات الدور
+			</h2>
+
+			<div class="text-muted mt-2">
+				الدور:
+				<strong>@Model.RoleName</strong>
+
+				<span class="mx-2">|</span>
+
+				الكود:
+				<code>@Model.RoleCode</code>
+			</div>
+		</div>
+
+		<a asp-controller="Role"
+		   asp-action="Index"
+		   class="btn btn-secondary">
+			<i class="bi bi-arrow-right"></i>
+			العودة للأدوار
+		</a>
+
+	</div>
+
+	@if (TempData["Success"] != null)
+	{
+		<div class="alert alert-success">
+			@TempData["Success"]
+		</div>
+	}
+
+	@if (TempData["Error"] != null)
+	{
+		<div class="alert alert-danger">
+			@TempData["Error"]
+		</div>
+	}
+
+	<div class="alert alert-info">
+		<i class="bi bi-info-circle"></i>
+
+		هذه الصفحة مخصصة لتحديد الصلاحيات الخاصة بالدور.
+		يمكن لمدير النظام التحكم في الصلاحيات الممنوحة
+		للمدير العام والموظفين.
+	</div>
+
+	<form asp-controller="Role"
+		  asp-action="SavePermissions"
+		  method="post">
+
+		@Html.AntiForgeryToken()
+
+		<input type="hidden"
+			   name="RoleId"
+			   value="@Model.RoleId" />
+
+		<div class="row">
+
+			@foreach (var group in Model.Groups)
+			{
+				<div class="col-md-6 mb-4">
+
+					<div class="card shadow-sm h-100">
+
+						<div class="card-header">
+							<strong>
+								@group.GroupName
+							</strong>
+						</div>
+
+						<div class="card-body">
+
+							@foreach (var permission in group.Permissions)
+							{
+								<div class="form-check mb-3">
+
+									<input class="form-check-input permission-checkbox"
+										   type="checkbox"
+										   name="SelectedPermissionIds"
+										   value="@permission.Id"
+										   id="permission_@permission.Id"
+									@(permission.IsSelected ? "checked" : "") />
+
+									<label class="form-check-label"
+										   for="permission_@permission.Id">
+
+										<strong>
+											@permission.Name
+										</strong>
+
+										<div class="text-muted small">
+											<code>
+												@permission.Code
+											</code>
+										</div>
+
+										@if (!string.IsNullOrWhiteSpace(
+											permission.Description))
+										{
+											<div class="text-muted small mt-1">
+												@permission.Description
+											</div>
+										}
+
+									</label>
+
+								</div>
+							}
+
+						</div>
+
+					</div>
+
+				</div>
+			}
+
+		</div>
+
+		<div class="d-flex gap-2 mt-3 mb-5">
+
+			<button type="submit"
+					class="btn btn-success btn-lg">
+
+				<i class="bi bi-check-circle"></i>
+				حفظ الصلاحيات
+
+			</button>
+
+			<a asp-controller="Role"
+			   asp-action="Index"
+			   class="btn btn-secondary btn-lg">
+
+				إلغاء
+
+			</a>
+
+		</div>
+
+	</form>
+
+</div>

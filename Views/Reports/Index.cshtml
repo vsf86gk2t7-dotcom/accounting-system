@@ -1,0 +1,268 @@
+@{
+	ViewData["Title"] = "التقارير";
+}
+
+<h3>التقارير</h3>
+
+<p class="text-muted">اختر التقرير المطلوب.</p>
+
+<div class="row g-3 mt-1">
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				تقرير المبيعات
+			</div>
+
+			<div class="card-body">
+
+				<p>فواتير البيع المعتمدة خلال فترة زمنية.</p>
+
+				<a asp-action="SalesReport"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				تقرير المشتريات
+			</div>
+
+			<div class="card-body">
+
+				<p>فواتير الشراء المعتمدة خلال فترة زمنية.</p>
+
+				<a asp-action="PurchaseReport"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				تقرير المخزون
+			</div>
+
+			<div class="card-body">
+
+				<p>أرصدة وقيم الأصناف الحالية بالمخازن.</p>
+
+				<a asp-action="InventoryReport"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				تقرير الخزينة
+			</div>
+
+			<div class="card-body">
+
+				<p>حركات القبض والصرف في المراكز النقدية.</p>
+
+				<a asp-action="TreasuryReport"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				تقرير القيود المحاسبية
+			</div>
+
+			<div class="card-body">
+
+				<p>سجل القيود المحاسبية خلال فترة زمنية.</p>
+
+				<a asp-action="AccountingReport"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				أرصدة العملاء
+			</div>
+
+			<div class="card-body">
+
+				<p>أرصدة كل العملاء خلال فترة، واضغط على أي عميل لعرض كشف حسابه.</p>
+
+				<a asp-action="CustomerBalancesReport"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				كشوف حسابات العملاء
+			</div>
+
+			<div class="card-body">
+
+				<p>كشف حساب مفصل لكل عميل مع اختيار مباشر للعميل.</p>
+
+				<a asp-action="CustomerStatement"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				أرصدة الموردين
+			</div>
+
+			<div class="card-body">
+
+				<p>أرصدة كل الموردين خلال فترة، واضغط على أي مورد لعرض كشف حسابه.</p>
+
+				<a asp-action="SupplierBalancesReport"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-primary shadow-sm h-100">
+
+			<div class="card-header bg-primary text-white">
+				كشوف حسابات الموردين
+			</div>
+
+			<div class="card-body">
+
+				<p>كشف حساب مفصل لكل مورد مع اختيار مباشر للمورد.</p>
+
+				<a asp-action="SupplierStatement"
+				   class="btn btn-primary">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-success shadow-sm h-100">
+
+			<div class="card-header bg-success text-white">
+				تقرير الأرباح
+			</div>
+
+			<div class="card-body">
+				<p>الإيرادات ناقص تكلفة البضاعة والمصروفات.</p>
+			</div>
+
+			<div class="card-body">
+
+				<p>الإيرادات ناقص تكلفة البضاعة والمصروفات.</p>
+
+				<a asp-action="ProfitReport"
+				   class="btn btn-success">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="col-md-6 col-xl-4">
+
+		<div class="card border-success shadow-sm h-100">
+
+			<div class="card-header bg-success text-white">
+				المبيعات اليومية
+			</div>
+
+			<div class="card-body">
+
+				<p>ملخص المبيعات والمرتجعات يومًا بيوم.</p>
+
+				<a asp-action="DailySalesReport"
+				   class="btn btn-success">
+					فتح التقرير
+				</a>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</div>

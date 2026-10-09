@@ -1,0 +1,94 @@
+@model List<AccountingSystem.Models.ShippingCompany>
+
+@{
+    ViewData["Title"] = "شركات الشحن";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">شركات الشحن</h2>
+            <p class="text-muted mb-0">إدارة شركات الشحن الخارجية المستخدمة في بوالص التوصيل</p>
+        </div>
+
+        <a asp-controller="ShippingCompany" asp-action="Create" class="btn btn-primary">
+            + إضافة شركة شحن
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">لا توجد شركات شحن مسجلة حاليًا.</div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الشركة</th>
+                                <th>الهاتف</th>
+                                <th>سعر الشحن الافتراضي</th>
+                                <th>الحالة</th>
+                                <th>الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var company in Model)
+                            {
+                                <tr>
+                                    <td>@company.Id</td>
+                                    <td><strong>@company.Name</strong></td>
+                                    <td dir="ltr">@(company.Phone ?? "-")</td>
+                                    <td>@company.ShippingRate.ToString("N2")</td>
+                                    <td>
+                                        @if (company.IsActive)
+                                        {
+                                            <span class="badge bg-success">نشطة</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">غير نشطة</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a asp-controller="ShippingCompany" asp-action="Edit" asp-route-id="@company.Id"
+                                           class="btn btn-warning btn-sm">
+                                            ✏ تعديل
+                                        </a>
+
+                                        <form asp-controller="ShippingCompany" asp-action="ToggleActive" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@company.Id" />
+                                            @if (company.IsActive)
+                                            {
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">تعطيل</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-outline-success btn-sm">تفعيل</button>
+                                            }
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

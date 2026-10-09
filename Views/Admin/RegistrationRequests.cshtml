@@ -1,0 +1,123 @@
+﻿@model List<AccountingSystem.Models.ViewModels.Admin.RegistrationRequestItem>
+
+@{
+	ViewData["Title"] = "طلبات التسجيل";
+	var type = ViewBag.Type as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<h2>طلبات التسجيل</h2>
+</div>
+
+<!-- فلتر -->
+<div class="btn-group mb-4">
+	<a asp-action="RegistrationRequests"
+	   class="btn @(string.IsNullOrEmpty(type) ? "btn-primary" : "btn-outline-primary")">
+		الكل
+	</a>
+
+	<a asp-action="RegistrationRequests"
+	   asp-route-type="customer"
+	   class="btn @(type == "customer" ? "btn-primary" : "btn-outline-primary")">
+		👤 العملاء
+	</a>
+
+	<a asp-action="RegistrationRequests"
+	   asp-route-type="supplier"
+	   class="btn @(type == "supplier" ? "btn-primary" : "btn-outline-primary")">
+		🧑‍💼 الموردون
+	</a>
+	<a asp-action="RegistrationRequests"
+	   asp-route-type="employee"
+	   class="btn @(type == "employee" ? "btn-primary" : "btn-outline-primary")">
+		👨‍💼 الموظفون
+	</a>
+</div>
+
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">
+		لا يوجد طلبات تسجيل حتى الآن.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>النوع</th>
+					<th>الاسم</th>
+					<th>الهاتف</th>
+					<th>التاريخ</th>
+					<th>حالة الطلب</th>
+					<th>إجراءات</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var item in Model)
+				{
+					<tr>
+						<td>
+							@if (item.TypeKey == "customer")
+							{
+								<span class="badge bg-primary">👤 @item.Type</span>
+							}
+							else if (item.TypeKey == "supplier")
+							{
+								<span class="badge bg-success">🧑‍💼 @item.Type</span>
+							}
+							else if (item.TypeKey == "employee")
+							{
+								<span class="badge bg-warning text-dark">👨‍💼 @item.Type</span>
+							}
+						</td>
+						<td>@item.Name</td>
+						<td>@item.Phone</td>
+						<td>@item.RequestedAt.ToString("yyyy-MM-dd")</td>
+						<td>
+							@if (item.HasAccount)
+							{
+								<span class="badge bg-info">حساب مُنشأ</span>
+							}
+							else if (item.IsApproved)
+							{
+								<span class="badge bg-warning text-dark">تمت الموافقة</span>
+							}
+							else
+							{
+								<span class="badge bg-secondary">في انتظار الموافقة</span>
+							}
+						</td>
+						<td>
+							@if (item.TypeKey == "customer")
+							{
+								<a asp-controller="Customer"
+								   asp-action="PortalRequests"
+								   class="btn btn-sm btn-outline-primary">
+									إدارة
+								</a>
+							}
+							else if (item.TypeKey == "supplier")
+							{
+								<a asp-controller="Supplier"
+								   asp-action="PortalRequests"
+								   class="btn btn-sm btn-outline-success">
+									إدارة
+								</a>
+							}
+							else if (item.TypeKey == "employee")
+							{
+								<a asp-controller="Employee"
+								   asp-action="PortalRequests"
+								   class="btn btn-sm btn-outline-warning">
+									إدارة
+								</a>
+							}
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

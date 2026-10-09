@@ -1,0 +1,498 @@
+/* ============================================================
+   AccountingSystem — لمسات الهوية الموحدة على Bootstrap
+   ألوان مطابقة للقائمة الجانبية الداكنة:
+   primary  -> #4f8cff  ،  cyan accent -> #7de3ff
+   ============================================================ */
+
+:root {
+    --app-primary: #4f8cff;
+    --app-primary-dark: #3a6fe0;
+    --app-cyan: #7de3ff;
+    --app-navy: #111a3f;
+}
+
+/* =========================================
+   العناوين
+   ========================================= */
+
+h1, h2, h3, h4, h5, h6,
+.display-1, .display-4,
+.fs-4, .fs-5 {
+    color: #16204a;
+}
+
+h2 {
+    font-weight: 700;
+}
+
+/* =========================================
+   الأزرار
+   ========================================= */
+
+.btn {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.btn-primary,
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:not(:disabled):not(.disabled):active {
+    background: linear-gradient(135deg, #4f8cff 0%, #2f66d6 100%);
+    border: 0;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(79, 140, 255, 0.28);
+}
+
+.btn-outline-primary {
+    color: var(--app-primary-dark);
+    border-color: #b9cdf5;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:not(:disabled):not(.disabled):active {
+    background: linear-gradient(135deg, #4f8cff 0%, #2f66d6 100%);
+    border-color: transparent;
+    color: #ffffff;
+}
+
+.btn-outline-secondary {
+    color: #55607f;
+    border-color: #d6dbea;
+}
+
+.btn-outline-secondary:hover {
+    background: #eef2fb;
+    border-color: #c4ccdf;
+    color: #33415f;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #27c08b 0%, #1ca06f 100%);
+    border: 0;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(39, 192, 139, 0.25);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ff6b6b 0%, #e05252 100%);
+    border: 0;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(255, 107, 107, 0.25);
+}
+
+/* =========================================
+   الروابط
+   ========================================= */
+
+a {
+    color: #2f6de0;
+}
+
+a:hover {
+    color: #1c4bb5;
+}
+
+/* =========================================
+   حقول الإدخال
+   ========================================= */
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    border-color: #dfe3ee;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #7db2ff;
+    box-shadow: 0 0 0 0.22rem rgba(79, 140, 255, 0.16);
+}
+
+.form-check-input:checked {
+    background-color: var(--app-primary);
+    border-color: var(--app-primary);
+}
+
+.form-check-input:focus {
+    border-color: #7db2ff;
+    box-shadow: 0 0 0 0.22rem rgba(79, 140, 255, 0.16);
+}
+
+.input-group-text {
+    border-radius: 0 10px 10px 0;
+    background: #f4f6fb;
+    color: #5a6580;
+    border-color: #dfe3ee;
+}
+
+/* =========================================
+   الكروت
+   ========================================= */
+
+.card {
+    border-radius: 18px;
+    border: 1px solid rgba(17, 26, 63, 0.06);
+    box-shadow: 0 4px 18px rgba(17, 26, 63, 0.06);
+}
+
+.card-header {
+    background: #f8faff;
+    border-bottom: 1px solid rgba(17, 26, 63, 0.06);
+    border-radius: 17px 17px 0 0 !important;
+    color: #16204a;
+    font-weight: 700;
+}
+
+.card-footer {
+    background: #fbfcff;
+    border-top: 1px solid rgba(17, 26, 63, 0.06);
+    border-radius: 0 0 17px 17px !important;
+}
+
+/* =========================================
+   الجداول
+   ========================================= */
+
+.table {
+    --bs-table-hover-bg: #f0f5ff;
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background: #edf2ff;
+    color: #26325a;
+    font-size: .85rem;
+    font-weight: 700;
+    border-bottom: 2px solid #dbe4ff;
+}
+
+.table-hover tbody tr:hover {
+    --bs-table-hover-bg: #eef3ff;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-striped-bg: #fbfcff;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* =========================================
+   الشارات
+   ========================================= */
+
+.badge {
+    border-radius: 8px;
+    padding: .45em .7em;
+    font-weight: 600;
+}
+
+.badge.bg-success { background: #e5f7f0 !important; color: #11805c !important; }
+.badge.bg-danger  { background: #fdeaea !important; color: #c23232 !important; }
+.badge.bg-warning { background: #fdf4df !important; color: #a06a0a !important; }
+.badge.bg-info    { background: #e6f2ff !important; color: #2068c0 !important; }
+.badge.bg-secondary { background: #edf0f7 !important; color: #5a6580 !important; }
+
+/* =========================================
+   الترويسة الداخلية للصفحات
+   (أزرار داخل مؤشرات + عناوين)
+   ========================================= */
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.page-header h2 {
+    margin: 0;
+    font-weight: 700;
+    color: #16204a;
+}
+
+/* =========================================
+   المودال
+   ========================================= */
+
+.modal-content {
+    border-radius: 18px;
+    border: 0;
+}
+
+.modal-header {
+    background: #f8faff;
+    border-bottom: 1px solid rgba(17, 26, 63, 0.06);
+}
+
+/* =========================================
+   الترقيم
+   ========================================= */
+
+.pagination .page-link {
+    color: #2f6de0;
+    border-radius: 8px;
+    margin: 0 3px;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #4f8cff 0%, #2f66d6 100%);
+    border-color: transparent;
+}
+
+/* =========================================
+   المدمة (Alert)
+   ========================================= */
+
+.alert {
+    border-radius: 14px;
+}
+
+.alert-success {
+    background: #e5f7f0;
+    border-color: #b9ecdc;
+    color: #11805c;
+}
+
+/* =========================================
+   مجموعات حقل الإدخال في الفلاتر
+   ========================================= */
+
+.input-group .form-control {
+    border-radius: 10px 0 0 10px;
+}
+
+/* =========================================
+   تاكييد صغير تحت الحقول
+   ========================================= */
+
+.field-validation-error {
+    display: block;
+    margin-top: 4px;
+}
+
+.field-validation-valid {
+    display: none;
+}
+
+.validation-summary-errors {
+    display: block;
+}
+
+.validation-summary-valid {
+    display: none;
+}
+
+/* =========================================
+    أيقونة الإشعارات في الـ Topbar
+    ========================================= */
+
+.topbar-bell {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    color: #c3d0f5;
+    text-decoration: none;
+    transition: background .2s, color .2s;
+    margin-left: 6px;
+}
+
+.topbar-bell:hover {
+    background: rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+}
+
+.topbar-bell i {
+    font-size: 1.2rem;
+}
+
+.bell-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #ff6b6b;
+    color: #ffffff;
+    font-size: .65rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(255, 107, 107, 0.5);
+    animation: bellPulse 2s infinite;
+}
+
+@keyframes bellPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.12); }
+}
+
+/* =========================================
+    شريط التمرير المخصص
+    ========================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(79, 140, 255, 0.22);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(79, 140, 255, 0.40);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(79, 140, 255, 0.22) transparent;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* =========================================
+    مُحمّل الصفحة (Preloader)
+    ========================================= */
+
+.app-preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: linear-gradient(160deg, #0b1026 0%, #111a3f 50%, #0c1129 100%);
+    display: grid;
+    place-items: center;
+    transition: opacity .5s ease, visibility .5s ease;
+}
+
+.app-preloader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.preloader-logo {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #4f8cff, #7de3ff);
+    box-shadow: 0 14px 40px rgba(79, 140, 255, 0.45);
+    animation: preloaderBounce 1.4s ease-in-out infinite;
+}
+
+.preloader-logo i {
+    font-size: 28px;
+    color: #fff;
+}
+
+@keyframes preloaderBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-14px) scale(1.06); }
+}
+
+/* =========================================
+    نظام الإشعارات Toast
+    ========================================= */
+
+.toast-container {
+    position: fixed;
+    top: 74px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9998;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    max-width: 420px;
+    width: calc(100% - 32px);
+}
+
+.toast-msg {
+    pointer-events: auto;
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: .9rem;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .30);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastIn .4s cubic-bezier(.22, 1, .36, 1);
+    backdrop-filter: blur(10px);
+}
+
+.toast-msg.out {
+    animation: toastOut .3s ease forwards;
+}
+
+.toast-msg.success { background: linear-gradient(135deg, #27c08b, #1ca06f); }
+.toast-msg.error   { background: linear-gradient(135deg, #ff6b6b, #e05252); }
+.toast-msg.info    { background: linear-gradient(135deg, #4f8cff, #2f66d6); }
+
+.toast-msg i { font-size: 1.1rem; }
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(-18px) scale(.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-12px) scale(.96); }
+}
+
+/* =========================================
+    حركة دخول متدرجة للبطاقات
+    ========================================= */
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-animate {
+    animation: fadeUp .5s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+/* =========================================
+    تذييل أكثر جمالاً
+    ========================================= */
+
+.app-footer a {
+    color: #7de3ff;
+    text-decoration: none;
+}
+
+.app-footer a:hover {
+    text-decoration: underline;
+}
+
+/* =========================================
+    تحسينات حساسة للمس
+    ========================================= */
+
+@media (pointer: coarse) {
+    .sidebar-link { min-height: 48px; }
+    .topbar-bell  { width: 44px; height: 44px; }
+}
