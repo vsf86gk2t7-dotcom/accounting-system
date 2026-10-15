@@ -1,0 +1,195 @@
+﻿@model AccountingSystem.Models.Customer
+
+@{
+    ViewData["Title"] = "إضافة عميل";
+    var companiesList = ViewData["Companies"] as SelectList;
+    var repsList = ViewData["Reps"] as SelectList;
+}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">إضافة عميل جديد</h2>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <form asp-action="Create" method="post">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Name"
+                           class="form-label">
+                        اسم العميل
+                    </label>
+
+                    <input asp-for="Name"
+                           class="form-control" />
+
+                    <span asp-validation-for="Name"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Phone"
+                           class="form-label">
+                        الهاتف
+                    </label>
+
+                    <input asp-for="Phone"
+                           class="form-control" />
+
+                    <span asp-validation-for="Phone"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Email"
+                           class="form-label">
+                        البريد الإلكتروني
+                    </label>
+
+                    <input asp-for="Email"
+                           class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Address"
+                           class="form-label">
+                        العنوان
+                    </label>
+
+                    <textarea asp-for="Address"
+                              class="form-control"
+                              rows="3">
+                    </textarea>
+                </div>
+
+                <!-- ═══════════════════════════════════════
+                     نوع العميل: مكتب / مندوب
+                     ═══════════════════════════════════════ -->
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold d-block mb-2">
+                        نوع العميل
+                    </label>
+
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <input type="radio"
+                               class="btn-check"
+                               name="CustomerKind"
+                               id="kindOffice"
+                               value="office"
+                               checked>
+                        <label class="btn btn-outline-primary" for="kindOffice">
+                            🏢 عميل مكتب (بدون مندوب)
+                        </label>
+
+                        <input type="radio"
+                               class="btn-check"
+                               name="CustomerKind"
+                               id="kindRep"
+                               value="rep">
+                        <label class="btn btn-outline-primary" for="kindRep">
+                            🚚 عميل مندوب
+                        </label>
+                    </div>
+
+                    <div id="repSelectBox" style="display:none;">
+                        <label asp-for="SalesRepId" class="form-label">
+                            اختر المندوب المسؤول
+                        </label>
+                        <select asp-for="SalesRepId"
+                                asp-items="repsList"
+                                class="form-select"
+                                id="salesRepSelect">
+                            <option value="">— اختر —</option>
+                        </select>
+                        <small class="text-muted">
+                            العميل سيظهر فقط لهذا المندوب في قائمة عملائه.
+                        </small>
+                        <span asp-validation-for="SalesRepId"
+                              class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        الشركة (اختياري — انتماء العميل)
+                    </label>
+
+                    <select asp-for="CompanyId"
+                            asp-items="companiesList"
+                            class="form-select">
+                        <option value="">— بدون شركة —</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="OpeningBalance"
+                           class="form-label">
+                        الرصيد الافتتاحي
+                    </label>
+
+                    <input asp-for="OpeningBalance"
+                           type="number"
+                           step="0.01"
+                           class="form-control" />
+                </div>
+
+                <button type="submit"
+                        class="btn btn-success">
+                    حفظ العميل
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-secondary">
+                    رجوع
+                </a>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            const kindOffice = document.getElementById('kindOffice');
+            const kindRep = document.getElementById('kindRep');
+            const repBox = document.getElementById('repSelectBox');
+            const select = document.getElementById('salesRepSelect');
+
+            function update() {
+                if (kindRep.checked) {
+                    repBox.style.display = '';
+                } else {
+                    repBox.style.display = 'none';
+                    select.value = '';
+                }
+            }
+
+            kindOffice.addEventListener('change', update);
+            kindRep.addEventListener('change', update);
+
+            // لو في قيمة موجودة مسبقاً → نوع "مندوب"
+            if (select.value) {
+                kindRep.checked = true;
+            }
+
+            update();
+        })();
+    </script>
+}

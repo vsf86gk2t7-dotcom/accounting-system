@@ -1,0 +1,185 @@
+﻿@model List<AccountingSystem.Models.Supplier>
+
+@{
+	ViewData["Title"] = "طلبات حسابات الموردين";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>طلبات حسابات الموردين</h3>
+
+	<a asp-action="Index" class="btn btn-secondary">
+		← رجوع للموردين
+	</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["ActivationQr"] != null)
+{
+	<div class="card border-success mb-4">
+		<div class="card-header bg-success text-white">
+			<h5 class="mb-0">
+				✅ تم إنشاء الحساب — شارك الكود مع المورد
+			</h5>
+		</div>
+		<div class="card-body">
+			<div class="row">
+				<div class="col-md-7">
+					<p>
+						<strong>المورد:</strong>
+						@TempData["ActivationPhone"]
+					</p>
+
+					<p>
+						<strong>كود التفعيل:</strong>
+						<br />
+						<span style="font-size: 1.8rem; letter-spacing: 4px; font-family: monospace; background: #f1f5f9; padding: 4px 12px; border-radius: 6px; display: inline-block; margin-top: 4px;">
+							@TempData["ActivationCode"]
+						</span>
+					</p>
+
+					<p class="mt-3">
+						<strong>لينك التفعيل:</strong>
+						<br />
+						<a href="@TempData["ActivationUrl"]"
+						   target="_blank"
+						   style="word-break: break-all;">
+							@TempData["ActivationUrl"]
+						</a>
+					</p>
+
+					<button type="button"
+							class="btn btn-outline-primary"
+							onclick="navigator.clipboard.writeText('@TempData["ActivationUrl"]'); this.textContent='✅ تم النسخ';">
+						📋 نسخ اللينك
+					</button>
+				</div>
+
+				<div class="col-md-5 text-center">
+					<p class="mb-2">
+						<strong>امسح الكود للتفعيل:</strong>
+					</p>
+
+					<a href="@TempData["ActivationUrl"]" target="_blank">
+						<img src="data:image/png;base64,@TempData["ActivationQr"]"
+							 alt="QR Code"
+							 style="max-width: 220px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; cursor: pointer;" />
+					</a>
+
+					<p class="text-muted small mt-2">
+						(اضغط على الصورة لفتح اللينك مباشرة)
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">
+		لا يوجد طلبات حسابات حتى الآن.
+	</div>
+}
+else
+{
+	<table class="table table-striped table-hover">
+		<thead class="table-dark">
+			<tr>
+				<th>#</th>
+				<th>الاسم</th>
+				<th>الهاتف</th>
+				<th>حالة الطلب</th>
+				<th>حالة الحساب</th>
+				<th>إجراءات</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var supplier in Model)
+			{
+				<tr>
+					<td>@supplier.Id</td>
+					<td>@supplier.Name</td>
+					<td>@(supplier.Phone ?? "-")</td>
+					<td>
+						@if (supplier.PortalApproved)
+						{
+							<span class="badge bg-success">
+								تمت الموافقة
+							</span>
+						}
+						else
+						{
+							<span class="badge bg-warning text-dark">
+								في انتظار الموافقة
+							</span>
+						}
+					</td>
+					<td>
+						@if (supplier.HasPortalAccount)
+						{
+							<span class="badge bg-primary">
+								حساب مُنشأ
+							</span>
+						}
+						else
+						{
+							<span class="badge bg-secondary">
+								لا يوجد حساب
+							</span>
+						}
+					</td>
+					<td>
+						@if (!supplier.PortalApproved)
+						{
+							<form asp-action="ApprovePortal"
+								  asp-route-id="@supplier.Id"
+								  method="post"
+								  class="d-inline">
+								@Html.AntiForgeryToken()
+								<button type="submit"
+										class="btn btn-sm btn-success">
+									موافقة
+								</button>
+							</form>
+						}
+						else if (!supplier.HasPortalAccount)
+						{
+							<form asp-action="CreatePortalAccount"
+								  asp-route-id="@supplier.Id"
+								  method="post"
+								  class="d-inline">
+								@Html.AntiForgeryToken()
+								<button type="submit"
+										class="btn btn-sm btn-primary"
+										onclick="return confirm('سيتم إنشاء حساب المورد وإرسال كود التفعيل عبر WhatsApp. متابعة؟');">
+									إنشاء الحساب وإرسال الكود
+								</button>
+							</form>
+						}
+						else
+						{
+							<span class="text-muted">
+								تم إرسال كود التفعيل
+							</span>
+						}
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}

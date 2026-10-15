@@ -1,0 +1,135 @@
+@model AccountingSystem.Models.ViewModels.Inventory.InventoryLotsViewModel
+
+@{
+	ViewData["Title"] = "دفعات المخزون";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>دفعات المخزون</h3>
+
+	<div class="btn-group">
+		<a asp-action="Index" class="btn btn-outline-primary">الأرصدة</a>
+		<a asp-action="Transactions" class="btn btn-outline-secondary">الحركات</a>
+	</div>
+</div>
+
+<form method="get" asp-action="Lots" class="card shadow-sm mb-3">
+	<div class="card-body py-3">
+		<div class="row g-2 align-items-end">
+			<div class="col-md-3">
+				<label class="form-label mb-1">المخزن</label>
+				<select name="storeId" class="form-select">
+					<option value="">جميع المخازن</option>
+					@foreach (var store in Model.Stores)
+					{
+						<option value="@store.Key"
+								selected="@(store.Key == Model.StoreId ? "selected" : null)">
+							@store.Value
+						</option>
+					}
+				</select>
+			</div>
+
+			<div class="col-md-3">
+				<label class="form-label mb-1">المنتج</label>
+				<select name="productId" class="form-select">
+					<option value="">جميع المنتجات</option>
+					@foreach (var product in Model.Products)
+					{
+						<option value="@product.Key"
+								selected="@(product.Key == Model.ProductId ? "selected" : null)">
+							@product.Value
+						</option>
+					}
+				</select>
+			</div>
+
+			<div class="col-md-3">
+				<label class="form-label mb-1">بحث (منتج / مورد)</label>
+				<input type="text"
+					   name="search"
+					   value="@Model.Search"
+					   class="form-control"
+					   placeholder="بحث..." />
+			</div>
+
+			<div class="col-md-1">
+				<div class="form-check mt-4">
+					<input type="checkbox"
+						   name="onlyAvailable"
+						   value="true"
+						   class="form-check-input"
+						   id="onlyAvailable"
+						   checked="@Model.OnlyAvailable" />
+					<label class="form-check-label" for="onlyAvailable">
+						متوفر
+					</label>
+				</div>
+			</div>
+
+			<div class="col-md-2 d-flex gap-2">
+				<button type="submit" class="btn btn-primary w-100">عرض</button>
+				<a asp-action="Lots" class="btn btn-outline-secondary">مسح</a>
+			</div>
+		</div>
+	</div>
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">لا توجد دفعات مطابقة.</div>
+}
+else
+{
+	<div class="alert alert-secondary">
+		إجمالي قيمة المتبقي: <strong>@Model.TotalRemainingValue.ToString("N2")</strong>
+	</div>
+
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>#</th>
+					<th>المنتج</th>
+					<th>المخزن</th>
+					<th>المورد</th>
+					<th>تاريخ الدفعة</th>
+					<th>المستلم</th>
+					<th>المتبقي</th>
+					<th>تكلفة الوحدة</th>
+					<th>قيمة المتبقي</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td>@row.Id</td>
+						<td>
+							<strong>@row.ProductName</strong>
+							@if (!string.IsNullOrWhiteSpace(row.ProductCode))
+							{
+								<small class="text-muted d-block">@row.ProductCode</small>
+							}
+						</td>
+						<td>@row.StoreName</td>
+						<td>@row.SupplierName</td>
+						<td>@row.PurchaseDate.ToString("yyyy-MM-dd")</td>
+						<td>@row.QuantityReceived.ToString("N3")</td>
+						<td class="@(row.QuantityRemaining <= 0 ? "text-muted" : "fw-bold")">
+							@row.QuantityRemaining.ToString("N3")
+						</td>
+						<td>@row.UnitCost.ToString("N4")</td>
+						<td>@row.RemainingValue.ToString("N2")</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot class="table-secondary fw-bold">
+				<tr>
+					<td colspan="8">الإجمالي</td>
+					<td>@Model.TotalRemainingValue.ToString("N2")</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

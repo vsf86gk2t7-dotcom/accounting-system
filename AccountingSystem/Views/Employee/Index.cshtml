@@ -1,0 +1,317 @@
+﻿@model List<AccountingSystem.Models.Employee>
+
+@{
+	ViewData["Title"] = "الموظفون";
+
+	var availableRoles = ViewBag.AvailableRoles
+		as List<AccountingSystem.Models.Role>
+		?? new List<AccountingSystem.Models.Role>();
+
+	var availableBranches = ViewBag.AvailableBranches
+		as List<AccountingSystem.Models.Branch>
+		?? new List<AccountingSystem.Models.Branch>();
+
+	var search = ViewBag.Search as string ?? "";
+	var roleId = ViewBag.RoleId as int?;
+	var branchId = ViewBag.BranchId as int?;
+	var status = ViewBag.Status as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">الموظفون</h2>
+		<p class="text-muted mb-0 small">
+			إدارة الموظفين والحسابات والصلاحيات
+		</p>
+	</div>
+
+	<a asp-action="Create" class="btn btn-primary">
+		+ إضافة موظف
+	</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<!-- الفلاتر -->
+<div class="card mb-3 shadow-sm border-0">
+	<div class="card-body">
+		<form asp-action="Index" method="get">
+			<div class="row g-2">
+
+				<div class="col-md-4">
+					<input type="text"
+						   name="search"
+						   value="@search"
+						   class="form-control"
+						   placeholder="🔎 بحث بالاسم / الهاتف / البريد" />
+				</div>
+
+				<div class="col-md-2">
+					<select name="roleId" class="form-select">
+						<option value="">كل الأدوار</option>
+						@foreach (var role in availableRoles)
+						{
+							<option value="@role.Id"
+									selected="@(roleId == role.Id)">
+								@role.Name
+							</option>
+						}
+					</select>
+				</div>
+
+				<div class="col-md-2">
+					<select name="branchId" class="form-select">
+						<option value="">كل الفروع</option>
+						@foreach (var branch in availableBranches)
+						{
+							<option value="@branch.Id"
+									selected="@(branchId == branch.Id)">
+								@branch.Name
+							</option>
+						}
+					</select>
+				</div>
+
+				<div class="col-md-2">
+					<select name="status" class="form-select">
+						<option value="">كل الحالات</option>
+						<option value="active" selected="@(status == "active")">نشط</option>
+						<option value="inactive" selected="@(status == "inactive")">غير نشط</option>
+						<option value="pending" selected="@(status == "pending")">يحتاج إجراء</option>
+					</select>
+				</div>
+
+				<div class="col-md-2">
+					<button type="submit" class="btn btn-secondary w-100">
+						تصفية
+					</button>
+				</div>
+
+			</div>
+		</form>
+	</div>
+</div>
+
+<!-- الإحصائيات -->
+<div class="row mb-4">
+	<div class="col-md-3">
+		<div class="card border-0 shadow-sm">
+			<div class="card-body text-center">
+				<div class="text-muted small">إجمالي الموظفين</div>
+				<div class="fs-4 fw-bold text-primary">
+					@ViewBag.TotalCount
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-3">
+		<div class="card border-0 shadow-sm">
+			<div class="card-body text-center">
+				<div class="text-muted small">نشط</div>
+				<div class="fs-4 fw-bold text-success">
+					@ViewBag.ActiveCount
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-3">
+		<div class="card border-0 shadow-sm">
+			<div class="card-body text-center">
+				<div class="text-muted small">غير نشط</div>
+				<div class="fs-4 fw-bold text-secondary">
+					@ViewBag.InactiveCount
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-3">
+		<div class="card border-0 shadow-sm">
+			<div class="card-body text-center">
+				<div class="text-muted small">يحتاج إجراء</div>
+				<div class="fs-4 fw-bold text-warning">
+					@ViewBag.PendingCount
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- الجدول -->
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">
+		لا يوجد موظفون حتى الآن.
+	</div>
+}
+else
+{
+	<div class="card border-0 shadow-sm">
+		<div class="card-body p-0">
+			<div class="table-responsive">
+				<table class="table table-hover mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>الموظف</th>
+							<th>الوظيفة</th>
+							<th>الدور</th>
+							<th>الفروع / المخازن</th>
+							<th>الحساب</th>
+							<th>الحالة</th>
+							<th style="width: 60px;"></th>
+						</tr>
+					</thead>
+
+					<tbody>
+						@foreach (var employee in Model)
+						{
+							var user = employee.Users.FirstOrDefault();
+							var role = user?.Role;
+
+							<tr>
+								<td>
+									<div class="fw-semibold">@employee.Name</div>
+									<div class="text-muted small">
+										@(employee.Phone ?? "-")
+									</div>
+								</td>
+
+								<td>@(employee.JobTitle ?? "-")</td>
+
+								<td>
+									@if (role != null)
+									{
+										<span class="badge bg-primary">
+											@role.Name
+										</span>
+									}
+									else
+									{
+										<span class="text-muted small">—</span>
+									}
+								</td>
+
+								<td>
+									@if (employee.EmployeeBranches.Any())
+									{
+										<div class="small">
+											@string.Join(
+												"، ",
+												employee.EmployeeBranches
+													.Select(x => x.Branch?.Name ?? "-"))
+										</div>
+									}
+									else
+									{
+										<span class="text-muted small">—</span>
+									}
+
+									@if (employee.EmployeeStores.Any())
+									{
+										<div class="small text-muted">
+											@string.Join(
+												"، ",
+												employee.EmployeeStores
+													.Select(x => x.Store?.Name ?? "-"))
+										</div>
+									}
+								</td>
+
+								<td>
+									@if (employee.HasPortalAccount)
+									{
+										<span class="badge bg-success">مفعّل</span>
+									}
+									else if (employee.PortalRequested)
+									{
+										<span class="badge bg-warning text-dark">يحتاج إجراء</span>
+									}
+									else
+									{
+										<span class="badge bg-secondary">لا يوجد</span>
+									}
+								</td>
+
+								<td>
+									@if (employee.IsActive)
+									{
+										<span class="badge bg-success">نشط</span>
+									}
+									else
+									{
+										<span class="badge bg-danger">غير نشط</span>
+									}
+								</td>
+
+								<td>
+									<div class="dropdown">
+										<button class="btn btn-sm btn-light"
+												type="button"
+												data-bs-toggle="dropdown">
+											⋮
+										</button>
+
+										<ul class="dropdown-menu dropdown-menu-end">
+											<li>
+												<a class="dropdown-item"
+												   asp-action="Details"
+												   asp-route-id="@employee.Id">
+													👁️ عرض الملف
+												</a>
+											</li>
+
+											<li>
+												<a class="dropdown-item"
+												   asp-action="Edit"
+												   asp-route-id="@employee.Id">
+													✏️ تعديل البيانات
+												</a>
+											</li>
+
+											<li>
+												<a class="dropdown-item"
+												   asp-action="PortalRequests">
+													🔑 إدارة الحساب
+												</a>
+											</li>
+
+											<li><hr class="dropdown-divider" /></li>
+
+											<li>
+												<form asp-action="ToggleActive"
+													  asp-route-id="@employee.Id"
+													  method="post">
+													@Html.AntiForgeryToken()
+													<button type="submit"
+															class="dropdown-item">
+														@(employee.IsActive ? "🚫 تعطيل" : "✅ تفعيل")
+													</button>
+												</form>
+											</li>
+										</ul>
+									</div>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+}

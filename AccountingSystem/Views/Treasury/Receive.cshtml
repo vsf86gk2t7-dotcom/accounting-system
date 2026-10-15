@@ -1,0 +1,483 @@
+@model AccountingSystem.Models.ViewModels.Treasury.TreasuryReceiveViewModel
+
+@{
+	ViewData["Title"] = "إيصال قبض";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>إيصال قبض</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للخزينة
+	</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<!-- كارت المحفظة المختارة -->
+<div class="card shadow-sm mb-3 d-none border-primary" id="walletCard">
+
+	<div class="card-body">
+
+		<div class="d-flex justify-content-between align-items-start">
+
+			<div>
+				<h5 class="mb-1" id="walletName">-</h5>
+				<small class="text-muted" id="walletAccountNumber">-</small>
+			</div>
+
+		</div>
+
+		<h3 class="mt-2 mb-1 text-primary" id="walletBalance">0.00</h3>
+		<small class="text-muted">الرصيد الحالي</small>
+
+		<div class="mt-3 small">
+
+			<div class="d-flex justify-content-between align-items-center border-top pt-2 mb-1">
+
+				<span class="d-inline-flex align-items-center gap-1">
+					<i class="bi bi-calendar-day"></i>
+					الحد اليومي
+				</span>
+
+				<span id="walletDaily">بلا حد</span>
+
+			</div>
+
+			<div class="progress mb-1 d-none" id="walletDailyBar" style="height: 8px;">
+				<div class="progress-bar bg-success" id="walletDailyBarFill"
+					 role="progressbar" style="width: 0%"></div>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center mb-2 d-none" id="walletDailyRemainingRow">
+				<span class="text-muted">المتبقي</span>
+				<span class="text-success fw-bold" id="walletDailyRemaining">0.00</span>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center mb-1">
+
+				<span class="d-inline-flex align-items-center gap-1">
+					<i class="bi bi-calendar-month"></i>
+					الحد الشهري
+				</span>
+
+				<span id="walletMonthly">بلا حد</span>
+
+			</div>
+
+			<div class="progress mb-1 d-none" id="walletMonthlyBar" style="height: 8px;">
+				<div class="progress-bar bg-success" id="walletMonthlyBarFill"
+					 role="progressbar" style="width: 0%"></div>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center mb-2 d-none" id="walletMonthlyRemainingRow">
+				<span class="text-muted">المتبقي</span>
+				<span class="text-success fw-bold" id="walletMonthlyRemaining">0.00</span>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center">
+				<small class="text-muted" id="walletTxCount">0 حركة</small>
+			</div>
+
+		</div>
+
+	</div>
+
+</div>
+
+<form asp-action="Receive"
+	  method="post">
+
+	@Html.AntiForgeryToken()
+
+	<!-- خيار خصم 1% من محفظة التليفون (فودافون/اتصالات) -->
+	<div class="alert alert-warning d-none"
+		 id="phoneWalletCommissionBox">
+		<label class="fw-semibold d-block mb-2">
+			طريقة الاستلام من محفظة التليفون:
+		</label>
+
+		<div class="btn-group w-100"
+			 role="group">
+
+			<input asp-for="ApplyCommission"
+				   type="radio"
+				   class="btn-check"
+				   id="NoCommission"
+				   value="false"
+				   checked />
+
+			<label for="NoCommission"
+				   class="btn btn-outline-success">
+				استلام كامل — يصل 100% بدون خصم
+			</label>
+
+			<input asp-for="ApplyCommission"
+				   type="radio"
+				   class="btn-check"
+				   id="ApplyCommission"
+				   value="true" />
+
+			<label for="ApplyCommission"
+				   class="btn btn-outline-danger">
+				خصم 1% — يصل بعد خصم
+				<span id="commissionValue">0.00</span>
+			</label>
+		</div>
+
+		<small class="text-muted d-block mt-2" id="commissionNote">
+
+		</small>
+	</div>
+
+	<div class="card shadow-sm mb-3">
+
+		<div class="card-header">
+			<h5 class="mb-0">بيانات القبض</h5>
+		</div>
+
+		<div class="card-body">
+
+			<div class="row g-3">
+
+				<div class="col-md-6">
+
+					<label asp-for="CashAccountId" class="form-label fw-semibold">
+						المركز النقدي
+					</label>
+
+					<select asp-for="CashAccountId"
+							class="form-select">
+
+						<option value="0">
+							-- اختر المركز --
+						</option>
+
+						@foreach (var account in Model.Accounts)
+						{
+							<option value="@account.Key">@account.Value</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="CashAccountId" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-6">
+
+					<label asp-for="Amount" class="form-label fw-semibold">
+						المبلغ
+					</label>
+
+					<input asp-for="Amount"
+						   class="form-control"
+						   type="number"
+						   min="0.01"
+						   step="0.01"
+						   placeholder="0.00" />
+
+					<span asp-validation-for="Amount" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label asp-for="CustomerId" class="form-label fw-semibold">
+						عميل
+					</label>
+
+					<select asp-for="CustomerId"
+							class="form-select">
+
+						<option value="">-- بدون --</option>
+
+						@foreach (var customer in Model.Customers)
+						{
+							<option value="@customer.Key">@customer.Value</option>
+						}
+
+					</select>
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label asp-for="SupplierId" class="form-label fw-semibold">
+						مورد
+					</label>
+
+					<select asp-for="SupplierId"
+							class="form-select">
+
+						<option value="">-- بدون --</option>
+
+						@foreach (var supplier in Model.Suppliers)
+						{
+							<option value="@supplier.Key">@supplier.Value</option>
+						}
+
+					</select>
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label asp-for="EmployeeId" class="form-label fw-semibold">
+						موظف
+					</label>
+
+					<select asp-for="EmployeeId"
+							class="form-select">
+
+						<option value="">-- بدون --</option>
+
+						@foreach (var employee in Model.Employees)
+						{
+							<option value="@employee.Key">@employee.Value</option>
+						}
+
+					</select>
+
+				</div>
+
+				<div class="col-md-6" id="otherIncomeRow"
+					 style="display:none;">
+
+					<label asp-for="OtherIncomeAccountId" class="form-label fw-semibold">
+						حساب الإيراد الحر
+					</label>
+
+					<select asp-for="OtherIncomeAccountId"
+							class="form-select">
+
+						<option value="">-- اختر الحساب --</option>
+
+						@foreach (var acc in Model.AvailableIncomeAccounts)
+						{
+							<option value="@acc.Key">@acc.Value</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="OtherIncomeAccountId" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-6">
+
+					<label asp-for="Reason" class="form-label fw-semibold">
+						البيان
+					</label>
+
+					<input asp-for="Reason"
+						   class="form-control"
+						   placeholder="بيان القبض" />
+
+				</div>
+
+				<div class="col-md-6">
+
+					<label asp-for="ReferenceDocument" class="form-label fw-semibold">
+						المستند المرجعي (اختياري)
+					</label>
+
+					<input asp-for="ReferenceDocument"
+						   class="form-control"
+						   placeholder="رقم فاتورة / إذن إلخ" />
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="d-flex justify-content-end gap-2">
+
+		<a asp-action="Index"
+		   class="btn btn-outline-secondary">
+			إلغاء
+		</a>
+
+		<button type="submit"
+				class="btn btn-success px-4">
+			حفظ الإيصال
+		</button>
+
+	</div>
+
+</form>
+
+@section Scripts
+{
+	<partial name="_ValidationScriptsPartial" />
+
+	<script>
+		(() => {
+			// ✅ Html.Raw ضرورية لمنع Razor من ترميز JSON إلى HTML entities (&quot; &amp;)
+			const providers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+				Model.AccountsProviders,
+				new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+			const cards = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+				Model.AccountCards,
+				new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+			const center = document.getElementById('CashAccountId');
+			const amount = document.getElementById('Amount');
+			const commissionBox = document.getElementById('phoneWalletCommissionBox');
+			const commissionValue = document.getElementById('commissionValue');
+			const commissionNote = document.getElementById('commissionNote');
+			const applyInputs = document.querySelectorAll('input[name="ApplyCommission"]');
+
+			const providerOf = (id) => providers[String(id)] ?? 0;
+			const applyValue = () =>
+				[...applyInputs].find(i => i.checked)?.value === 'true';
+
+			const fmt = (v) => Number(v).toFixed(2);
+			const fmtMoney = (v) =>
+				new Intl.NumberFormat('en-US', {
+					minimumFractionDigits: 2,
+					maximumFractionDigits: 2
+				}).format(Number(v) || 0);
+
+			const renderCard = (card) => {
+				const walletCard = document.getElementById('walletCard');
+
+				if (!card) {
+					walletCard.classList.add('d-none');
+					return;
+				}
+
+				document.getElementById('walletName').textContent = card.Name || '-';
+				document.getElementById('walletAccountNumber').textContent =
+					card.AccountNumber || 'بدون رقم حساب';
+				document.getElementById('walletBalance').textContent =
+					fmtMoney(card.Balance);
+				document.getElementById('walletBalance').className =
+					'card-text mb-1 ' + (card.Balance < 0 ? 'text-danger' : 'text-primary') +
+					' fs-3 fw-bold';
+
+				const dailyBar = document.getElementById('walletDailyBar');
+				const dailyRemRow = document.getElementById('walletDailyRemainingRow');
+				const dailyRem = document.getElementById('walletDailyRemaining');
+				const dailyBarFill = document.getElementById('walletDailyBarFill');
+
+				if (card.DailyLimit != null) {
+					document.getElementById('walletDaily').textContent =
+						fmtMoney(card.DailyConsumed) + ' / ' + fmtMoney(card.DailyLimit);
+					dailyBar.classList.remove('d-none');
+					dailyRemRow.classList.remove('d-none');
+
+					const pct = card.DailyLimit > 0
+						? Math.min(100, card.DailyConsumed / card.DailyLimit * 100)
+						: 0;
+					const over = card.DailyConsumed > card.DailyLimit;
+
+					dailyBarFill.style.width = pct + '%';
+					dailyBarFill.className = 'progress-bar ' +
+						(over ? 'bg-danger' : pct >= 80 ? 'bg-warning' : 'bg-success');
+
+					const rem = card.DailyLimit - card.DailyConsumed;
+					dailyRem.textContent = fmtMoney(rem);
+					dailyRem.className = (over ? 'text-danger' : 'text-success') + ' fw-bold';
+				} else {
+					document.getElementById('walletDaily').textContent = 'بلا حد';
+					dailyBar.classList.add('d-none');
+					dailyRemRow.classList.add('d-none');
+				}
+
+				const monthlyBar = document.getElementById('walletMonthlyBar');
+				const monthlyRemRow = document.getElementById('walletMonthlyRemainingRow');
+				const monthlyRem = document.getElementById('walletMonthlyRemaining');
+				const monthlyBarFill = document.getElementById('walletMonthlyBarFill');
+
+				if (card.MonthlyLimit != null) {
+					document.getElementById('walletMonthly').textContent =
+						fmtMoney(card.MonthlyConsumed) + ' / ' + fmtMoney(card.MonthlyLimit);
+					monthlyBar.classList.remove('d-none');
+					monthlyRemRow.classList.remove('d-none');
+
+					const pct = card.MonthlyLimit > 0
+						? Math.min(100, card.MonthlyConsumed / card.MonthlyLimit * 100)
+						: 0;
+					const over = card.MonthlyConsumed > card.MonthlyLimit;
+
+					monthlyBarFill.style.width = pct + '%';
+					monthlyBarFill.className = 'progress-bar ' +
+						(over ? 'bg-danger' : pct >= 80 ? 'bg-warning' : 'bg-success');
+
+					const rem = card.MonthlyLimit - card.MonthlyConsumed;
+					monthlyRem.textContent = fmtMoney(rem);
+					monthlyRem.className = (over ? 'text-danger' : 'text-success') + ' fw-bold';
+				} else {
+					document.getElementById('walletMonthly').textContent = 'بلا حد';
+					monthlyBar.classList.add('d-none');
+					monthlyRemRow.classList.add('d-none');
+				}
+
+				document.getElementById('walletTxCount').textContent =
+					(card.TransactionCount ?? 0) + ' حركة';
+
+				walletCard.classList.remove('d-none');
+			};
+
+			const update = () => {
+				const selected = Number(center.value);
+				const provider = providerOf(selected);
+
+				renderCard(selected > 0 ? cards[String(selected)] : null);
+
+				// محفظة تليفون: فودافون كاش (1) أو اتصالات كاش (2)
+				const isPhoneWallet = provider === 1 || provider === 2;
+
+				commissionBox.classList.toggle('d-none', !isPhoneWallet);
+
+				const amt = parseFloat(amount.value) || 0;
+				const fee = Math.round(amt * 0.01 * 100) / 100;
+
+				if (isPhoneWallet) {
+					commissionValue.textContent = fee.toFixed(2);
+
+					commissionNote.textContent = applyValue()
+						? `سيُسجَّل قبض ${amt.toFixed(2)} كاملًا في محفظة التليفون، ويُخصم ${fee.toFixed(2)} (1%) من حساب العميل لصالح إيراد العمولات.`
+						: `سيُسجَّل قبض ${amt.toFixed(2)} كاملًا في محفظة التليفون بدون أي خصم.`;
+				}
+			};
+
+			center.addEventListener('change', update);
+			amount.addEventListener('input', update);
+			applyInputs.forEach(i => i.addEventListener('change', update));
+
+			// إظهار/إخفاء حساب الإيراد الحر عند عدم اختيار طرف
+			const otherIncomeRow = document.getElementById('otherIncomeRow');
+			const customerSel = document.getElementById('CustomerId');
+			const supplierSel = document.getElementById('SupplierId');
+			const employeeSel = document.getElementById('EmployeeId');
+
+			const toggleOtherIncome = () =>
+			{
+				const noParty =
+					!customerSel.value &&
+					!supplierSel.value &&
+					!employeeSel.value;
+				otherIncomeRow.style.display = noParty ? 'block' : 'none';
+			};
+
+			customerSel.addEventListener('change', toggleOtherIncome);
+			supplierSel.addEventListener('change', toggleOtherIncome);
+			employeeSel.addEventListener('change', toggleOtherIncome);
+			toggleOtherIncome();
+		})();
+	</script>
+}

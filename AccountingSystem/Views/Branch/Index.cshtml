@@ -1,0 +1,177 @@
+﻿@model IEnumerable<AccountingSystem.Models.Branch>
+
+@{
+	ViewData["Title"] = "الفروع";
+}
+
+<div class="container mt-4">
+
+	<div class="d-flex justify-content-between align-items-center mb-4">
+
+		<div>
+			<h2>الفروع</h2>
+			<p class="text-muted mb-0">
+				إدارة فروع الشركة
+			</p>
+		</div>
+
+		<a asp-action="Create"
+		   class="btn btn-primary">
+			+ إضافة فرع
+		</a>
+
+	</div>
+
+	@if (TempData["Success"] != null)
+	{
+		<div class="alert alert-success">
+			@TempData["Success"]
+		</div>
+	}
+
+	@if (TempData["Error"] != null)
+	{
+		<div class="alert alert-danger">
+			@TempData["Error"]
+		</div>
+	}
+
+	<div class="card shadow-sm">
+
+		<div class="card-body">
+
+			<div class="table-responsive">
+
+				<table class="table table-bordered table-hover align-middle">
+
+					<thead class="table-light">
+						<tr>
+							<th>الرقم</th>
+							<th>اسم الفرع</th>
+							<th>الشركة</th>
+							<th>الهاتف</th>
+							<th>العنوان</th>
+							<th>الحالة</th>
+							<th>الإجراء</th>
+						</tr>
+					</thead>
+
+					<tbody>
+
+						@foreach (var branch in Model)
+						{
+							<tr>
+
+								<td>
+									@branch.Id
+								</td>
+
+								<td>
+									<strong>
+										@branch.Name
+									</strong>
+								</td>
+
+								<td>
+									@branch.Company?.Name
+								</td>
+
+								<td>
+									@(branch.Phone ?? "-")
+								</td>
+
+								<td>
+									@(branch.Address ?? "-")
+								</td>
+
+								<td>
+									@if (branch.IsActive)
+									{
+										<span class="badge bg-success">
+											نشط
+										</span>
+									}
+									else
+									{
+										<span class="badge bg-danger">
+											غير نشط
+										</span>
+									}
+								</td>
+
+								<td>
+
+									<a asp-action="Edit"
+									   asp-route-id="@branch.Id"
+									   class="btn btn-warning btn-sm">
+										✏ تعديل
+									</a>
+
+									<form asp-action="ToggleActive"
+										  method="post"
+										  class="d-inline">
+
+										@Html.AntiForgeryToken()
+
+										<input type="hidden"
+											   name="id"
+											   value="@branch.Id" />
+
+										@if (branch.IsActive)
+										{
+											<button type="submit"
+													class="btn btn-outline-danger btn-sm">
+												تعطيل
+											</button>
+										}
+										else
+										{
+											<button type="submit"
+													class="btn btn-outline-success btn-sm">
+												تفعيل
+											</button>
+										}
+
+									</form>
+
+									<form asp-action="Delete"
+										  asp-route-id="@branch.Id"
+										  method="post"
+										  class="d-inline"
+										  onsubmit="return confirm('هل أنت متأكد من حذف الفرع؟');">
+
+										@Html.AntiForgeryToken()
+
+										<button type="submit"
+												class="btn btn-outline-danger btn-sm">
+											🗑 حذف
+										</button>
+
+									</form>
+
+								</td>
+
+							</tr>
+						}
+
+						@if (!Model.Any())
+						{
+							<tr>
+								<td colspan="7"
+									class="text-center text-muted py-4">
+									لا توجد فروع حاليًا.
+								</td>
+							</tr>
+						}
+
+					</tbody>
+
+				</table>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</div>

@@ -1,0 +1,406 @@
+@model AccountingSystem.Models.ViewModels.Returns.SalesReturnViewModel
+
+@{
+    ViewData["Title"] = "مرتجع بيع جديد";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>مرتجع بيع جديد</h3>
+
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        العودة للسجل
+    </a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<form asp-action="Create" method="post" id="returnForm">
+
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="OriginalSalesInvoiceId" id="originalInvoiceId" />
+
+    <!-- ============================================= -->
+    <!-- بيانات أساسية -->
+    <!-- ============================================= -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">بيانات المرتجع</h5>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        العميل
+                    </label>
+
+                    <select asp-for="CustomerId"
+                            id="customerSelect"
+                            class="form-select">
+                        <option value="0">-- اختر العميل --</option>
+                        @foreach (var customer in Model.Customers)
+                        {
+                            <option value="@customer.Key">
+                                @customer.Value
+                            </option>
+                        }
+                    </select>
+
+                    <span asp-validation-for="CustomerId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        الفاتورة الأصلية
+                    </label>
+
+                    <select id="invoiceSelect"
+                            class="form-select"
+                            disabled>
+                        <option value="0">-- اختر العميل أولًا --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="ReturnDate" class="form-label fw-semibold">
+                        تاريخ المرتجع
+                    </label>
+
+                    <input asp-for="ReturnDate"
+                           class="form-control"
+                           type="date" />
+
+                    <span asp-validation-for="ReturnDate" class="text-danger"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Reason" class="form-label fw-semibold">
+                        سبب المرتجع
+                    </label>
+
+                    <input asp-for="Reason"
+                           class="form-control"
+                           placeholder="اختياري" />
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- بنود الفاتورة الأصلية -->
+    <!-- ============================================= -->
+    <div class="card shadow-sm mb-3"
+         id="itemsCard"
+         style="display:none;">
+
+        <div class="card-header">
+            <h5 class="mb-0">الأصناف في الفاتورة</h5>
+        </div>
+
+        <div class="card-body">
+
+            <div class="alert alert-info" id="invoiceInfo" style="display:none;">
+                <strong>الفاتورة:</strong>
+                <span id="invNumber">-</span>
+                |
+                <strong>التاريخ:</strong>
+                <span id="invDate">-</span>
+                |
+                <strong>الإجمالي:</strong>
+                <span id="invTotal">-</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الصنف</th>
+                            <th style="width:100px">المباع</th>
+                            <th style="width:100px">مُرجع سابقًا</th>
+                            <th style="width:100px">المتاح</th>
+                            <th style="width:130px">الكمية</th>
+                            <th style="width:120px">السعر</th>
+                            <th style="width:130px">الإجمالي</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="itemsBody"></tbody>
+
+                    <tfoot>
+                        <tr class="table-light">
+                            <th colspan="6" class="text-end">
+                                إجمالي المرتجع:
+                            </th>
+                            <th>
+                                <span id="grandTotal" class="text-primary fw-bold">
+                                    0.00
+                                </span>
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="noItemsMessage"
+                 class="alert alert-warning mt-3"
+                 style="display:none;">
+                لا توجد بنود قابلة للإرجاع في هذه الفاتورة.
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- الرد النقدي -->
+    <!-- ============================================= -->
+    <div class="card shadow-sm mb-3" id="refundCard" style="display:none;">
+        <div class="card-header">
+            <h5 class="mb-0">رد نقدي</h5>
+        </div>
+
+        <div class="card-body">
+            <div class="form-check mb-3">
+                <input asp-for="RefundToCash"
+                       class="form-check-input"
+                       type="checkbox"
+                       id="refundCheckbox" />
+
+                <label class="form-check-label fw-semibold"
+                       for="refundCheckbox">
+                    إرجاع المبلغ نقدًا للعميل من الخزينة
+                </label>
+            </div>
+
+            <div id="refundDetails" style="display:none;">
+                <label asp-for="RefundCashAccountId"
+                       class="form-label fw-semibold">
+                    المركز النقدي
+                </label>
+
+                <select asp-for="RefundCashAccountId"
+                        class="form-select">
+                    <option value="">-- اختر المركز --</option>
+                    @foreach (var acc in Model.CashAccounts)
+                    {
+                        <option value="@acc.Key">
+                            @acc.Value
+                        </option>
+                    }
+                </select>
+
+                <span asp-validation-for="RefundCashAccountId"
+                      class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- الأزرار -->
+    <!-- ============================================= -->
+    <div class="d-flex justify-content-end gap-2">
+
+        <a asp-action="Index"
+           class="btn btn-outline-secondary">
+            إلغاء
+        </a>
+
+        <button type="submit"
+                class="btn btn-success px-4"
+                id="submitBtn"
+                disabled>
+            تسجيل المرتجع
+        </button>
+
+    </div>
+
+</form>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function() {
+
+            const customerSelect = document.getElementById("customerSelect");
+            const invoiceSelect = document.getElementById("invoiceSelect");
+            const invoiceIdInput = document.getElementById("originalInvoiceId");
+            const itemsCard = document.getElementById("itemsCard");
+            const itemsBody = document.getElementById("itemsBody");
+            const refundCard = document.getElementById("refundCard");
+            const refundCheckbox = document.getElementById("refundCheckbox");
+            const refundDetails = document.getElementById("refundDetails");
+            const grandTotal = document.getElementById("grandTotal");
+            const submitBtn = document.getElementById("submitBtn");
+            const noItemsMsg = document.getElementById("noItemsMessage");
+            const invoiceInfo = document.getElementById("invoiceInfo");
+
+            // =========================================
+            // عند تغيير العميل → نجيب فواتيره
+            // =========================================
+            customerSelect?.addEventListener("change", async function() {
+
+                const customerId = parseInt(this.value) || 0;
+
+                invoiceSelect.innerHTML =
+                    '<option value="0">-- جاري التحميل... --</option>';
+
+                invoiceSelect.disabled = true;
+
+                itemsCard.style.display = "none";
+                refundCard.style.display = "none";
+                invoiceInfo.style.display = "none";
+                submitBtn.disabled = true;
+
+                if (customerId <= 0) {
+                    invoiceSelect.innerHTML =
+                        '<option value="0">-- اختر العميل أولًا --</option>';
+                    return;
+                }
+
+                try {
+                    const res = await fetch(
+                        `@Url.Action("GetCustomerInvoices", "SalesReturn")?customerId=${customerId}`
+                    );
+
+                    const invoices = await res.json();
+
+                    if (!invoices || invoices.length === 0) {
+                        invoiceSelect.innerHTML =
+                            '<option value="0">-- لا توجد فواتير معتمدة --</option>';
+                        return;
+                    }
+
+                    let html = '<option value="0">-- اختر الفاتورة --</option>';
+
+                    invoices.forEach(inv => {
+                        html += `<option value="${inv.invoiceId}">
+                                            ${inv.invoiceNumber} — ${inv.invoiceDate} — ${Number(inv.totalAmount).toFixed(2)}
+                                        </option>`;
+                    });
+
+                    invoiceSelect.innerHTML = html;
+                    invoiceSelect.disabled = false;
+
+                } catch (err) {
+                    console.error(err);
+                    invoiceSelect.innerHTML =
+                        '<option value="0">-- خطأ في التحميل --</option>';
+                }
+            });
+
+            // =========================================
+            // عند تغيير الفاتورة → نحمّل بنودها
+            // =========================================
+            invoiceSelect?.addEventListener("change", async function() {
+
+                const invoiceId = parseInt(this.value) || 0;
+
+                itemsCard.style.display = "none";
+                refundCard.style.display = "none";
+                invoiceInfo.style.display = "none";
+                submitBtn.disabled = true;
+                noItemsMsg.style.display = "none";
+
+                if (invoiceId <= 0) {
+                    invoiceIdInput.value = "";
+                    return;
+                }
+
+                // نروح للـCreate بنفس الصفحة مع invoiceId في الـQuery
+                // (أبسط من AJAX كامل، والـServer يعرض البنود)
+                window.location.href =
+                    `@Url.Action("Create", "SalesReturn")?invoiceId=${invoiceId}`;
+            });
+
+            // =========================================
+            // تحديث الإجماليات عند إدخال الكميات
+            // =========================================
+            itemsBody?.addEventListener("input", function(e) {
+                if (e.target.classList.contains("qty-input")) {
+                    updateRowTotal(e.target.closest("tr"));
+                    updateGrandTotal();
+                }
+            });
+
+            function updateRowTotal(row) {
+
+                const price = parseFloat(row.dataset.unitPrice) || 0;
+                const qtyInput = row.querySelector(".qty-input");
+                const qty = parseFloat(qtyInput?.value) || 0;
+                const returnable = parseFloat(row.dataset.returnable) || 0;
+
+                // سقف الكمية = المتاح
+                if (qty > returnable) {
+                    qtyInput.value = returnable.toFixed(6);
+                }
+
+                const effectiveQty = parseFloat(qtyInput.value) || 0;
+
+                const total = effectiveQty * price;
+
+                const totalEl = row.querySelector(".row-total");
+                if (totalEl) {
+                    totalEl.textContent = total.toFixed(2);
+                }
+            }
+
+            function updateGrandTotal() {
+
+                let total = 0;
+
+                itemsBody.querySelectorAll("tr[data-unit-price]").forEach(row => {
+                    const v = parseFloat(
+                        row.querySelector(".row-total")?.textContent
+                    ) || 0;
+
+                    total += v;
+                });
+
+                grandTotal.textContent = total.toFixed(2);
+            }
+
+            // =========================================
+            // شاشة الرد النقدي
+            // =========================================
+            refundCheckbox?.addEventListener("change", function() {
+                refundDetails.style.display = this.checked ? "block" : "none";
+            });
+
+            // =========================================
+            // عند تحميل الصفحة (لو جاي من فاتورة محددة)
+            // =========================================
+            document.addEventListener("DOMContentLoaded", function() {
+
+                const rows = itemsBody.querySelectorAll("tr[data-unit-price]");
+
+                if (rows.length > 0) {
+
+                    itemsCard.style.display = "block";
+                    refundCard.style.display = "block";
+                    invoiceInfo.style.display = "block";
+                    submitBtn.disabled = false;
+
+                    updateGrandTotal();
+                }
+                else if (invoiceIdInput.value) {
+                    itemsCard.style.display = "block";
+                    noItemsMsg.style.display = "block";
+                }
+
+            });
+
+        })();
+    </script>
+}

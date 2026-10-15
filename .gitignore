@@ -1,0 +1,110 @@
+# ═══════════════════════════════════════════
+# الأسرار — مهم جدًا
+# ═══════════════════════════════════════════
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Local.json
+secrets.json
+*.pfx
+*.p12
+*.key
+*.pem
+
+# ═══════════════════════════════════════════
+# Build outputs
+# ═══════════════════════════════════════════
+bin/
+obj/
+.vs/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ═══════════════════════════════════════════
+# محررات ومجلدات محلية
+# ═══════════════════════════════════════════
+.cursor/
+.idea/
+.vscode/
+
+# ═══════════════════════════════════════════
+# نسخ احتياطية وملفات مؤقتة
+# ═══════════════════════════════════════════
+Backups/
+Migrations_BACKUP_*/
+Migrations_Archive/
+*Backup*/
+*BACKUP*/
+*.bak
+*.dump
+*.rar
+*.7z
+*.tar
+*.tar.gz
+*.zip
+
+# ═══════════════════════════════════════════
+# Project dumps
+# ═══════════════════════════════════════════
+project_dump.txt
+
+# ═══════════════════════════════════════════
+# ملفات قواعد البيانات
+# ═══════════════════════════════════════════
+*.mdf
+*.ldf
+*.db
+*.sqlite
+
+# ═══════════════════════════════════════════
+# Node / packages
+# ═══════════════════════════════════════════
+node_modules/
+packages/
+
+# ═══════════════════════════════════════════
+# بيئة
+# ═══════════════════════════════════════════
+.env
+.env.*
+!.env.example
+
+# ═══════════════════════════════════════════
+# Logs وأرشيفات
+# ═══════════════════════════════════════════
+*.log
+logs/
+Logs/
+Uploads/
+App_Data/
+
+# ═══════════════════════════════════════════
+# Status files
+# ═══════════════════════════════════════════
+PROGRESS.md
+PROJECT_STATE.txt
+
+# ═══════════════════════════════════════════
+# Mac / Windows
+# ═══════════════════════════════════════════
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ═══════════════════════════════════════════
+# WhatsApp Gateway
+# ═══════════════════════════════════════════
+WhatsAppGateway/node_modules/
+WhatsAppGateway/.wwebjs_cache/
+WhatsAppGateway/.wwebjs_auth/
+WhatsAppGateway/auth_info*/
+WhatsAppGateway/.env
+WhatsAppGateway/*.err.txt
+WhatsAppGateway/*.out.txt
+check-status.ps1
+collect_project.ps1
+update_state.ps1

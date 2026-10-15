@@ -1,0 +1,211 @@
+﻿@model AccountingSystem.Models.Customer
+
+@{
+	ViewData["Title"] = "بوابة العميل";
+
+	decimal totalInvoices = ViewBag.TotalInvoices ?? 0m;
+	int invoiceCount = ViewBag.InvoiceCount ?? 0;
+	int totalItems = ViewBag.TotalItems ?? 0;
+	int totalProducts = ViewBag.TotalProducts ?? 0;
+	decimal currentBalance = ViewBag.CurrentBalance ?? 0m;
+}
+
+<div class="container mt-4">
+
+	<div class="row mb-4">
+		<div class="col">
+			<h2>بوابة العميل</h2>
+			<p class="text-muted">
+				مرحبًا بك، @Model.Name
+			</p>
+		</div>
+
+		<div class="col-auto d-flex align-items-center">
+			<form asp-controller="Account"
+				  asp-action="Logout"
+				  method="post">
+
+				@Html.AntiForgeryToken()
+
+				<button type="submit"
+						class="btn btn-outline-danger">
+					تسجيل الخروج
+				</button>
+
+			</form>
+		</div>
+	</div>
+
+	<!-- كروت إحصائية -->
+	<div class="row">
+
+		<div class="col-6 col-md-3 mb-3">
+			<div class="card shadow-sm h-100 border-0">
+				<div class="card-body text-center">
+					<div class="fs-2 text-primary"><i class="bi bi-coin"></i></div>
+					<div class="text-muted small mt-2">إجمالي الفواتير</div>
+					<div class="fs-4 fw-bold text-primary">
+						@totalInvoices.ToString("N2")
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-6 col-md-3 mb-3">
+			<div class="card shadow-sm h-100 border-0">
+				<div class="card-body text-center">
+					<div class="fs-2 text-success"><i class="bi bi-receipt"></i></div>
+					<div class="text-muted small mt-2">عدد الفواتير</div>
+					<div class="fs-4 fw-bold text-success">
+						@invoiceCount
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-6 col-md-3 mb-3">
+			<div class="card shadow-sm h-100 border-0">
+				<div class="card-body text-center">
+					<div class="fs-2 text-warning"><i class="bi bi-list-ol"></i></div>
+					<div class="text-muted small mt-2">عدد البنود</div>
+					<div class="fs-4 fw-bold text-warning">
+						@totalItems
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-6 col-md-3 mb-3">
+			<div class="card shadow-sm h-100 border-0">
+				<div class="card-body text-center">
+					<div class="fs-2" style="color: #6f42c1;"><i class="bi bi-box-seam"></i></div>
+					<div class="text-muted small mt-2">عدد الأصناف</div>
+					<div class="fs-4 fw-bold" style="color: #6f42c1;">
+						@totalProducts
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+	<!-- بيانات العميل + الرصيد -->
+	<div class="row mt-2">
+
+		<div class="col-md-6 mb-3">
+			<div class="card shadow-sm h-100">
+				<div class="card-header bg-primary text-white">
+					<h5 class="mb-0">بيانات العميل</h5>
+				</div>
+				<div class="card-body">
+					<dl class="row mb-0">
+						<dt class="col-sm-4">الاسم</dt>
+						<dd class="col-sm-8">@Model.Name</dd>
+
+						<dt class="col-sm-4">الهاتف</dt>
+						<dd class="col-sm-8">@Model.Phone</dd>
+
+						<dt class="col-sm-4">البريد</dt>
+						<dd class="col-sm-8">@(Model.Email ?? "-")</dd>
+
+						<dt class="col-sm-4">العنوان</dt>
+						<dd class="col-sm-8">@(Model.Address ?? "-")</dd>
+
+						<dt class="col-sm-4">الحالة</dt>
+						<dd class="col-sm-8">
+							@if (Model.IsActive)
+							{
+								<span class="badge bg-success">نشط</span>
+							}
+							else
+							{
+								<span class="badge bg-secondary">معطل</span>
+							}
+						</dd>
+					</dl>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-6 mb-3">
+			<div class="card shadow-sm h-100">
+				<div class="card-header bg-success text-white">
+					<h5 class="mb-0">الرصيد</h5>
+				</div>
+				<div class="card-body">
+					<dl class="row mb-0">
+						<dt class="col-sm-6">الرصيد الافتتاحي</dt>
+						<dd class="col-sm-6 text-end">
+							@Model.OpeningBalance.ToString("N2")
+						</dd>
+
+						<dt class="col-sm-6">إجمالي الفواتير</dt>
+						<dd class="col-sm-6 text-end">
+							@totalInvoices.ToString("N2")
+						</dd>
+
+						<dt class="col-sm-6">إجمالي المسدد</dt>
+						<dd class="col-sm-6 text-end">
+							0.00
+						</dd>
+
+						<dt class="col-sm-6 border-top pt-2">
+							<strong>الرصيد الحالي</strong>
+						</dt>
+						<dd class="col-sm-6 text-end border-top pt-2">
+							<strong class="text-danger">
+								@currentBalance.ToString("N2")
+							</strong>
+						</dd>
+					</dl>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+	<!-- روابط سريعة -->
+	<div class="row">
+		<div class="col-md-6 mb-3">
+			<a asp-controller="CustomerPortal"
+			   asp-action="Invoices"
+			   class="text-decoration-none">
+
+				<div class="card shadow-sm portal-mobile-card h-100">
+					<div class="card-body text-center">
+						<div class="fs-1"><i class="bi bi-receipt-cutoff"></i></div>
+						<h5 class="mt-2">فواتير البيع</h5>
+						<p class="text-muted mb-0">
+							عرض فواتير البيع الخاصة بك
+						</p>
+					</div>
+				</div>
+
+			</a>
+		</div>
+
+		<div class="col-md-6 mb-3">
+			<a asp-controller="CustomerPortal"
+			   asp-action="Statement"
+			   class="text-decoration-none">
+
+				<div class="card shadow-sm portal-mobile-card h-100">
+					<div class="card-body text-center">
+						<div class="fs-1"><i class="bi bi-file-earmark-text"></i></div>
+						<h5 class="mt-2">كشف الحساب</h5>
+						<p class="text-muted mb-0">
+							عرض الحركات والرصيد
+						</p>
+					</div>
+				</div>
+
+			</a>
+		</div>
+	</div>
+
+	<div class="alert alert-info mt-3">
+		هذه البوابة للعرض فقط.
+		لا يمكن للعميل تعديل الفواتير أو الرصيد أو البيانات المحاسبية.
+	</div>
+
+</div>

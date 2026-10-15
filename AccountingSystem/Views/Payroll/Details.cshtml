@@ -1,0 +1,174 @@
+﻿@model AccountingSystem.Models.PayrollRun
+
+@{
+ViewData["Title"] = "تفاصيل رواتب " + Model.PeriodName;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div>
+<h2 class="mb-1">رواتب @Model.PeriodName</h2>
+<p class="text-muted mb-0 small">
+@Model.PeriodStart.ToString("yyyy-MM-dd") → @Model.PeriodEnd.ToString("yyyy-MM-dd")
+</p>
+</div>
+<a asp-action="Index" class="btn btn-outline-secondary">رجوع</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success alert-dismissible fade show">
+@TempData["Success"]
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+@if (TempData["Error"] != null)
+{
+<div class="alert alert-danger alert-dismissible fade show">
+@TempData["Error"]
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+}
+
+<div class="row g-3 mb-4">
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">إجمالي الأساسي</div>
+<div class="fs-5 fw-bold">@Model.TotalGross.ToString("N2")</div>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">إجمالي الخصومات</div>
+<div class="fs-5 fw-bold text-danger">
+@((Model.TotalAbsenceDeduction + Model.TotalLateDeduction + Model.TotalManualDeductions + Model.TotalAdvances).ToString("N2"))
+</div>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">إجمالي العمولات</div>
+<div class="fs-5 fw-bold text-success">@Model.TotalCommissions.ToString("N2")</div>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">الصافي</div>
+<div class="fs-5 fw-bold text-primary">@Model.TotalNet.ToString("N2")</div>
+</div></div>
+</div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+<div class="card-body">
+<div class="d-flex gap-2 flex-wrap">
+
+@if (Model.Status == AccountingSystem.Models.PayrollRunStatus.Draft)
+{
+<form asp-action="Recalculate" asp-route-id="@Model.Id" method="post" class="d-inline">
+@Html.AntiForgeryToken()
+<button type="submit" class="btn btn-outline-primary"
+onclick="return confirm('إعادة حساب الرواتب؟')">
+<i class="bi bi-arrow-clockwise"></i> إعادة حساب
+</button>
+</form>
+
+<form asp-action="Approve" asp-route-id="@Model.Id" method="post" class="d-inline">
+@Html.AntiForgeryToken()
+<button type="submit" class="btn btn-success"
+onclick="return confirm('اعتماد الشهر؟ سيتم ترحيل قيد الاستحقاق.')">
+<i class="bi bi-check-circle"></i> اعتماد
+</button>
+</form>
+
+<form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+@Html.AntiForgeryToken()
+<button type="submit" class="btn btn-outline-danger"
+onclick="return confirm('حذف المسودة؟')">
+<i class="bi bi-trash"></i> حذف
+</button>
+</form>
+}
+
+@if (Model.Status == AccountingSystem.Models.PayrollRunStatus.Approved)
+{
+<a asp-action="Pay" asp-route-id="@Model.Id" class="btn btn-primary">
+<i class="bi bi-cash-stack"></i> صرف الرواتب
+</a>
+}
+
+@if (Model.JournalEntryId.HasValue)
+{
+<a asp-controller="Accounting" asp-action="Journal" class="btn btn-outline-secondary">
+<i class="bi bi-journal"></i> قيد الاستحقاق
+</a>
+}
+
+@if (Model.PaymentJournalEntryId.HasValue)
+{
+<a asp-controller="Accounting" asp-action="Journal" class="btn btn-outline-secondary">
+<i class="bi bi-journal-check"></i> قيد الصرف
+</a>
+}
+</div>
+</div>
+</div>
+
+<div class="card shadow-sm border-0">
+<div class="card-header bg-white fw-bold">
+بنود الرواتب (@Model.Items.Count موظف)
+</div>
+<div class="table-responsive">
+<table class="table table-sm align-middle mb-0">
+<thead class="table-light">
+<tr>
+<th>الموظف</th>
+<th>الأساسي</th>
+<th>غياب</th>
+<th>تأخير</th>
+<th>يدوي</th>
+<th>سلف</th>
+<th>عمولة</th>
+<th>الصافي</th>
+</tr>
+</thead>
+<tbody>
+@foreach (var item in Model.Items.OrderBy(x => x.Employee?.Name))
+{
+<tr>
+<td><strong>@item.Employee?.Name</strong></td>
+<td>@item.BaseSalary.ToString("N2")</td>
+<td class="text-danger">
+@if (item.AbsenceDays > 0)
+{
+<span>@item.AbsenceDeduction.ToString("N2")</span>
+<small class="text-muted">(@item.AbsenceDays يوم)</small>
+}
+else { <span class="text-muted">—</span> }
+</td>
+<td class="text-danger">
+@if (item.LateMinutes > 0)
+{
+<span>@item.LateDeduction.ToString("N2")</span>
+<small class="text-muted">(@item.LateMinutes ق)</small>
+}
+else { <span class="text-muted">—</span> }
+</td>
+<td class="text-danger">
+@if (item.ManualDeductions > 0) { <span>@item.ManualDeductions.ToString("N2")</span> }
+else { <span class="text-muted">—</span> }
+</td>
+<td class="text-danger">
+@if (item.AdvancesDeduction > 0) { <span>@item.AdvancesDeduction.ToString("N2")</span> }
+else { <span class="text-muted">—</span> }
+</td>
+<td class="text-success">
+@if (item.Commissions > 0) { <span>@item.Commissions.ToString("N2")</span> }
+else { <span class="text-muted">—</span> }
+</td>
+<td><strong class="text-primary">@item.NetSalary.ToString("N2")</strong></td>
+</tr>
+}
+</tbody>
+</table>
+</div>
+</div>

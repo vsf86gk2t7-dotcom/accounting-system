@@ -1,0 +1,606 @@
+@model AccountingSystem.Models.ViewModels.Treasury.TreasuryPayViewModel
+
+@{
+	ViewData["Title"] = "إذن صرف";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>إذن صرف</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للخزينة
+	</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<!-- تنبيه الرسوم حسب نوع المحفظة -->
+<div class="alert alert-warning d-none" id="feePreviewBox">
+	سيتحول
+	<b id="feePreviewAmount">0.00</b>
+	رسوم تحويل إلى حساب «إيراد العمولات».
+</div>
+
+<!-- كارت المحفظة المختارة -->
+<div class="card shadow-sm mb-3 d-none border-primary" id="walletCard">
+
+	<div class="card-body">
+
+		<div class="d-flex justify-content-between align-items-start">
+
+			<div>
+				<h5 class="mb-1" id="walletName">-</h5>
+				<small class="text-muted" id="walletAccountNumber">-</small>
+			</div>
+
+		</div>
+
+		<h3 class="mt-2 mb-1 text-primary" id="walletBalance">0.00</h3>
+		<small class="text-muted">الرصيد الحالي</small>
+
+		<div class="mt-3 small">
+
+			<div class="d-flex justify-content-between align-items-center border-top pt-2 mb-1">
+
+				<span class="d-inline-flex align-items-center gap-1">
+					<i class="bi bi-calendar-day"></i>
+					الحد اليومي
+				</span>
+
+				<span id="walletDaily">بلا حد</span>
+
+			</div>
+
+			<div class="progress mb-1 d-none" id="walletDailyBar" style="height: 8px;">
+				<div class="progress-bar bg-success" id="walletDailyBarFill"
+					 role="progressbar" style="width: 0%"></div>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center mb-2 d-none" id="walletDailyRemainingRow">
+				<span class="text-muted">المتبقي</span>
+				<span class="text-success fw-bold" id="walletDailyRemaining">0.00</span>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center mb-1">
+
+				<span class="d-inline-flex align-items-center gap-1">
+					<i class="bi bi-calendar-month"></i>
+					الحد الشهري
+				</span>
+
+				<span id="walletMonthly">بلا حد</span>
+
+			</div>
+
+			<div class="progress mb-1 d-none" id="walletMonthlyBar" style="height: 8px;">
+				<div class="progress-bar bg-success" id="walletMonthlyBarFill"
+					 role="progressbar" style="width: 0%"></div>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center mb-2 d-none" id="walletMonthlyRemainingRow">
+				<span class="text-muted">المتبقي</span>
+				<span class="text-success fw-bold" id="walletMonthlyRemaining">0.00</span>
+			</div>
+
+			<div class="d-flex justify-content-between align-items-center">
+				<small class="text-muted" id="walletTxCount">0 حركة</small>
+			</div>
+
+		</div>
+
+	</div>
+
+</div>
+
+<form asp-action="Pay"
+	  method="post">
+
+	@Html.AntiForgeryToken()
+
+	<div class="card shadow-sm mb-3">
+
+		<div class="card-header">
+			<h5 class="mb-0">بيانات الصرف</h5>
+		</div>
+
+		<div class="card-body">
+
+			<div class="row g-3">
+
+				<div class="col-md-6">
+
+					<label asp-for="CashAccountId" class="form-label fw-semibold">
+						المركز النقدي
+					</label>
+
+					<select asp-for="CashAccountId"
+							class="form-select">
+
+						<option value="0">
+							-- اختر المركز --
+						</option>
+
+						@foreach (var account in Model.Accounts)
+						{
+							<option value="@account.Key">@account.Value</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="CashAccountId" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-6">
+
+					<label asp-for="Amount" class="form-label fw-semibold">
+						المبلغ
+					</label>
+
+					<input asp-for="Amount"
+						   class="form-control"
+						   type="number"
+						   min="0.01"
+						   step="0.01"
+						   placeholder="0.00" />
+
+					<span asp-validation-for="Amount" class="text-danger"></span>
+
+				</div>
+
+				<!-- نوع الطرف: عميل / مورد / موظف / مصروف -->
+				<div class="col-12">
+
+					<label class="form-label fw-semibold d-block mb-2">
+						نوع الطرف
+					</label>
+
+					<div class="btn-group w-100"
+						 role="group"
+						 aria-label="نوع الطرف">
+
+						<input type="radio"
+							   class="btn-check"
+							   name="PayPartyKind"
+							   id="partyKindCustomer"
+							   value="customer"
+							   checked />
+
+						<label for="partyKindCustomer"
+							   class="btn btn-outline-primary">
+							عميل
+						</label>
+
+						<input type="radio"
+							   class="btn-check"
+							   name="PayPartyKind"
+							   id="partyKindSupplier"
+							   value="supplier" />
+
+						<label for="partyKindSupplier"
+							   class="btn btn-outline-primary">
+							مورد
+						</label>
+
+						<input type="radio"
+							   class="btn-check"
+							   name="PayPartyKind"
+							   id="partyKindEmployee"
+							   value="employee" />
+
+						<label for="partyKindEmployee"
+							   class="btn btn-outline-primary">
+							موظف
+						</label>
+
+						<input type="radio"
+							   class="btn-check"
+							   name="PayPartyKind"
+							   id="partyKindExpense"
+							   value="expense" />
+
+						<label for="partyKindExpense"
+							   class="btn btn-outline-primary">
+							مصروف
+						</label>
+
+					</div>
+
+				</div>
+
+				<div class="col-md-6" id="partyCustomer">
+
+					<label asp-for="CustomerId" class="form-label fw-semibold">
+						عميل
+					</label>
+
+					<select asp-for="CustomerId"
+							class="form-select">
+
+						<option value="">-- بدون --</option>
+
+						@foreach (var customer in Model.Customers)
+						{
+							<option value="@customer.Key">@customer.Value</option>
+						}
+
+					</select>
+
+				</div>
+
+				<div class="col-md-6 d-none" id="partySupplier">
+
+					<label asp-for="SupplierId" class="form-label fw-semibold">
+						مورد
+					</label>
+
+					<select asp-for="SupplierId"
+							class="form-select">
+
+						<option value="">-- بدون --</option>
+
+						@foreach (var supplier in Model.Suppliers)
+						{
+							<option value="@supplier.Key">@supplier.Value</option>
+						}
+
+					</select>
+
+				</div>
+
+				<div class="col-md-6 d-none" id="partyEmployee">
+
+					<label asp-for="EmployeeId" class="form-label fw-semibold">
+						موظف
+					</label>
+
+					<select asp-for="EmployeeId"
+							class="form-select">
+
+						<option value="">-- بدون --</option>
+
+						@foreach (var employee in Model.Employees)
+						{
+							<option value="@employee.Key">@employee.Value</option>
+						}
+
+					</select>
+
+				</div>
+
+				<div class="col-md-6 d-none" id="partyExpense">
+
+					<label asp-for="ExpenseAccountId" class="form-label fw-semibold">
+						حساب المصروف <span class="text-muted fw-normal">(للمصاريف النثرية — بلا عميل/مورد/موظف)</span>
+					</label>
+
+					<select asp-for="ExpenseAccountId"
+							class="form-select">
+
+						<option value="">-- بدون --</option>
+
+						@foreach (var expense in Model.ExpenseAccounts)
+						{
+							<option value="@expense.Key">@expense.Value</option>
+						}
+
+					</select>
+
+				</div>
+
+				<div class="col-md-6">
+
+					<label asp-for="Reason" class="form-label fw-semibold">
+						البيان
+					</label>
+
+					<input asp-for="Reason"
+						   class="form-control"
+						   placeholder="بيان الصرف" />
+
+				</div>
+
+				<div class="col-md-6">
+
+					<label asp-for="ReferenceDocument" class="form-label fw-semibold">
+						المستند المرجعي (اختياري)
+					</label>
+
+					<input asp-for="ReferenceDocument"
+						   class="form-control"
+						   placeholder="رقم فاتورة / إذن إلخ" />
+
+				</div>
+
+				<!-- =============================================
+					 رسوم التحويل حسب نوع المركز النقدي:
+					 - نقدي/محفظة عامة: لا تظهر رسوم.
+					 - انستا باي: حقل نصي فارغ للرسوم (بدون افتراضي)
+					   ويُمنع تجاوز 1% من المبلغ.
+					 - محفظة موبايل: اختيار نوع محفظة المستلم
+					   (1ج لنفس الشبكة / 15ج لشبكة أخرى).
+					============================================= -->
+
+				<div class="col-md-6 d-none" id="instapayFeeField">
+
+					<label asp-for="WalletFee" class="form-label fw-semibold">
+						رسوم انستا باي (1% أو أقل)
+					</label>
+
+					<input asp-for="WalletFee"
+						   class="form-control"
+						   type="number"
+						   min="0.01"
+						   step="0.01"
+						   placeholder="0.00" />
+
+					<small class="text-muted">
+						الحد الأقصى 1% من المبلغ:
+						<b id="instapayMaxFee">0.00</b>
+					</small>
+
+					<span asp-validation-for="WalletFee" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-6 d-none" id="mobileWalletField">
+
+					<label asp-for="RecipientWalletProvider" class="form-label fw-semibold">
+						نوع محفظة المستلم
+					</label>
+
+					<select asp-for="RecipientWalletProvider"
+							class="form-select">
+
+						<option value="">-- اختر --</option>
+						<option value="1">فودافون كاش</option>
+						<option value="2">اتصالات كاش</option>
+						<option value="3">انستا باي</option>
+						<option value="4">محفظة عامة أخرى</option>
+
+					</select>
+
+					<small class="text-muted">
+						نفس الشبكة = 1ج، شبكة أخرى = 15ج
+					</small>
+
+					<span asp-validation-for="RecipientWalletProvider" class="text-danger"></span>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="d-flex justify-content-end gap-2">
+
+		<a asp-action="Index"
+		   class="btn btn-outline-secondary">
+			إلغاء
+		</a>
+
+		<button type="submit"
+				class="btn btn-danger px-4">
+			حفظ الإذن
+		</button>
+
+	</div>
+
+</form>
+
+@section Scripts
+{
+	<partial name="_ValidationScriptsPartial" />
+
+	<script>
+		(() => {
+			// ✅ Html.Raw ضرورية لمنع Razor من ترميز JSON إلى HTML entities (&quot; &amp;)
+			const providers = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+				Model.AccountsProviders,
+				new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+			const cards = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+				Model.AccountCards,
+				new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default }));
+
+			const center = document.getElementById('CashAccountId');
+			const amount = document.getElementById('Amount');
+			const feeBox = document.getElementById('feePreviewBox');
+			const feeAmount = document.getElementById('feePreviewAmount');
+			const instapayField = document.getElementById('instapayFeeField');
+			const instapayMax = document.getElementById('instapayMaxFee');
+			const walletFeeInput = document.getElementById('WalletFee');
+			const mobileField = document.getElementById('mobileWalletField');
+			const recipientSelect = document.getElementById('RecipientWalletProvider');
+
+			const providerOf = (id) => providers[String(id)] ?? 0;
+
+			const fmt = (v) => Number(v).toFixed(2);
+			const fmtMoney = (v) =>
+				new Intl.NumberFormat('en-US', {
+					minimumFractionDigits: 2,
+					maximumFractionDigits: 2
+				}).format(Number(v) || 0);
+
+			const renderCard = (card) => {
+				const walletCard = document.getElementById('walletCard');
+
+				if (!card) {
+					walletCard.classList.add('d-none');
+					return;
+				}
+
+				document.getElementById('walletName').textContent = card.Name || '-';
+				document.getElementById('walletAccountNumber').textContent =
+					card.AccountNumber || 'بدون رقم حساب';
+				document.getElementById('walletBalance').textContent =
+					fmtMoney(card.Balance);
+				document.getElementById('walletBalance').className =
+					'card-text mb-1 ' + (card.Balance < 0 ? 'text-danger' : 'text-primary') +
+					' fs-3 fw-bold';
+
+				const dailyBar = document.getElementById('walletDailyBar');
+				const dailyRemRow = document.getElementById('walletDailyRemainingRow');
+				const dailyRem = document.getElementById('walletDailyRemaining');
+				const dailyBarFill = document.getElementById('walletDailyBarFill');
+
+				if (card.DailyLimit != null) {
+					document.getElementById('walletDaily').textContent =
+						fmtMoney(card.DailyConsumed) + ' / ' + fmtMoney(card.DailyLimit);
+					dailyBar.classList.remove('d-none');
+					dailyRemRow.classList.remove('d-none');
+
+					const pct = card.DailyLimit > 0
+						? Math.min(100, card.DailyConsumed / card.DailyLimit * 100)
+						: 0;
+					const over = card.DailyConsumed > card.DailyLimit;
+
+					dailyBarFill.style.width = pct + '%';
+					dailyBarFill.className = 'progress-bar ' +
+						(over ? 'bg-danger' : pct >= 80 ? 'bg-warning' : 'bg-success');
+
+					const rem = card.DailyLimit - card.DailyConsumed;
+					dailyRem.textContent = fmtMoney(rem);
+					dailyRem.className = (over ? 'text-danger' : 'text-success') + ' fw-bold';
+				} else {
+					document.getElementById('walletDaily').textContent = 'بلا حد';
+					dailyBar.classList.add('d-none');
+					dailyRemRow.classList.add('d-none');
+				}
+
+				const monthlyBar = document.getElementById('walletMonthlyBar');
+				const monthlyRemRow = document.getElementById('walletMonthlyRemainingRow');
+				const monthlyRem = document.getElementById('walletMonthlyRemaining');
+				const monthlyBarFill = document.getElementById('walletMonthlyBarFill');
+
+				if (card.MonthlyLimit != null) {
+					document.getElementById('walletMonthly').textContent =
+						fmtMoney(card.MonthlyConsumed) + ' / ' + fmtMoney(card.MonthlyLimit);
+					monthlyBar.classList.remove('d-none');
+					monthlyRemRow.classList.remove('d-none');
+
+					const pct = card.MonthlyLimit > 0
+						? Math.min(100, card.MonthlyConsumed / card.MonthlyLimit * 100)
+						: 0;
+					const over = card.MonthlyConsumed > card.MonthlyLimit;
+
+					monthlyBarFill.style.width = pct + '%';
+					monthlyBarFill.className = 'progress-bar ' +
+						(over ? 'bg-danger' : pct >= 80 ? 'bg-warning' : 'bg-success');
+
+					const rem = card.MonthlyLimit - card.MonthlyConsumed;
+					monthlyRem.textContent = fmtMoney(rem);
+					monthlyRem.className = (over ? 'text-danger' : 'text-success') + ' fw-bold';
+				} else {
+					document.getElementById('walletMonthly').textContent = 'بلا حد';
+					monthlyBar.classList.add('d-none');
+					monthlyRemRow.classList.add('d-none');
+				}
+
+				document.getElementById('walletTxCount').textContent =
+					(card.TransactionCount ?? 0) + ' حركة';
+
+				walletCard.classList.remove('d-none');
+			};
+
+			const update = () => {
+				const p = providerOf(Number(center.value));
+
+				renderCard(Number(center.value) > 0
+					? cards[String(center.value)]
+					: null);
+
+				const isInstaPay = p === 3;
+				const isMobile = p === 1 || p === 2;
+
+				instapayField.classList.toggle('d-none', !isInstaPay);
+				mobileField.classList.toggle('d-none', !isMobile);
+
+				const amt = parseFloat(amount.value) || 0;
+
+				let fee = 0;
+
+				if (isInstaPay) {
+					const max = amt * 0.01;
+					instapayMax.textContent = fmt(max);
+					const typed = parseFloat(walletFeeInput.value);
+					fee = Number.isFinite(typed)
+						? Math.min(Math.max(typed, 0), max)
+						: 0;
+				} else if (isMobile) {
+					const r = Number(recipientSelect.value);
+					fee = r === 0 ? 0 : (r === p ? 1 : 15);
+				}
+
+				feeBox.classList.toggle('d-none', !(isInstaPay || isMobile) || fee <= 0);
+				feeAmount.textContent = fmt(fee);
+			};
+
+			center.addEventListener('change', update);
+			amount.addEventListener('input', update);
+			walletFeeInput?.addEventListener('input', update);
+			recipientSelect?.addEventListener('change', update);
+			update();
+
+			// =========================================
+			// تبديل حقول الطرف حسب «نوع الطرف»:
+			// عميل / مورد / موظف / مصروف
+			// فقط الحقل المطابق للاختيار يظهر.
+			// =========================================
+			const partySections = {
+				customer: document.getElementById('partyCustomer'),
+				supplier: document.getElementById('partySupplier'),
+				employee: document.getElementById('partyEmployee'),
+				expense: document.getElementById('partyExpense')
+			};
+
+			const partyInputs = document.querySelectorAll('input[name="PayPartyKind"]');
+
+			const updateParty = (value) => {
+				Object.entries(partySections).forEach(([key, section]) => {
+					if (!section) return;
+					section.classList.toggle('d-none', key !== value);
+				});
+			};
+
+			partyInputs.forEach(input => {
+				input.addEventListener('change', () => {
+					if (input.checked) updateParty(input.value);
+				});
+			});
+
+			// تحديد الحقل الذي يحمل قيمة بالفعل (بعد خطأ تحقق)
+			// فنحدد النوع الصحيح تلقائيًا:
+			const hasValue = (sel) =>
+				sel && sel.value && sel.value !== '';
+			const initialKind =
+				hasValue(document.getElementById('ExpenseAccountId'))
+					? 'expense'
+					: hasValue(document.getElementById('EmployeeId'))
+					? 'employee'
+					: hasValue(document.getElementById('SupplierId'))
+					? 'supplier'
+					: 'customer';
+
+			const partyCheckbox =
+				document.getElementById('partyKind' +
+					initialKind[0].toUpperCase() + initialKind.slice(1));
+
+			if (partyCheckbox) {
+				partyCheckbox.checked = true;
+			}
+
+			updateParty(initialKind);
+		})();
+	</script>
+}

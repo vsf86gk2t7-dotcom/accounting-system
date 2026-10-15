@@ -1,0 +1,501 @@
+@model AccountingSystem.Models.ViewModels.Treasury.TreasuryIndexViewModel
+
+@{
+	ViewData["Title"] = "الخزينة";
+
+	string TypeLabel(AccountingSystem.Models.TreasuryTransactionType t)
+	{
+		return t switch
+		{
+			AccountingSystem.Models.TreasuryTransactionType.Receive => "قبض",
+			AccountingSystem.Models.TreasuryTransactionType.Pay => "صرف",
+			AccountingSystem.Models.TreasuryTransactionType.Transfer => "تحويل",
+			AccountingSystem.Models.TreasuryTransactionType.Adjust => "تسوية",
+			AccountingSystem.Models.TreasuryTransactionType.WalletTransfer => "محفظة",
+			_ => "حركة"
+		};
+	}
+
+	string TypeBadge(AccountingSystem.Models.TreasuryTransactionType t)
+	{
+		return t switch
+		{
+			AccountingSystem.Models.TreasuryTransactionType.Receive => "bg-success",
+			AccountingSystem.Models.TreasuryTransactionType.Pay => "bg-danger",
+			AccountingSystem.Models.TreasuryTransactionType.Transfer => "bg-primary",
+			AccountingSystem.Models.TreasuryTransactionType.Adjust => "bg-warning text-dark",
+			AccountingSystem.Models.TreasuryTransactionType.WalletTransfer => "bg-info text-dark",
+			_ => "bg-dark"
+		};
+	}
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>الخزينة</h3>
+
+	<div>
+		<button type="button"
+				class="btn btn-outline-primary"
+				data-bs-toggle="collapse"
+				data-bs-target="#newAccountForm">
+			+ مركز نقدي جديد
+		</button>
+
+		<a asp-action="Adjust" class="btn btn-outline-warning">تسوية</a>
+		<a asp-action="Receive" class="btn btn-primary">إيصال قبض</a>
+		<a asp-action="Pay" class="btn btn-outline-danger">إذن صرف</a>
+	</div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<form asp-action="CreateAccount"
+	  method="post"
+	  class="collapse mb-3"
+	  id="newAccountForm">
+
+	@Html.AntiForgeryToken()
+
+	<div class="card shadow-sm">
+
+		<div class="card-header">
+			<h5 class="mb-0">إضافة مركز نقدي جديد</h5>
+		</div>
+
+		<div class="card-body">
+
+			<div class="row g-3">
+
+				<div class="col-md-4">
+
+					<label class="form-label fw-semibold">
+						اسم المركز
+					</label>
+
+					<input name="Name"
+						   class="form-control"
+						   placeholder="مثال: خزينة المكتب - بنك القاهرة" />
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label class="form-label fw-semibold">
+						رقم الحساب (اختياري)
+					</label>
+
+					<input name="AccountNumber"
+						   class="form-control"
+						   placeholder="رقم الحساب البنكي" />
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label class="form-label fw-semibold">
+						نوع المحفظة
+					</label>
+
+					<select name="Provider"
+							class="form-select"
+							required>
+
+						<option value=""
+								selected
+								disabled>
+							-- اختر نوع المحفظة --
+						</option>
+
+						<option value="0">عام (نقدي)</option>
+						<option value="4">محفظة عامة أخرى</option>
+						<option value="1">فودافون كاش</option>
+						<option value="2">اتصالات كاش</option>
+						<option value="3">انستا باي (خصم 1%)</option>
+
+					</select>
+
+				</div>
+
+				<div class="col-md-3">
+
+					<label class="form-label fw-semibold">
+						الحد اليومي (اختياري)
+					</label>
+
+					<input name="DailyLimit"
+						   type="number"
+						   class="form-control"
+						   min="0"
+						   step="0.01"
+						   placeholder="مثال: 50000" />
+
+				</div>
+
+				<div class="col-md-3">
+
+					<label class="form-label fw-semibold">
+						الحد الشهري (اختياري)
+					</label>
+
+					<input name="MonthlyLimit"
+						   type="number"
+						   class="form-control"
+						   min="0"
+						   step="0.01"
+						   placeholder="مثال: 500000" />
+
+				</div>
+
+				<div class="col-md-2 d-flex align-items-end">
+
+					<button type="submit"
+							class="btn btn-success">
+						حفظ المركز
+					</button>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</form>
+
+<div class="row g-3 mb-3">
+
+	@if (Model.Accounts.Count == 0)
+	{
+		<div class="col-12">
+			<div class="alert alert-info">
+				لا توجد مراكز نقدية بعد. أضف أول مركز نقدي من الزر أعلاه.
+			</div>
+		</div>
+	}
+
+	@foreach (var account in Model.Accounts)
+	{
+		<div class="col-md-4">
+
+			<div class="card shadow-sm h-100">
+
+				<div class="card-body">
+
+					<div class="d-flex justify-content-between align-items-start">
+
+						<div>
+
+							<h5 class="mb-1">@account.Name</h5>
+
+							<small class="text-muted">
+								@(string.IsNullOrWhiteSpace(account.AccountNumber)
+									? "بدون رقم حساب"
+									: account.AccountNumber)
+							</small>
+
+						</div>
+
+						@if (!account.IsActive)
+						{
+							<span class="badge bg-secondary">معطل</span>
+						}
+
+					</div>
+
+					<h3 class="mt-3 mb-1
+						@(account.Balance < 0 ? "text-danger" : "text-primary")">
+						@account.Balance.ToString("N2")
+					</h3>
+
+					<small class="text-muted">
+						الرصيد الحالي
+					</small>
+
+					<div class="mt-3 small">
+
+						<div class="d-flex justify-content-between align-items-center border-top pt-2 mb-1">
+
+							<span class="d-inline-flex align-items-center gap-1">
+								<i class="bi bi-calendar-day"></i>
+								الحد اليومي
+							</span>
+
+							@if (account.DailyLimit.HasValue)
+							{
+								var dailyRemaining = account.DailyLimit.Value - account.DailyConsumed;
+
+								<span>
+									<strong>@account.DailyConsumed.ToString("N2")</strong>
+									/ @account.DailyLimit.Value.ToString("N2")
+								</span>
+							}
+							else
+							{
+								<span class="badge bg-light text-muted">بلا حد</span>
+							}
+
+						</div>
+
+						@if (account.DailyLimit.HasValue)
+						{
+							var dailyPct =
+								account.DailyLimit.Value > 0
+									? (int)Math.Min(
+										100m,
+										account.DailyConsumed /
+											account.DailyLimit.Value * 100m)
+									: 0;
+
+							var dailyOver = account.DailyConsumed > account.DailyLimit.Value;
+
+							<div class="progress mb-1" style="height: 8px;">
+								<div class="progress-bar @(dailyOver ? "bg-danger" : dailyPct >= 80 ? "bg-warning" : "bg-success")"
+									 role="progressbar"
+									 style="width: @(dailyPct)%">
+								</div>
+							</div>
+
+							<div class="d-flex justify-content-between align-items-center mb-2">
+
+								<span class="text-muted">
+									المتبقي
+								</span>
+
+								<span class="@(dailyOver ? "text-danger fw-bold" : "text-success fw-bold")">
+									@((account.DailyLimit.Value - account.DailyConsumed).ToString("N2"))
+								</span>
+
+							</div>
+						}
+
+						<div class="d-flex justify-content-between align-items-center mb-1">
+
+							<span class="d-inline-flex align-items-center gap-1">
+								<i class="bi bi-calendar-month"></i>
+								الحد الشهري
+							</span>
+
+							@if (account.MonthlyLimit.HasValue)
+							{
+								<span>
+									<strong>@account.MonthlyConsumed.ToString("N2")</strong>
+									/ @account.MonthlyLimit.Value.ToString("N2")
+								</span>
+							}
+							else
+							{
+								<span class="badge bg-light text-muted">بلا حد</span>
+							}
+
+						</div>
+
+						@if (account.MonthlyLimit.HasValue)
+						{
+							var monthlyPct =
+								account.MonthlyLimit.Value > 0
+									? (int)Math.Min(
+										100m,
+										account.MonthlyConsumed /
+											account.MonthlyLimit.Value * 100m)
+									: 0;
+
+							var monthlyOver = account.MonthlyConsumed > account.MonthlyLimit.Value;
+
+							<div class="progress mb-1" style="height: 8px;">
+								<div class="progress-bar @(monthlyOver ? "bg-danger" : monthlyPct >= 80 ? "bg-warning" : "bg-success")"
+									 role="progressbar"
+									 style="width: @(monthlyPct)%">
+								</div>
+							</div>
+
+							<div class="d-flex justify-content-between align-items-center">
+
+								<span class="text-muted">
+									المتبقي
+								</span>
+
+								<span class="@(monthlyOver ? "text-danger fw-bold" : "text-success fw-bold")">
+									@((account.MonthlyLimit.Value - account.MonthlyConsumed).ToString("N2"))
+								</span>
+
+							</div>
+						}
+
+					</div>
+
+					<div class="mt-3 d-flex justify-content-between">
+
+						<small class="text-muted">
+							@account.TransactionCount حركة
+						</small>
+
+						<a asp-action="Transactions"
+						   asp-route-accountId="@account.Id"
+						   class="small">
+							عرض الحركات
+						</a>
+
+					</div>
+
+				</div>
+
+			</div>
+
+		</div>
+	}
+
+	@if (Model.Accounts.Count > 1)
+	{
+		<div class="col-md-4">
+
+			<div class="card shadow-sm h-100 border-success">
+
+				<div class="card-body">
+
+					<h5 class="mb-1 text-success">
+						إجمالي الخزينة
+					</h5>
+
+					<h3 class="mt-3 mb-1 text-success">
+						@Model.TotalBalance.ToString("N2")
+					</h3>
+
+					<small class="text-muted">
+						مجموع أرصدة جميع المراكز
+					</small>
+
+				</div>
+
+			</div>
+
+		</div>
+	}
+
+</div>
+
+<div class="card shadow-sm">
+
+	<div class="card-header d-flex justify-content-between align-items-center">
+
+		<h5 class="mb-0">أحدث الحركات</h5>
+
+		<a asp-action="Transactions"
+		   class="btn btn-outline-secondary btn-sm">
+			كل الحركات
+		</a>
+
+	</div>
+
+	<div class="card-body p-0">
+
+		<div class="table-responsive">
+
+			<table class="table table-hover align-middle mb-0">
+
+				<thead class="table-light">
+					<tr>
+						<th>المستند</th>
+						<th>النوع</th>
+						<th>المركز</th>
+						<th>الطرف</th>
+						<th>البيان</th>
+						<th>المبلغ</th>
+						<th>التاريخ</th>
+					</tr>
+				</thead>
+
+				<tbody>
+
+					@if (Model.RecentTransactions.Count == 0)
+					{
+						<tr>
+							<td colspan="7" class="text-center text-muted">
+								لا توجد حركات خزينة بعد.
+							</td>
+						</tr>
+					}
+
+					@foreach (var t in Model.RecentTransactions)
+					{
+						<tr>
+							<td>
+								<strong>@t.TransactionNumber</strong>
+								<a asp-action="Receipt"
+								   asp-route-id="@t.Id"
+								   class="btn btn-sm btn-outline-primary ms-1"
+								   title="عرض وطباعة الإيصال">
+									إيصال
+								</a>
+							</td>
+							<td>
+								<span class="badge @TypeBadge(t.Type)">
+									@TypeLabel(t.Type)
+								</span>
+							</td>
+							<td>
+								@t.AccountName
+								@if (!string.IsNullOrWhiteSpace(t.TransferToAccountName))
+								{
+									<small class="text-muted d-block">
+										← @t.TransferToAccountName
+									</small>
+								}
+							</td>
+							<td>@(t.PartyName ?? "-")</td>
+							<td>@(t.Reason ?? "-")</td>
+							<td class="@(t.Type == AccountingSystem.Models.TreasuryTransactionType.Pay || t.Type == AccountingSystem.Models.TreasuryTransactionType.WalletTransfer ? "text-danger" : "text-success")">
+								<strong>
+									@(t.Type == AccountingSystem.Models.TreasuryTransactionType.Pay
+										|| t.Type == AccountingSystem.Models.TreasuryTransactionType.WalletTransfer
+										? "-"
+										: "+")@t.Amount.ToString("N2")
+								</strong>
+							</td>
+							<td>@t.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+						</tr>
+					}
+
+				</tbody>
+
+			</table>
+
+		</div>
+
+	</div>
+
+</div>
+
+@if (Model.TotalPages > 1)
+{
+	<nav aria-label="Page navigation">
+		<ul class="pagination justify-content-center">
+			<li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+				<a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber - 1)" asp-route-pageSize="@Model.PageSize">السابق</a>
+			</li>
+			@for (int i = 1; i <= Model.TotalPages; i++)
+			{
+				<li class="page-item @(i == Model.PageNumber ? "active" : "")">
+					<a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-pageSize="@Model.PageSize">@i</a>
+				</li>
+			}
+			<li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+				<a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber + 1)" asp-route-pageSize="@Model.PageSize">التالي</a>
+			</li>
+		</ul>
+	</nav>
+}

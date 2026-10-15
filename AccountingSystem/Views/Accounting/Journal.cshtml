@@ -1,0 +1,138 @@
+@model AccountingSystem.Models.ViewModels.Accounting.JournalIndexViewModel
+
+@{
+	ViewData["Title"] = "القيود المحاسبية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>القيود المحاسبية</h3>
+
+	<div>
+		<a asp-action="Accounts" class="btn btn-outline-secondary">شجرة الحسابات</a>
+		<a asp-action="TrialBalance" class="btn btn-outline-secondary">ميزان المراجعة</a>
+		<a asp-action="Create" class="btn btn-primary">+ قيد جديد</a>
+	</div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div class="mb-3">
+
+	<a asp-action="Journal"
+	   class="btn @(Model.PostedOnly != true ? "btn-primary" : "btn-outline-primary") btn-sm">
+		جميع القيود
+	</a>
+
+	<a asp-action="Journal"
+	   asp-route-postedOnly="true"
+	   class="btn @(Model.PostedOnly == true ? "btn-primary" : "btn-outline-primary") btn-sm">
+		القيود المعتمدة فقط
+	</a>
+
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد قيود محاسبية بعد.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>رقم القيد</th>
+					<th>التاريخ</th>
+					<th>البيان</th>
+					<th>عدد البنود</th>
+					<th>المدين</th>
+					<th>الدائن</th>
+					<th>الحالة</th>
+					<th>بواسطة</th>
+					<th>إجراءات</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td><strong>@row.EntryNumber</strong></td>
+						<td>@row.EntryDate.ToString("yyyy-MM-dd")</td>
+						<td>@(row.Description ?? "-")</td>
+						<td>@row.LinesCount</td>
+						<td>@row.DebitTotal.ToString("N2")</td>
+						<td>@row.CreditTotal.ToString("N2")</td>
+						<td>
+							@if (row.IsPosted)
+							{
+								<span class="badge bg-success">معتمد</span>
+							}
+							else
+							{
+								<span class="badge bg-warning text-dark">مسودة</span>
+							}
+						</td>
+						<td>@(row.CreatedByUserName ?? "-")</td>
+						<td>
+
+							@if (!row.IsPosted)
+							{
+								<a asp-action="Edit"
+								   asp-route-id="@row.Id"
+								   class="btn btn-outline-primary btn-sm">
+									تعديل
+								</a>
+
+								<form asp-action="Approve"
+									  asp-route-id="@row.Id"
+									  method="post"
+									  class="d-inline">
+
+									@Html.AntiForgeryToken()
+
+									<button type="submit"
+											class="btn btn-outline-success btn-sm">
+										اعتماد
+									</button>
+
+								</form>
+
+								<form asp-action="Delete"
+									  asp-route-id="@row.Id"
+									  method="post"
+									  class="d-inline"
+									  onsubmit="return confirm('هل تريد حذف هذا القيد؟');">
+
+									@Html.AntiForgeryToken()
+
+									<button type="submit"
+											class="btn btn-outline-danger btn-sm">
+										حذف
+									</button>
+
+								</form>
+							}
+
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}

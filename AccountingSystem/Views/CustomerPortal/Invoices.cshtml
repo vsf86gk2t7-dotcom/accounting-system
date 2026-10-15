@@ -1,0 +1,114 @@
+﻿@model AccountingSystem.Models.Customer
+
+@{
+	ViewData["Title"] = "فواتيري";
+
+	var invoices =
+		ViewBag.Invoices as List<AccountingSystem.Models.SalesInvoice>
+		?? new List<AccountingSystem.Models.SalesInvoice>();
+
+	string PaymentLabel(AccountingSystem.Models.SalesPaymentMethod method)
+	{
+		return method switch
+		{
+			AccountingSystem.Models.SalesPaymentMethod.Cash => "نقدي",
+			AccountingSystem.Models.SalesPaymentMethod.BankTransfer => "تحويل بنكي",
+			AccountingSystem.Models.SalesPaymentMethod.Cheque => "شيك",
+			AccountingSystem.Models.SalesPaymentMethod.Credit => "آجل",
+			AccountingSystem.Models.SalesPaymentMethod.Wallet => "محفظة إلكترونية",
+			_ => "—"
+		};
+	}
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">فواتيري</h2>
+		<p class="text-muted mb-0 small">
+			عرض فواتير البيع المؤكدة
+		</p>
+	</div>
+
+	<a asp-controller="CustomerPortal"
+	   asp-action="Index"
+	   class="btn btn-outline-secondary">
+		← رجوع
+	</a>
+</div>
+
+@if (!invoices.Any())
+{
+	<div class="alert alert-info">
+		لم يتم تسجيل فواتير مؤكدة بعد.
+	</div>
+}
+else
+{
+	foreach (var invoice in invoices)
+	{
+		<div class="card shadow-sm mb-4">
+			<div class="card-header">
+				<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+					<div>
+						<span class="fw-bold">@invoice.InvoiceNumber</span>
+						<span class="text-muted ms-2 small">
+							@invoice.InvoiceDate.ToString("yyyy-MM-dd")
+						</span>
+					</div>
+
+					<div class="d-flex gap-2 align-items-center">
+						<span class="badge bg-secondary">
+							@(invoice.Store?.Name ?? "-")
+						</span>
+
+						<span class="badge bg-info">
+							@PaymentLabel(invoice.PaymentMethod)
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="card-body p-0">
+				<div class="table-responsive">
+					<table class="table table-hover align-middle mb-0">
+						<thead>
+							<tr>
+								<th>الصنف</th>
+								<th class="text-center">الكمية</th>
+								<th class="text-center">السعر</th>
+								<th class="text-end">الإجمالي</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach (var item in invoice.Items)
+							{
+								<tr>
+									<td>@(item.Product?.Name ?? "-")</td>
+									<td class="text-center">
+										@item.Quantity.ToString("N3")
+									</td>
+									<td class="text-center">
+										@item.UnitPrice.ToString("N2")
+									</td>
+									<td class="text-end fw-bold">
+										@item.TotalPrice.ToString("N2")
+									</td>
+								</tr>
+							}
+						</tbody>
+						<tfoot>
+							<tr class="table-secondary">
+								<th colspan="3" class="text-end">
+									إجمالي الفاتورة:
+								</th>
+								<th class="text-end">
+									@invoice.TotalAmount.ToString("N2") ج.م
+								</th>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,28 @@
+@model AccountingSystem.ViewComponents.NotificationBellViewModel
+@if (Model.UnreadCount > 0)
+{
+	<a class="topbar-bell"
+	   id="notificationBellLink"
+	   asp-controller="Notifications"
+	   asp-action="Index"
+	   role="button"
+	   aria-haspopup="true"
+	   aria-expanded="false"
+	   title="Notifications">
+		<i class="bi bi-bell"></i>
+		<span class="bell-badge">@Model.UnreadCount</span>
+	</a>
+}
+else
+{
+	<a class="topbar-bell"
+	   id="notificationBellLink"
+	   asp-controller="Notifications"
+	   asp-action="Index"
+	   role="button"
+	   aria-haspopup="true"
+	   aria-expanded="false"
+	   title="Notifications">
+		<i class="bi bi-bell"></i>
+	</a>
+}

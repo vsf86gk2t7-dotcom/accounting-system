@@ -1,0 +1,156 @@
+@model AccountingSystem.Models.ViewModels.Treasury.TreasuryReceiptViewModel
+
+@{
+	ViewData["Title"] = "إيصال " +
+		(Model.Type == AccountingSystem.Models.TreasuryTransactionType.Pay
+			? "صرف"
+			: "قبض");
+}
+
+<div class="no-print d-flex justify-content-between align-items-center mb-3">
+	<h3>إيصال @(Model.Type == AccountingSystem.Models.TreasuryTransactionType.Pay ? "صرف" : "قبض")</h3>
+
+	<div>
+		<a asp-action="Transactions" class="btn btn-outline-secondary">
+			العودة للحركات
+		</a>
+
+		<button type="button"
+				class="btn btn-primary"
+				onclick="window.print()">
+			طباعة الإيصال
+		</button>
+	</div>
+</div>
+
+<div class="receipt-sheet card shadow-sm mx-auto">
+
+	<div class="card-body p-4">
+
+		@if (!string.IsNullOrWhiteSpace(Model.Company.LogoPath))
+		{
+			<div class="text-center mb-2">
+				<img src="@Model.Company.LogoPath"
+					 alt="شعار الشركة"
+					 class="receipt-logo" />
+			</div>
+		}
+
+		<div class="text-center mb-3">
+			<h4 class="mb-1 fw-bold">@Model.Company.Name</h4>
+			<small class="text-muted d-block">
+				@Model.Company.Address
+			</small>
+			<small class="text-muted d-block">
+				@Model.Company.Phone
+			</small>
+		</div>
+
+		<div class="text-center mb-4">
+			<h5 class="border border-2 border-dark d-inline-block px-4 py-2 mb-0 fw-bold">
+				إيصال @(Model.Type == AccountingSystem.Models.TreasuryTransactionType.Pay ? "صرف" : "قبض")
+			</h5>
+		</div>
+
+		<table class="table table-borderless table-sm receipt-table">
+			<tr>
+				<td class="fw-bold w-25">رقم السند</td>
+				<td class="w-25">@Model.TransactionNumber</td>
+				<td class="fw-bold w-25">التاريخ</td>
+				<td>@Model.CreatedAt.ToString("yyyy/MM/dd")</td>
+			</tr>
+			<tr>
+				<td class="fw-bold">
+					@(Model.Type == AccountingSystem.Models.TreasuryTransactionType.Pay
+						? "صرف من"
+						: "قبض من")
+				</td>
+				<td>@Model.CashAccountName</td>
+
+				@if (!string.IsNullOrWhiteSpace(Model.TransferToCashAccountName))
+				{
+					<td class="fw-bold">إلى</td>
+					<td>@Model.TransferToCashAccountName</td>
+				}
+				else
+				{
+					<td></td>
+					<td></td>
+				}
+			</tr>
+			<tr>
+				<td class="fw-bold">الطرف</td>
+				<td>@(Model.PartyName ?? "-")</td>
+				<td class="fw-bold">المستند المرجعي</td>
+				<td>@(Model.ReferenceDocument ?? "-")</td>
+			</tr>
+			<tr>
+				<td class="fw-bold">البيان</td>
+				<td colspan="3">@(Model.Reason ?? "-")</td>
+			</tr>
+		</table>
+
+		<div class="border border-2 p-3 mb-4 text-center">
+			<small class="text-muted d-block mb-1">المبلغ المستحق</small>
+			<h2 class="mb-0 fw-bold">
+				@Model.Amount.ToString("N2")
+			</h2>
+		</div>
+
+		<table class="table table-borderless table-sm receipt-table mb-0">
+			<tr>
+				<td class="fw-bold">استلم المبلغ</td>
+				<td></td>
+				<td class="fw-bold">المحاسب / الصراف</td>
+			</tr>
+			<tr class="receipt-sign-row">
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+		</table>
+
+		<small class="text-muted d-block mt-4">
+			حرر بواسطة: @(Model.CreatedByUserName ?? "-")
+			— @Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+		</small>
+
+	</div>
+
+</div>
+
+<style>
+	.receipt-sheet {
+		max-width: 760px;
+	}
+
+	.receipt-logo {
+		max-height: 80px;
+	}
+
+	.receipt-sign-row td {
+		height: 70px;
+	}
+
+	@@media print {
+		body {
+			background: #fff !important;
+		}
+
+		.no-print {
+			display: none !important;
+		}
+
+		.receipt-sheet {
+			max-width: 100%;
+			border: none !important;
+			box-shadow: none !important;
+		}
+
+		.receipt-table,
+		.receipt-table * {
+			print-color-adjust: exact;
+			-webkit-print-color-adjust: exact;
+		}
+	}
+</style>

@@ -1,0 +1,367 @@
+@model AccountingSystem.Models.SalesInvoice
+
+@{
+	ViewData["Title"] = $"فاتورة بيع {Model.InvoiceNumber}";
+
+	string PaymentLabel(AccountingSystem.Models.SalesPaymentMethod m)
+	{
+		return m switch
+		{
+			AccountingSystem.Models.SalesPaymentMethod.Cash => "نقدي",
+			AccountingSystem.Models.SalesPaymentMethod.BankTransfer => "تحويل بنكي",
+			AccountingSystem.Models.SalesPaymentMethod.Cheque => "شيك",
+			AccountingSystem.Models.SalesPaymentMethod.Credit => "آجل",
+			AccountingSystem.Models.SalesPaymentMethod.Wallet => "محفظة",
+			_ => "-"
+		};
+	}
+
+	string StatusLabel(AccountingSystem.Models.SalesInvoiceStatus s)
+	{
+		return s switch
+		{
+			AccountingSystem.Models.SalesInvoiceStatus.Draft => "مسودة",
+			AccountingSystem.Models.SalesInvoiceStatus.Confirmed => "مُعتمدة",
+			AccountingSystem.Models.SalesInvoiceStatus.Cancelled => "ملغاة",
+			_ => "-"
+		};
+	}
+}
+
+<style>
+	@@media print {
+		.app-sidebar, .app-topbar, .sidebar-toggle, .sidebar-overlay,
+		.no-print {
+			display: none !important;
+		}
+
+		.app-content {
+			margin: 0 !important;
+			padding: 0 !important;
+		}
+
+		body {
+			background: #fff !important;
+		}
+	}
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+	<h3>فاتورة بيع @Model.InvoiceNumber</h3>
+
+	<div>
+		@if (!string.IsNullOrWhiteSpace(Model.Customer?.Phone))
+		{
+			<form asp-action="SendWhatsApp"
+				  asp-route-id="@Model.Id"
+				  method="post"
+				  class="d-inline">
+				@Html.AntiForgeryToken()
+				<button type="submit"
+						class="btn btn-success">
+					<i class="bi bi-whatsapp"></i> إرسال واتساب
+				</button>
+			</form>
+		}
+
+		@if (Model.DueDate != null &&
+			 Model.Status == SalesInvoiceStatus.Confirmed)
+		{
+			<form asp-action="SendReminder"
+				  asp-route-id="@Model.Id"
+				  method="post"
+				  class="d-inline">
+				@Html.AntiForgeryToken()
+				<button type="submit"
+						class="btn btn-warning">
+					<i class="bi bi-bell"></i> إرسال تذكير
+				</button>
+			</form>
+		}
+
+		<button type="button"
+				class="btn btn-primary"
+				onclick="window.print();">
+			<i class="bi bi-printer"></i> طباعة / PDF
+		</button>
+
+		<div class="btn-group" role="group" aria-label="مقاسات الطباعة">
+			<button type="button"
+					class="btn btn-outline-primary"
+					title="طابعة حرارية عرض 80مم"
+					onclick="printInvoice('80')">
+				<i class="bi bi-receipt"></i> 80مم
+			</button>
+			<button type="button"
+					class="btn btn-outline-primary"
+					title="ورق A5"
+					onclick="printInvoice('a5')">
+				A5
+			</button>
+			<button type="button"
+					class="btn btn-outline-primary"
+					title="ورق A4"
+					onclick="printInvoice('a4')">
+				A4
+			</button>
+		</div>
+
+		<a asp-action="Edit"
+	   asp-route-id="@Model.Id"
+	   class="btn btn-outline-dark">
+	<i class="bi bi-pencil"></i> تعديل
+</a>
+
+		<a asp-action="Index" class="btn btn-outline-secondary">رجوع</a>
+	</div>
+</div>
+
+<div class="card">
+	<div class="card-body">
+
+		<!-- رأس الفاتورة -->
+		<div class="row mb-4">
+			<div class="col-md-6">
+				<h4 class="mb-1">فاتورة بيع</h4>
+				<div class="text-muted">
+					رقم: <strong>@Model.InvoiceNumber</strong>
+				</div>
+				<div class="text-muted">
+					التاريخ: @Model.InvoiceDate.ToString("yyyy-MM-dd")
+				</div>
+				<div class="text-muted">
+					الحالة: <strong>@StatusLabel(Model.Status)</strong>
+</div>
+</div>
+
+<style>
+	/* =====================================
+	   طباعة بثلاثة مقاسات: 80مم / A5 / A4
+	   ===================================== */
+
+	body.print-80 {
+		font-size: 10px;
+	}
+
+	body.print-a5 {
+		font-size: 12px;
+	}
+
+	body.print-a4 {
+		font-size: 13px;
+	}
+
+	/* في فاتورة 80مم نخفي أعمدة التكلفة/الدفعة
+	   والربح المتوقع لتوفير العرض */
+	body.print-80 .table th:nth-child(7),
+	body.print-80 .table td:nth-child(7),
+	body.print-80 .table th:nth-child(8),
+	body.print-80 .table td:nth-child(8),
+	body.print-80 .table th:nth-child(9),
+	body.print-80 .table td:nth-child(9) {
+		display: none !important;
+	}
+
+	body.print-80 .disable-on-80 {
+		display: none !important;
+	}
+
+	@@media print {
+		body.print-80 .card {
+			border: none !important;
+			box-shadow: none !important;
+		}
+
+		body.print-80 .app-content {
+			margin: 0 !important;
+			padding: 0 !important;
+		}
+	}
+</style>
+
+<script>
+	function printInvoice(format) {
+		document.body.classList.remove('print-80', 'print-a5', 'print-a4');
+		document.body.classList.add('print-' + format);
+
+		var pageCss = document.getElementById('invoice-page-css');
+		var rules = {
+			'80': '@@page { size: 80mm auto; margin: 4mm; }',
+			'a5': '@@page { size: A5; margin: 10mm; }',
+			'a4': '@@page { size: A4; margin: 12mm; }'
+		};
+		var rule = rules[format] || rules['a4'];
+
+		if (pageCss) {
+			pageCss.textContent = rule;
+		} else {
+			var s = document.createElement('style');
+			s.id = 'invoice-page-css';
+			s.textContent = rule;
+			document.head.appendChild(s);
+		}
+
+		setTimeout(function () {
+			window.print();
+		}, 80);
+	}
+</script>
+
+			<div class="col-md-6 text-md-end">
+				<div><strong>الفرع:</strong> @(Model.Branch?.Name ?? "-")</div>
+				<div><strong>المخزن:</strong> @(Model.Store?.Name ?? "-")</div>
+				<div><strong>العميل:</strong> @(Model.Customer?.Name ?? "—")</div>
+				@if (!string.IsNullOrWhiteSpace(Model.Customer?.Phone))
+				{
+					<div><strong>هاتف العميل:</strong> @Model.Customer.Phone</div>
+				}
+				<div><strong>طريقة الدفع:</strong> @PaymentLabel(Model.PaymentMethod)</div>
+				@if (!string.IsNullOrWhiteSpace(Model.PaymentDetails))
+				{
+					<div><strong>تفاصيل الدفع:</strong> @Model.PaymentDetails</div>
+				}
+			</div>
+		</div>
+
+		<!-- البنود -->
+		<div class="table-responsive">
+			<table class="table table-bordered">
+				<thead class="table-dark">
+					<tr>
+						<th>#</th>
+						<th>الصنف</th>
+						<th>الوحدة</th>
+						<th>الكمية</th>
+						<th>سعر الوحدة</th>
+						<th>الإجمالي</th>
+						
+					</tr>
+				</thead>
+				<tbody>
+					@{
+						var index = 1;
+
+						string RowClass(decimal cost, decimal total)
+						{
+							var profit = total - cost;
+							if (profit < 0) return "table-danger";
+							if (Math.Abs(profit) < 0.005m) return "table-success";
+							return "";
+						}
+					}
+
+					@foreach (var item in Model.Items)
+					{
+						var itemCost = item.LotAllocations
+							.Sum(a => a.QuantityBaseUnit * a.UnitCost);
+						var detailRows = item.LotAllocations
+							.Where(a => a.StockLot != null)
+							.Select(a =>
+								$"دفعة {a.StockLot!.PurchaseDate.ToString("yyyy-MM-dd")} ({(a.StockLot!.Supplier?.Name ?? "-")}): {a.QuantityBaseUnit.ToString("N2")} × {a.UnitCost.ToString("N2")} = {(a.QuantityBaseUnit * a.UnitCost).ToString("N2")}");
+
+						<tr class="@RowClass(itemCost, item.TotalPrice)">
+							<td>@(index++)</td>
+							<td>@(item.Product?.Name ?? "-")</td>
+							<td>
+								@(item.Unit?.Name ?? "-")
+								@if (item.ConversionFactor > 0 &&
+									item.ConversionFactor != 1)
+								{
+									<small class="text-muted">
+										(× @item.ConversionFactor.ToString("0.###") قطعة)
+									</small>
+								}
+							</td>
+							<td>@item.Quantity.ToString("N2")</td>
+							<td>
+								@if (item.ConversionFactor > 0 &&
+									item.ConversionFactor != 1)
+								{
+									@item.UnitPrice.ToString("N2")
+									<small class="text-muted">
+										(@((item.UnitPrice /
+											item.ConversionFactor).ToString("0.##")))
+									</small>
+								}
+								else
+								{
+									@item.UnitPrice.ToString("N2")
+								}
+							</td>
+							<td>@item.TotalPrice.ToString("N2")</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+
+		<!-- الإجماليات -->
+		<div class="row justify-content-end">
+			<div class="col-md-5">
+				<table class="table table-sm">
+					<tbody>
+
+						@* ═══ الإجمالي الفرعي ═══ *@
+						<tr>
+							<th>الإجمالي الفرعي</th>
+							<td class="text-end">@Model.SubTotal.ToString("N2")</td>
+						</tr>
+
+						@* ═══ الخصم ═══ *@
+						@if (Model.DiscountAmount > 0)
+						{
+							<tr>
+								<th>الخصم</th>
+								<td class="text-end">(@Model.DiscountAmount.ToString("N2"))</td>
+							</tr>
+						}
+
+						@* ═══ ض.ق.م ═══ *@
+						@if (Model.TaxRate > 0 || Model.TaxAmount > 0)
+						{
+							<tr>
+								<th>
+									ضريبة القيمة المضافة
+									@if (Model.TaxRate > 0)
+									{
+										<small class="text-muted">(@Model.TaxRate.ToString("0.##")%)</small>
+									}
+								</th>
+								<td class="text-end">@Model.TaxAmount.ToString("N2")</td>
+							</tr>
+						}
+
+						@* ═══ ضريبة المبيعات ═══ *@
+						@if (Model.SalesTaxRate > 0 || Model.SalesTaxAmount > 0)
+						{
+							<tr>
+								<th>
+									ضريبة المبيعات
+									@if (Model.SalesTaxRate > 0)
+									{
+										<small class="text-muted">(@Model.SalesTaxRate.ToString("0.##")%)</small>
+									}
+								</th>
+								<td class="text-end">@Model.SalesTaxAmount.ToString("N2")</td>
+							</tr>
+						}
+
+						@* ═══ الإجمالي النهائي ═══ *@
+						<tr class="table-dark fw-bold">
+							<th>الإجمالي</th>
+							<td class="text-end">@Model.TotalAmount.ToString("N2")</td>
+						</tr>
+
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		@if (!string.IsNullOrWhiteSpace(Model.Notes))
+		{
+			<div class="alert alert-light border">
+				<strong>ملاحظات:</strong> @Model.Notes
+			</div>
+		}
+	</div>
+</div>

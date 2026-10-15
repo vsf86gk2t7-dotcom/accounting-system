@@ -1,0 +1,65 @@
+﻿@model AccountingSystem.Models.EmployeeAdvance
+
+@{
+ViewData["Title"] = "تفاصيل سلفة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h2 class="mb-0">تفاصيل سلفة</h2>
+<a asp-action="Index" class="btn btn-outline-secondary">رجوع</a>
+</div>
+
+<div class="card shadow-sm border-0">
+<div class="card-body">
+<div class="row g-3">
+<div class="col-md-6">
+<label class="text-muted small">الموظف</label>
+<div class="fs-5 fw-bold">@Model.Employee?.Name</div>
+</div>
+<div class="col-md-6">
+<label class="text-muted small">المبلغ</label>
+<div class="fs-5 fw-bold text-primary">@Model.Amount.ToString("N2")</div>
+</div>
+<div class="col-md-6">
+<label class="text-muted small">التاريخ</label>
+<div>@Model.Date.ToString("yyyy-MM-dd")</div>
+</div>
+<div class="col-md-6">
+<label class="text-muted small">الخزنة</label>
+<div>@Model.CashAccount?.Name</div>
+</div>
+<div class="col-md-6">
+<label class="text-muted small">الحالة</label>
+<div>
+@if (Model.Status == AccountingSystem.Models.AdvanceStatus.Paid)
+{
+<span class="badge bg-warning text-dark">غير مخصومة من الراتب</span>
+}
+else if (Model.Status == AccountingSystem.Models.AdvanceStatus.Deducted)
+{
+<span class="badge bg-success">مخصومة من الراتب</span>
+}
+else
+{
+<span class="badge bg-secondary">ملغاة</span>
+}
+</div>
+</div>
+<div class="col-md-6">
+<label class="text-muted small">السبب</label>
+<div>@(Model.Reason ?? "—")</div>
+</div>
+@if (Model.JournalEntryId.HasValue)
+{
+<div class="col-md-6">
+<label class="text-muted small">القيد المحاسبي</label>
+<div>
+<a asp-controller="Accounting" asp-action="Journal">
+<i class="bi bi-journal"></i> عرض القيد
+</a>
+</div>
+</div>
+}
+</div>
+</div>
+</div>

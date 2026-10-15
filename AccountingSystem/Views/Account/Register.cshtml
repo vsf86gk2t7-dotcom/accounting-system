@@ -1,0 +1,926 @@
+﻿@model AccountingSystem.Models.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "تسجيل جديد";
+}
+
+<div class="register-page">
+
+    
+    <div class="register-container">
+
+        <!-- Header -->
+        <div class="register-header">
+            <div class="register-logo">
+                <i class="bi bi-person-plus-fill"></i>
+            </div>
+
+            <h1>إنشاء حساب جديد</h1>
+
+            <p>
+                أدخل بياناتك لإرسال طلب التسجيل إلى الإدارة
+            </p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="register-card">
+
+            <div class="register-card-header">
+                <h2>
+                    <i class="bi bi-person-lines-fill"></i>
+                    بيانات التسجيل
+                </h2>
+
+                <span class="required-note">
+                    الحقول المميزة بـ <span>*</span> مطلوبة
+                </span>
+            </div>
+
+            <div class="register-card-body">
+
+                <!-- Information -->
+                <div class="register-info">
+                    <div class="register-info-icon">
+                        <i class="bi bi-info-circle-fill"></i>
+                    </div>
+
+                    <div>
+                        <div class="register-info-title">
+                            قبل إرسال الطلب
+                        </div>
+
+                        <div class="register-info-text">
+                            سيتم مراجعة بياناتك من الإدارة، وبعد الموافقة
+                            سيتم إرسال كود تفعيل لاستخدامه عند أول تسجيل دخول.
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-action="Register"
+                      method="post"
+                      autocomplete="off">
+
+                    @Html.AntiForgeryToken()
+
+                    <!-- Validation -->
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger validation-summary">
+                    </div>
+
+                    <!-- Account Type -->
+                    <div class="form-section">
+
+                        <div class="section-title">
+                            <span>
+                                <i class="bi bi-person-vcard"></i>
+                                نوع الحساب
+                            </span>
+
+                            <span class="required-star">*</span>
+                        </div>
+
+                        <div class="account-types">
+
+                            <!-- Customer -->
+                            <div class="account-type">
+                                <input class="account-type-input"
+                                       type="radio"
+                                       asp-for="AccountType"
+                                       value="@((int)AccountingSystem.Models.ViewModels.RegisterType.Customer)"
+                                       id="typeCustomer" />
+
+                                <label class="account-type-label"
+                                       for="typeCustomer">
+
+                                    <div class="account-type-icon customer">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+
+                                    <div class="account-type-content">
+                                        <div class="account-type-title">
+                                            عميل
+                                        </div>
+
+                                        <div class="account-type-description">
+                                            حساب لعملاء الشركة
+                                        </div>
+                                    </div>
+
+                                    <div class="account-type-check">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+
+                                </label>
+                            </div>
+
+                            <!-- Supplier -->
+                            <div class="account-type">
+                                <input class="account-type-input"
+                                       type="radio"
+                                       asp-for="AccountType"
+                                       value="@((int)AccountingSystem.Models.ViewModels.RegisterType.Supplier)"
+                                       id="typeSupplier" />
+
+                                <label class="account-type-label"
+                                       for="typeSupplier">
+
+                                    <div class="account-type-icon supplier">
+                                        <i class="bi bi-building-fill"></i>
+                                    </div>
+
+                                    <div class="account-type-content">
+                                        <div class="account-type-title">
+                                            مورد
+                                        </div>
+
+                                        <div class="account-type-description">
+                                            حساب لموردي الشركة
+                                        </div>
+                                    </div>
+
+                                    <div class="account-type-check">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+
+                                </label>
+                            </div>
+
+                            <!-- Employee -->
+                            <div class="account-type">
+                                <input class="account-type-input"
+                                       type="radio"
+                                       asp-for="AccountType"
+                                       value="@((int)AccountingSystem.Models.ViewModels.RegisterType.Employee)"
+                                       id="typeEmployee" />
+
+                                <label class="account-type-label"
+                                       for="typeEmployee">
+
+                                    <div class="account-type-icon employee">
+                                        <i class="bi bi-person-badge-fill"></i>
+                                    </div>
+
+                                    <div class="account-type-content">
+                                        <div class="account-type-title">
+                                            موظف
+                                        </div>
+
+                                        <div class="account-type-description">
+                                            طلب إنشاء حساب موظف
+                                        </div>
+                                    </div>
+
+                                    <div class="account-type-check">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+
+                                </label>
+                            </div>
+
+                        </div>
+
+                        <span asp-validation-for="AccountType"
+                              class="field-error">
+                        </span>
+
+                    </div>
+
+                    <!-- Personal Information -->
+                    <div class="form-section">
+
+                        <div class="section-title">
+                            <span>
+                                <i class="bi bi-person"></i>
+                                البيانات الأساسية
+                            </span>
+                        </div>
+
+                        <div class="row g-3">
+
+                            <!-- Name -->
+                            <div class="col-12">
+                                <label asp-for="Name"
+                                       class="form-label">
+                                    الاسم الكامل
+                                    <span class="required-star">*</span>
+                                </label>
+
+                                <div class="modern-input">
+                                    <i class="bi bi-person"></i>
+
+                                    <input asp-for="Name"
+                                           class="form-control"
+                                           placeholder="اكتب الاسم بالكامل"
+                                           autocomplete="name" />
+                                </div>
+
+                                <span asp-validation-for="Name"
+                                      class="field-error">
+                                </span>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-12 col-md-6">
+                                <label asp-for="Phone"
+                                       class="form-label">
+                                    رقم الهاتف
+                                    <span class="required-star">*</span>
+                                </label>
+
+                                <div class="modern-input">
+                                    <i class="bi bi-telephone"></i>
+
+                                    <input asp-for="Phone"
+                                           class="form-control"
+                                           placeholder="01xxxxxxxxx"
+                                           inputmode="tel"
+                                           autocomplete="tel" />
+                                </div>
+
+                                <span asp-validation-for="Phone"
+                                      class="field-error">
+                                </span>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-12 col-md-6">
+                                <label asp-for="Email"
+                                       class="form-label">
+                                    البريد الإلكتروني
+                                    <span class="optional-label">
+                                        اختياري
+                                    </span>
+                                </label>
+
+                                <div class="modern-input">
+                                    <i class="bi bi-envelope"></i>
+
+                                    <input asp-for="Email"
+                                           type="email"
+                                           class="form-control"
+                                           placeholder="example@email.com"
+                                           autocomplete="email" />
+                                </div>
+
+                                <span asp-validation-for="Email"
+                                      class="field-error">
+                                </span>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="col-12">
+                                <label asp-for="Address"
+                                       class="form-label">
+                                    العنوان
+                                    <span class="optional-label">
+                                        اختياري
+                                    </span>
+                                </label>
+
+                                <div class="modern-textarea">
+                                    <i class="bi bi-geo-alt"></i>
+
+                                    <textarea asp-for="Address"
+                                              class="form-control"
+                                              rows="3"
+                                              placeholder="اكتب العنوان بالتفصيل"></textarea>
+                                </div>
+
+                                <span asp-validation-for="Address"
+                                      class="field-error">
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="submit-section">
+
+                        <button type="submit"
+                                class="register-submit">
+
+                            <span>
+                                <i class="bi bi-send-fill"></i>
+                                إرسال طلب التسجيل
+                            </span>
+
+                            <i class="bi bi-arrow-left"></i>
+
+                        </button>
+
+                        <div class="submit-note">
+                            <i class="bi bi-shield-check"></i>
+                            بياناتك تخضع للمراجعة من الإدارة
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="register-footer">
+
+                <span>
+                    لديك حساب بالفعل؟
+                </span>
+
+                <a asp-action="Login">
+                    تسجيل الدخول
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+
+            </div>
+
+        </div>
+
+        <!-- Bottom -->
+        <div class="page-footer">
+            <span>
+                <i class="bi bi-lock-fill"></i>
+                بياناتك محمية ويتم التعامل معها بسرية
+            </span>
+        </div>
+
+    </div>
+    
+
+</div>
+
+<style>
+
+    /* ================================
+           Page
+           ================================ */
+
+    .register-page {
+        min-height: calc(100vh - 70px);
+        padding: 40px 16px 50px;
+        background: radial-gradient(circle at top right, rgba(13, 110, 253, 0.08), transparent 35%), radial-gradient(circle at bottom left, rgba(25, 135, 84, 0.06), transparent 35%), #f6f8fb;
+    }
+
+    .register-container {
+        width: 100%;
+        max-width: 850px;
+        margin: 0 auto;
+    }
+
+
+    /* ================================
+           Header
+           ================================ */
+
+    .register-header {
+        text-align: center;
+        margin-bottom: 28px;
+    }
+
+    .register-logo {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 20px;
+        background: linear-gradient( 135deg, #0d6efd, #0a58ca );
+        color: #fff;
+        font-size: 30px;
+        box-shadow: 0 12px 30px rgba(13, 110, 253, 0.25);
+    }
+
+    .register-header h1 {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 800;
+        color: #172033;
+    }
+
+    .register-header p {
+        margin: 8px 0 0;
+        color: #6c757d;
+        font-size: 15px;
+    }
+
+
+    /* ================================
+           Card
+           ================================ */
+
+    .register-card {
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #e9edf3;
+        box-shadow: 0 15px 45px rgba(28, 39, 60, 0.08);
+    }
+
+    .register-card-header {
+        padding: 22px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        border-bottom: 1px solid #edf0f4;
+        background: #fcfdff;
+    }
+
+        .register-card-header h2 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 19px;
+            font-weight: 700;
+            color: #172033;
+        }
+
+            .register-card-header h2 i {
+                color: #0d6efd;
+            }
+
+    .required-note {
+        color: #8993a4;
+        font-size: 13px;
+    }
+
+        .required-note span,
+        .required-star {
+            color: #dc3545;
+        }
+
+    .register-card-body {
+        padding: 30px;
+    }
+
+
+    /* ================================
+           Information
+           ================================ */
+
+    .register-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 13px;
+        padding: 16px 18px;
+        margin-bottom: 30px;
+        background: #f2f7ff;
+        border: 1px solid #d9e8ff;
+        border-radius: 14px;
+    }
+
+    .register-info-icon {
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #dceaff;
+        color: #0d6efd;
+    }
+
+    .register-info-title {
+        font-weight: 700;
+        color: #17345f;
+        margin-bottom: 4px;
+    }
+
+    .register-info-text {
+        color: #667085;
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+
+    /* ================================
+           Sections
+           ================================ */
+
+    .form-section {
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #202938;
+    }
+
+        .section-title i {
+            color: #0d6efd;
+        }
+
+
+    /* ================================
+           Account Types
+           ================================ */
+
+    .account-types {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+    }
+
+    .account-type-input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .account-type-label {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 170px;
+        padding: 22px 15px;
+        border: 2px solid #e8ecf2;
+        border-radius: 16px;
+        background: #fff;
+        cursor: pointer;
+        text-align: center;
+        transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .account-type-label:hover {
+            border-color: #b9d3ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(13, 110, 253, 0.08);
+        }
+
+    .account-type-input:checked + .account-type-label {
+        border-color: #0d6efd;
+        background: #f4f8ff;
+        box-shadow: 0 8px 25px rgba(13, 110, 253, 0.12);
+    }
+
+    .account-type-icon {
+        width: 58px;
+        height: 58px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        font-size: 24px;
+        margin-bottom: 12px;
+    }
+
+        .account-type-icon.customer {
+            color: #0d6efd;
+            background: #e7f1ff;
+        }
+
+        .account-type-icon.supplier {
+            color: #198754;
+            background: #e7f7ef;
+        }
+
+        .account-type-icon.employee {
+            color: #b58105;
+            background: #fff4d6;
+        }
+
+    .account-type-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #202938;
+    }
+
+    .account-type-description {
+        margin-top: 5px;
+        font-size: 12px;
+        color: #8a94a6;
+    }
+
+    .account-type-check {
+        position: absolute;
+        top: 11px;
+        left: 11px;
+        color: #0d6efd;
+        opacity: 0;
+        transform: scale(0.7);
+        transition: all 0.2s ease;
+    }
+
+    .account-type-input:checked + .account-type-label .account-type-check {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+
+    /* ================================
+           Inputs
+           ================================ */
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #313b4d;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .optional-label {
+        color: #98a1b2;
+        font-size: 12px;
+        font-weight: 400;
+        margin-right: 4px;
+    }
+
+    .modern-input {
+        position: relative;
+    }
+
+        .modern-input > i {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            color: #8a94a6;
+            z-index: 2;
+        }
+
+        .modern-input .form-control {
+            padding-right: 45px;
+        }
+
+    .form-control {
+        min-height: 50px;
+        border: 1px solid #dce1e8;
+        border-radius: 12px;
+        background: #fff;
+        color: #202938;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.10);
+        }
+
+        .form-control::placeholder {
+            color: #adb5bd;
+        }
+
+    .modern-textarea {
+        position: relative;
+    }
+
+        .modern-textarea > i {
+            position: absolute;
+            top: 16px;
+            right: 15px;
+            color: #8a94a6;
+            z-index: 2;
+        }
+
+        .modern-textarea .form-control {
+            padding-right: 45px;
+            resize: vertical;
+        }
+
+
+    /* ================================
+           Validation
+           ================================ */
+
+    .validation-summary {
+        border-radius: 12px;
+    }
+
+    .field-error {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+        color: #dc3545;
+    }
+
+
+    /* ================================
+           Submit
+           ================================ */
+
+    .submit-section {
+        margin-top: 8px;
+    }
+
+    .register-submit {
+        width: 100%;
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        border: 0;
+        border-radius: 13px;
+        background: linear-gradient( 135deg, #0d6efd, #0a58ca );
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(13, 110, 253, 0.20);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .register-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(13, 110, 253, 0.25);
+        }
+
+        .register-submit span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    .submit-note {
+        margin-top: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        color: #8993a4;
+        font-size: 12px;
+    }
+
+        .submit-note i {
+            color: #198754;
+        }
+
+
+    /* ================================
+           Footer
+           ================================ */
+
+    .register-footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        padding: 20px;
+        border-top: 1px solid #edf0f4;
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+        .register-footer a {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #0d6efd;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+            .register-footer a:hover {
+                text-decoration: underline;
+            }
+
+
+    /* ================================
+           Page Footer
+           ================================ */
+
+    .page-footer {
+        text-align: center;
+        margin-top: 18px;
+        color: #9aa3b2;
+        font-size: 12px;
+    }
+
+        .page-footer i {
+            color: #198754;
+            margin-left: 3px;
+        }
+
+
+    /* ================================
+           Mobile
+           ================================ */
+
+    @@media (max-width: 767.98px) {
+
+        .register-page {
+            padding: 25px 12px 35px;
+        }
+
+        .register-header {
+            margin-bottom: 20px;
+        }
+
+        .register-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 17px;
+            font-size: 25px;
+        }
+
+        .register-header h1 {
+            font-size: 24px;
+        }
+
+        .register-header p {
+            font-size: 13px;
+        }
+
+        .register-card {
+            border-radius: 16px;
+        }
+
+        .register-card-header {
+            padding: 18px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .register-card-body {
+            padding: 18px;
+        }
+
+        .register-info {
+            margin-bottom: 22px;
+            padding: 14px;
+        }
+
+        .account-types {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .account-type-label {
+            min-height: auto;
+            flex-direction: row;
+            text-align: right;
+            padding: 14px;
+        }
+
+        .account-type-icon {
+            flex: 0 0 auto;
+            width: 48px;
+            height: 48px;
+            margin: 0 0 0 12px;
+            border-radius: 13px;
+            font-size: 20px;
+        }
+
+        .account-type-content {
+            flex: 1;
+        }
+
+        .account-type-check {
+            position: static;
+            margin-right: auto;
+        }
+
+        .register-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .page-footer {
+            padding: 0 10px;
+        }
+    }
+
+
+    /* ================================
+           Small Mobile
+           ================================ */
+
+    @@media (max-width: 400px) {
+
+        .register-card-body {
+            padding: 15px;
+        }
+
+        .register-header h1 {
+            font-size: 22px;
+        }
+
+        .register-info-text {
+            font-size: 13px;
+        }
+
+        .register-submit {
+            min-height: 50px;
+        }
+    }
+
+</style>
+
+@section Scripts {
+
+    
+    <partial name="_ValidationScriptsPartial" />
+    
+
+}

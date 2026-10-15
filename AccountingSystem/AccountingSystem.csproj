@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>accounting-system-secrets-2026</UserSecretsId>
+  </PropertyGroup>
+
+    <!--
+    ⚠️⚠️⚠️  CRITICAL WARNING — READ BEFORE EDITING  ⚠️⚠️⚠️
+
+    DO NOT add any line like:
+        <Compile Remove="Migrations_Archive\**\*.cs" />
+    DO NOT delete the Migrations_Archive folder.
+
+    The files inside Migrations_Archive are STILL COMPILED and are
+    responsible for creating 50 out of 53 tables. Deleting them or
+    excluding them from build will completely break any fresh database.
+
+    See: Migrations_Archive/README.md
+  -->
+  <ItemGroup>
+    <Compile Remove="Backups\**" />
+    <None Remove="Backups\**" />
+    <Content Remove="Backups\**" />
+    <Compile Remove="Backup_Dashboard_*\**" />
+    <None Remove="Backup_Dashboard_*\**" />
+    <Content Remove="Backup_Dashboard_*\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="QuestPDF" Version="2026.9.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\uploads\profiles\" />
+  </ItemGroup>
+
+</Project>

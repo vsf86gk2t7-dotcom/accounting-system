@@ -1,0 +1,209 @@
+@model AccountingSystem.Models.ViewModels.Inventory.InventoryAdjustViewModel
+
+@{
+	ViewData["Title"] = "تسوية مخزون";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تسوية مخزون</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للأرصدة
+	</a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<form asp-action="Adjust"
+	  method="post">
+
+	@Html.AntiForgeryToken()
+
+	<div class="card shadow-sm mb-3">
+
+		<div class="card-header">
+			<h5 class="mb-0">بيانات التسوية</h5>
+		</div>
+
+		<div class="card-body">
+
+			<div class="row g-3">
+
+				<div class="col-md-4">
+
+					<label asp-for="StoreId" class="form-label fw-semibold">
+						المخزن
+					</label>
+
+					<select asp-for="StoreId"
+							class="form-select"
+							id="adjStoreSelect">
+
+						<option value="0">
+							-- اختر المخزن --
+						</option>
+
+						@foreach (var store in Model.Stores)
+						{
+							<option value="@store.Key">@store.Value</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="StoreId" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label asp-for="ProductId" class="form-label fw-semibold">
+						المنتج
+					</label>
+
+					<select asp-for="ProductId"
+							class="form-select"
+							id="adjProductSelect">
+
+						<option value="0">
+							-- اختر المنتج --
+						</option>
+
+						@foreach (var product in Model.Products)
+						{
+							<option value="@product.Id">@product.Name</option>
+						}
+
+					</select>
+
+					<span asp-validation-for="ProductId" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label class="form-label fw-semibold">
+						الرصيد الحالي
+					</label>
+
+					<input type="text"
+						   id="currentQuantityDisplay"
+						   class="form-control"
+						   value="@Model.CurrentQuantity.ToString("N3")"
+						   disabled />
+
+				</div>
+
+				<div class="col-md-4">
+
+					<label asp-for="NewQuantity" class="form-label fw-semibold">
+						الكمية الجديدة
+					</label>
+
+					<input asp-for="NewQuantity"
+						   class="form-control"
+						   id="adjNewQuantity"
+						   min="0"
+						   step="0.001" />
+
+					<span asp-validation-for="NewQuantity" class="text-danger"></span>
+
+				</div>
+
+				<div class="col-md-8">
+
+					<label asp-for="Reason" class="form-label fw-semibold">
+						سبب التسوية
+					</label>
+
+					<input asp-for="Reason"
+						   class="form-control"
+						   placeholder="اكتب سبب التسوية (السبب إجباري)" />
+
+					<span asp-validation-for="Reason" class="text-danger"></span>
+
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div class="d-flex justify-content-end gap-2">
+
+		<a asp-action="Index"
+		   class="btn btn-outline-secondary">
+			إلغاء
+		</a>
+
+		<button type="submit"
+				class="btn btn-success px-4">
+			حفظ التسوية
+		</button>
+
+	</div>
+
+</form>
+
+@section Scripts
+{
+	<partial name="_ValidationScriptsPartial" />
+
+	<script>
+		const storeSelect =
+			document.getElementById("adjStoreSelect");
+
+		const productSelect =
+			document.getElementById("adjProductSelect");
+
+		const currentDisplay =
+			document.getElementById("currentQuantityDisplay");
+
+		function loadCurrentQuantity() {
+			const productId =
+				parseInt(productSelect.value);
+
+			const storeId =
+				parseInt(storeSelect.value);
+
+			if (!productId || !storeId) {
+				currentDisplay.value = "-";
+				return;
+			}
+
+			fetch(
+				`/Inventory/GetProductQuantity?productId=${productId}&storeId=${storeId}`
+			)
+				.then(r => r.json())
+				.then(data => {
+					currentDisplay.value =
+						Number(data.quantity).toFixed(3);
+				})
+				.catch(() => {
+					currentDisplay.value = "-";
+				});
+		}
+
+		if (productSelect) {
+			productSelect.addEventListener(
+				"change",
+				loadCurrentQuantity
+			);
+		}
+
+		if (storeSelect) {
+			storeSelect.addEventListener(
+				"change",
+				loadCurrentQuantity
+			);
+		}
+	</script>
+}

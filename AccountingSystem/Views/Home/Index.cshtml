@@ -1,0 +1,1315 @@
+﻿@model AccountingSystem.Models.ViewModels.Dashboard.DashboardViewModel
+
+@{
+	ViewData["Title"] = "لوحة التحكم";
+
+	var ar = System.Globalization.CultureInfo.GetCultureInfo("ar-EG");
+	string Money0(decimal v) => v.ToString("N0", ar);
+	string Money2(decimal v) => v.ToString("N2", ar);
+
+	// نسبة التغيير مقارنة بالفترة السابقة المماثلة
+	(string Text, string Css)? Delta(decimal current, decimal previous, bool higherIsBetter, bool neutral = false)
+	{
+		if (previous == 0m) return null;
+		var pct = (current - previous) / Math.Abs(previous) * 100m;
+		var up = pct >= 0;
+		var good = neutral ? (bool?)null : (up == higherIsBetter);
+		var css = good == null ? "d-delta-flat" : (good.Value ? "d-delta-good" : "d-delta-bad");
+		var arrow = up ? "▲" : "▼";
+		return ($"{arrow} {Math.Abs(pct).ToString("N0", ar)}٪", css);
+	}
+
+	var ranges = new[]
+	{
+		("today", "اليوم"),
+		("7d", "٧ أيام"),
+		("month", "الشهر"),
+		("3m", "٣ شهور"),
+		("year", "السنة")
+	};
+
+	// =========================================
+	// إنشاء سريع (يظهر حسب صلاحيات المستخدم)
+	// =========================================
+	var quick = new List<(string Perm, string Ctrl, string Act, string Icon, string Label)>
+	{
+		("sales.create", "SalesInvoice", "Create", "bi-receipt", "فاتورة بيع"),
+		("sales.create", "SalesInvoice", "Pos", "bi-upc-scan", "نقطة بيع"),
+		("purchase.create", "PurchaseInvoice", "Create", "bi-cart-plus", "فاتورة شراء"),
+		("treasury.receive", "Treasury", "Receive", "bi-box-arrow-in-down", "سند قبض"),
+		("treasury.pay", "Treasury", "Pay", "bi-box-arrow-up", "سند صرف"),
+		("customer.create", "Customer", "Create", "bi-person-plus", "عميل جديد"),
+		("supplier.create", "Supplier", "Create", "bi-truck", "مورد جديد"),
+		("product.create", "Product", "Create", "bi-box-seam", "منتج جديد"),
+		("sales.return.create", "SalesReturn", "Create", "bi-arrow-return-left", "مرتجع مبيعات"),
+		("purchase.return.create", "PurchaseReturn", "Create", "bi-arrow-return-right", "مرتجع مشتريات"),
+		("accounting.journal.create", "Accounting", "Create", "bi-journal-plus", "قيد يومية")
+	}.Where(q => Model.Can(q.Perm)).ToList();
+
+	// =========================================
+	// تصفّح الأقسام مع العدّاد
+	// =========================================
+	var browse = new List<(string Perm, string Ctrl, string Act, string Icon, string Label, int? Count)>
+	{
+		("sales.view", "SalesInvoice", "Index", "bi-receipt-cutoff", "فواتير البيع", Model.SalesInvoices),
+		("purchase.view", "PurchaseInvoice", "Index", "bi-bag-check", "فواتير الشراء", Model.PurchaseInvoices),
+		("customer.view", "Customer", "Index", "bi-people", "العملاء", Model.Customers),
+		("supplier.view", "Supplier", "Index", "bi-shop", "الموردون", Model.Suppliers),
+		("product.view", "Product", "Index", "bi-box-seam", "المنتجات", Model.Products),
+		("inventory.view", "Inventory", "Index", "bi-boxes", "المخزون", null),
+		("treasury.view", "Treasury", "Index", "bi-cash-coin", "الخزينة", null),
+		("accounting.view", "Accounting", "Journal", "bi-journal-text", "القيود", null),
+		("employee.view", "Employee", "Index", "bi-person-badge", "الموظفون", Model.Employees),
+		("store.view", "Store", "Index", "bi-building", "المخازن", Model.Stores),
+		("", "Reports", "Index", "bi-bar-chart-line", "التقارير", null)
+	}.Where(b => b.Perm == "" || Model.Can(b.Perm)).ToList();
+
+	// =========================================
+	// عناصر تحتاج إجراء
+	// =========================================
+	var attention = new List<(string Tone, string Icon, string Title, string Sub, string Url)>();
+
+	if (Model.CanSales && Model.OverdueSalesCount > 0)
+		attention.Add(("bad", "bi-alarm", $"{Model.OverdueSalesCount.ToString("N0", ar)} فاتورة بيع تجاوزت موعد الاستحقاق", $"بقيمة {Money0(Model.OverdueSalesAmount)} ج.م", Url.Action("Index", "SalesInvoice")!));
+
+	if (Model.CanSales && Model.UpcomingDueSalesCount > 0)
+		attention.Add(("warn", "bi-calendar-event", $"{Model.UpcomingDueSalesCount.ToString("N0", ar)} فاتورة بيع تستحق خلال ٧ أيام", "تابع التحصيل قبل الموعد", Url.Action("Index", "SalesInvoice")!));
+
+	if (Model.CanPurchases && Model.OverduePurchasesCount > 0)
+		attention.Add(("bad", "bi-exclamation-octagon", $"{Model.OverduePurchasesCount.ToString("N0", ar)} فاتورة شراء تجاوزت موعد السداد", $"بقيمة {Money0(Model.OverduePurchasesAmount)} ج.م", Url.Action("Index", "PurchaseInvoice")!));
+
+	if (Model.CanInventory && Model.OutOfStockProducts > 0)
+		attention.Add(("bad", "bi-box", $"{Model.OutOfStockProducts.ToString("N0", ar)} منتج نفد من المخزون", "راجع حركة المخزون وأعد الطلب", Url.Action("Index", "Inventory")!));
+
+	if (Model.CanInventory && Model.LowStockProducts > 0)
+		attention.Add(("warn", "bi-arrow-down-circle", $"{Model.LowStockProducts.ToString("N0", ar)} منتج وصل لحد الطلب", "الكمية أقل من أو تساوي الحد الأدنى", Url.Action("Index", "Inventory")!));
+
+	if (Model.CanSales && Model.DraftSales > 0)
+		attention.Add(("info", "bi-pencil-square", $"{Model.DraftSales.ToString("N0", ar)} فاتورة بيع مسودة", "لم يتم تأكيدها بعد", Url.Action("Index", "SalesInvoice")!));
+
+	if (Model.CanPurchases && Model.DraftPurchases > 0)
+		attention.Add(("info", "bi-pencil-square", $"{Model.DraftPurchases.ToString("N0", ar)} فاتورة شراء مسودة", "لم يتم ترحيلها بعد", Url.Action("Index", "PurchaseInvoice")!));
+
+	if (Model.PendingPortalRequests > 0)
+		attention.Add(("info", "bi-person-check", $"{Model.PendingPortalRequests.ToString("N0", ar)} طلب تفعيل بوابة", "عملاء أو موردون ينتظرون الموافقة",
+			Model.CanCustomers ? Url.Action("PortalRequests", "Customer")! : Url.Action("PortalRequests", "Supplier")!));
+
+	string Pct(decimal part, decimal whole) => whole == 0 ? "٠٪" : (part / whole * 100m).ToString("N0", ar) + "٪";
+	var maxProduct = Model.TopProducts.Count == 0 ? 1m : Model.TopProducts.Max(x => x.Amount);
+	var maxCustomer = Model.TopCustomers.Count == 0 ? 1m : Model.TopCustomers.Max(x => x.Amount);
+	var maxDebtor = Model.TopDebtors.Count == 0 ? 1m : Model.TopDebtors.Max(x => x.Amount);
+	var maxCreditor = Model.TopCreditors.Count == 0 ? 1m : Model.TopCreditors.Max(x => x.Amount);
+
+	var trendJson = System.Text.Json.JsonSerializer.Serialize(
+		Model.Trend.Select(t => new { l = t.Label, s = t.Sales, p = t.Purchases }));
+
+	var donutColors = new[] { "#3a6fe0", "#1ca06f", "#e0821f", "#6b57f0", "#1fa9c4" };
+	var mixTotal = Model.PaymentMix.Sum(x => x.Amount);
+}
+
+<style>
+	.d-wrap {
+		--d-ink: #16204a;
+		--d-muted: #6b7696;
+		--d-line: #e4e9f5;
+		--d-surface: #fff;
+		--d-sales: #3a6fe0;
+		--d-purch: #e0821f;
+		--d-good: #17855d;
+		--d-bad: #c8343f;
+		--d-warn: #b9740f;
+		--d-info: #4a5a8c;
+	}
+
+	.d-head {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px 20px;
+		align-items: flex-end;
+		justify-content: space-between;
+		margin-bottom: 18px;
+	}
+
+		.d-head h2 {
+			margin: 0 0 2px;
+		}
+
+		.d-head p {
+			margin: 0;
+			color: var(--d-muted);
+			font-size: .85rem;
+		}
+
+	.d-tools {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		align-items: center;
+	}
+
+	.d-seg {
+		display: inline-flex;
+		background: #eef2fb;
+		border-radius: 12px;
+		padding: 3px;
+	}
+
+		.d-seg a {
+			padding: 6px 14px;
+			border-radius: 9px;
+			font-size: .84rem;
+			font-weight: 600;
+			color: var(--d-muted);
+			text-decoration: none;
+		}
+
+			.d-seg a:hover {
+				color: var(--d-ink);
+			}
+
+			.d-seg a.active {
+				background: #fff;
+				color: var(--d-ink);
+				box-shadow: 0 1px 4px rgba(17, 26, 63, .12);
+			}
+
+			.d-seg a:focus-visible, .d-quick a:focus-visible, .d-kpi:focus-visible, .d-chip:focus-visible, .d-row:focus-visible {
+				outline: 3px solid #4f8cff;
+				outline-offset: 2px;
+			}
+
+	.d-panel {
+		background: var(--d-surface);
+		border-radius: 16px;
+		box-shadow: 0 4px 18px rgba(17, 26, 63, .07);
+		padding: 18px 20px;
+		height: 100%;
+	}
+
+	.d-panel-title {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		margin: 0 0 14px;
+		font-size: .98rem;
+		font-weight: 700;
+		color: var(--d-ink);
+	}
+
+		.d-panel-title a {
+			font-size: .78rem;
+			font-weight: 600;
+			text-decoration: none;
+		}
+
+	.d-empty {
+		color: var(--d-muted);
+		font-size: .85rem;
+		margin: 6px 0 0;
+	}
+
+	/* اختصارات */
+	.d-shortcuts {
+		margin-bottom: 18px;
+	}
+
+	.d-quick {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-bottom: 14px;
+	}
+
+		.d-quick a {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 9px 15px;
+			border-radius: 11px;
+			background: #111a3f;
+			color: #fff;
+			font-size: .86rem;
+			font-weight: 600;
+			text-decoration: none;
+			transition: background .15s;
+		}
+
+			.d-quick a:hover {
+				background: #2a3a7a;
+				color: #fff;
+			}
+
+			.d-quick a i {
+				font-size: 1.05rem;
+				color: #7de3ff;
+			}
+
+	.d-browse {
+		display: flex;
+		gap: 8px;
+		overflow-x: auto;
+		padding-bottom: 4px;
+	}
+
+	.d-chip {
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 13px;
+		border: 1px solid var(--d-line);
+		border-radius: 11px;
+		background: #fff;
+		color: var(--d-ink);
+		font-size: .84rem;
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+		.d-chip:hover {
+			border-color: #4f8cff;
+			background: #f5f8ff;
+			color: var(--d-ink);
+		}
+
+		.d-chip i {
+			color: #4f8cff;
+			font-size: 1rem;
+		}
+
+		.d-chip b {
+			background: #eef2fb;
+			border-radius: 7px;
+			padding: 1px 7px;
+			font-size: .76rem;
+			color: var(--d-muted);
+		}
+
+	/* مؤشرات */
+	.d-kpis {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+		gap: 14px;
+		margin-bottom: 18px;
+	}
+
+	.d-kpi {
+		display: block;
+		background: var(--d-surface);
+		border-radius: 16px;
+		box-shadow: 0 4px 18px rgba(17, 26, 63, .07);
+		padding: 16px 18px;
+		text-decoration: none;
+		color: inherit;
+		border-top: 4px solid var(--k, #4f8cff);
+		transition: transform .15s, box-shadow .15s;
+	}
+
+		.d-kpi:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 24px rgba(17, 26, 63, .12);
+			color: inherit;
+		}
+
+	.d-kpi-label {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: .82rem;
+		font-weight: 600;
+		color: var(--d-muted);
+	}
+
+		.d-kpi-label i {
+			color: var(--k, #4f8cff);
+			font-size: 1.15rem;
+		}
+
+	.d-kpi-value {
+		font-size: 1.6rem;
+		font-weight: 800;
+		color: var(--d-ink);
+		line-height: 1.25;
+		margin: 6px 0 4px;
+		white-space: nowrap;
+	}
+
+		.d-kpi-value small {
+			font-size: .78rem;
+			font-weight: 600;
+			color: var(--d-muted);
+		}
+
+	.d-kpi-foot {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 10px;
+		align-items: center;
+		font-size: .78rem;
+		color: var(--d-muted);
+		min-height: 20px;
+	}
+
+	.d-delta-good {
+		color: var(--d-good);
+		font-weight: 700;
+	}
+
+	.d-delta-bad {
+		color: var(--d-bad);
+		font-weight: 700;
+	}
+
+	.d-delta-flat {
+		color: var(--d-info);
+		font-weight: 700;
+	}
+
+	/* الرسم */
+	.d-legend {
+		display: flex;
+		gap: 16px;
+		font-size: .8rem;
+		color: var(--d-muted);
+	}
+
+		.d-legend span::before {
+			content: "";
+			display: inline-block;
+			width: 10px;
+			height: 10px;
+			border-radius: 3px;
+			margin-inline-end: 6px;
+			background: var(--c);
+		}
+
+	#trendChart {
+		position: relative;
+		direction: ltr;
+		width: 100%;
+		min-height: 280px;
+	}
+
+		#trendChart svg {
+			display: block;
+			width: 100%;
+			height: 280px;
+		}
+
+	.d-tip {
+		position: absolute;
+		pointer-events: none;
+		background: #111a3f;
+		color: #fff;
+		padding: 8px 11px;
+		border-radius: 9px;
+		font-size: .78rem;
+		line-height: 1.6;
+		direction: rtl;
+		white-space: nowrap;
+		opacity: 0;
+		transition: opacity .1s;
+		z-index: 5;
+	}
+
+		.d-tip.on {
+			opacity: 1;
+		}
+
+		.d-tip b {
+			color: #7de3ff;
+		}
+
+	/* تنبيهات وقوائم */
+	.d-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.d-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 8px;
+		border-radius: 11px;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	a.d-row:hover {
+		background: #f5f8ff;
+		color: inherit;
+	}
+
+	.d-row + .d-row {
+		border-top: 1px solid #f0f3fa;
+	}
+
+	.d-ico {
+		width: 36px;
+		height: 36px;
+		flex: 0 0 auto;
+		border-radius: 10px;
+		display: grid;
+		place-items: center;
+		font-size: 1rem;
+		background: color-mix(in srgb, var(--t) 14%, #fff);
+		color: var(--t);
+	}
+
+	.d-tone-bad {
+		--t: var(--d-bad);
+	}
+
+	.d-tone-warn {
+		--t: var(--d-warn);
+	}
+
+	.d-tone-info {
+		--t: var(--d-info);
+	}
+
+	.d-row-main {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.d-row-title {
+		font-size: .86rem;
+		font-weight: 700;
+		color: var(--d-ink);
+	}
+
+	.d-row-sub {
+		font-size: .76rem;
+		color: var(--d-muted);
+	}
+
+	.d-ok {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		color: var(--d-good);
+		font-weight: 600;
+		font-size: .9rem;
+		padding: 12px 4px;
+	}
+
+	/* أشرطة */
+	.d-bar-row {
+		margin-bottom: 12px;
+	}
+
+	.d-bar-top {
+		display: flex;
+		justify-content: space-between;
+		gap: 10px;
+		font-size: .84rem;
+		margin-bottom: 4px;
+	}
+
+		.d-bar-top span:first-child {
+			font-weight: 600;
+			color: var(--d-ink);
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.d-bar-top span:last-child {
+			color: var(--d-muted);
+			white-space: nowrap;
+		}
+
+	.d-bar {
+		height: 8px;
+		border-radius: 6px;
+		background: #eef2fb;
+		overflow: hidden;
+	}
+
+		.d-bar > i {
+			display: block;
+			height: 100%;
+			border-radius: 6px;
+			background: var(--b, #4f8cff);
+		}
+
+	/* دونات */
+	.d-donut {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 16px;
+	}
+
+		.d-donut svg {
+			width: 150px;
+			height: 150px;
+			flex: 0 0 auto;
+		}
+
+	.d-donut-legend {
+		flex: 1;
+		min-width: 150px;
+		font-size: .84rem;
+	}
+
+		.d-donut-legend div {
+			display: flex;
+			justify-content: space-between;
+			gap: 10px;
+			padding: 4px 0;
+		}
+
+		.d-donut-legend span::before {
+			content: "";
+			display: inline-block;
+			width: 10px;
+			height: 10px;
+			border-radius: 3px;
+			margin-inline-end: 7px;
+			background: var(--c);
+		}
+
+	/* جداول */
+	.d-table {
+		width: 100%;
+		font-size: .84rem;
+	}
+
+		.d-table th {
+			color: var(--d-muted);
+			font-weight: 600;
+			font-size: .76rem;
+			padding: 6px 8px;
+			border-bottom: 1px solid var(--d-line);
+		}
+
+		.d-table td {
+			padding: 9px 8px;
+			border-bottom: 1px solid #f0f3fa;
+		}
+
+		.d-table tr:last-child td {
+			border-bottom: 0;
+		}
+
+		.d-table a {
+			text-decoration: none;
+			font-weight: 700;
+		}
+
+	.d-num {
+		font-weight: 700;
+		color: var(--d-ink);
+		white-space: nowrap;
+	}
+
+	.d-grid-3 {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+		gap: 14px;
+		margin-bottom: 18px;
+	}
+
+	.d-grid-main {
+		display: grid;
+		grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+		gap: 14px;
+		margin-bottom: 18px;
+	}
+
+	.d-grid-2 {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+		gap: 14px;
+		margin-bottom: 18px;
+	}
+
+	@@media (max-width: 991px) {
+		.d-grid-main {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.visually-hidden-table {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+	}
+
+	@@media (prefers-reduced-motion: reduce) {
+		.d-kpi, .d-tip {
+			transition: none;
+		}
+
+			.d-kpi:hover {
+				transform: none;
+			}
+	}
+</style>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show" role="alert">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show" role="alert">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+<div class="d-wrap">
+
+	<!-- الرأس + فلتر الفترة -->
+	<div class="d-head">
+		<div>
+			<h2>لوحة التحكم</h2>
+			<p>
+				@Model.RangeLabel — من @Model.From.ToString("yyyy/MM/dd") إلى @Model.To.ToString("yyyy/MM/dd")
+				· مقارنة بالفترة السابقة المماثلة
+			</p>
+		</div>
+		<div class="d-tools">
+			<nav class="d-seg" aria-label="الفترة الزمنية">
+				@foreach (var r in ranges)
+				{
+					<a asp-action="Index" asp-route-range="@r.Item1"
+					   class="@(Model.Range == r.Item1 ? "active" : "")"
+					   aria-current="@(Model.Range == r.Item1 ? "true" : null)">@r.Item2</a>
+				}
+			</nav>
+			@if (User.IsInRole("Admin"))
+			{
+				<button type="button"
+						class="btn btn-outline-danger btn-sm"
+						data-bs-toggle="modal"
+						data-bs-target="#factoryResetModal">
+					<i class="bi bi-arrow-counterclockwise"></i>
+					إعادة ضبط المصنع
+				</button>
+			}
+		</div>
+	</div>
+
+	<!-- اختصارات سريعة -->
+	<div class="d-panel d-shortcuts">
+		@if (quick.Count > 0)
+		{
+			<div class="d-panel-title">إنشاء سريع</div>
+			<div class="d-quick">
+				@foreach (var q in quick)
+				{
+					<a asp-controller="@q.Ctrl" asp-action="@q.Act"><i class="bi @q.Icon"></i>@q.Label</a>
+				}
+			</div>
+		}
+		<div class="d-panel-title">الأقسام</div>
+		<div class="d-browse">
+			@foreach (var b in browse)
+			{
+				<a class="d-chip" asp-controller="@b.Ctrl" asp-action="@b.Act">
+					<i class="bi @b.Icon"></i>@b.Label
+					@if (b.Count.HasValue)
+					{
+						<b>@b.Count.Value.ToString("N0", ar)</b>
+					}
+				</a>
+			}
+		</div>
+	</div>
+
+	<!-- المؤشرات الرئيسية -->
+	<div class="d-kpis">
+
+		@if (Model.CanSales)
+		{
+			var d = Delta(Model.SalesTotal, Model.SalesPrevious, true);
+			<a class="d-kpi" style="--k:#3a6fe0" asp-controller="SalesInvoice" asp-action="Index">
+				<div class="d-kpi-label">مبيعات الفترة <i class="bi bi-graph-up-arrow"></i></div>
+				<div class="d-kpi-value">@Money0(Model.SalesTotal) <small>ج.م</small></div>
+				<div class="d-kpi-foot">
+					<span>@Model.SalesCount.ToString("N0", ar) فاتورة</span>
+					@if (d != null)
+					{
+						<span class="@d.Value.Css">@d.Value.Text</span>
+					}
+				</div>
+			</a>
+		}
+
+		@if (Model.CanPurchases)
+		{
+			var d = Delta(Model.PurchaseTotal, Model.PurchasePrevious, false, neutral: true);
+			<a class="d-kpi" style="--k:#e0821f" asp-controller="PurchaseInvoice" asp-action="Index">
+				<div class="d-kpi-label">مشتريات الفترة <i class="bi bi-cart-check"></i></div>
+				<div class="d-kpi-value">@Money0(Model.PurchaseTotal) <small>ج.م</small></div>
+				<div class="d-kpi-foot">
+					<span>@Model.PurchaseCount.ToString("N0", ar) فاتورة</span>
+					@if (d != null)
+					{
+						<span class="@d.Value.Css">@d.Value.Text</span>
+					}
+				</div>
+			</a>
+		}
+
+		@if (Model.CanAccounting)
+		{
+			var d = Delta(Model.NetProfit, Model.NetProfitPrevious, true);
+			<a class="d-kpi" style="--k:@(Model.NetProfit >= 0 ? "#17855d" : "#c8343f")" asp-controller="Accounting" asp-action="IncomeStatement">
+				<div class="d-kpi-label">صافي الربح <i class="bi bi-piggy-bank"></i></div>
+				<div class="d-kpi-value" style="color:@(Model.NetProfit >= 0 ? "#17855d" : "#c8343f")">@Money0(Model.NetProfit) <small>ج.م</small></div>
+				<div class="d-kpi-foot">
+					<span>إيرادات @Money0(Model.Revenue)</span>
+					<span>مصروفات @Money0(Model.Expenses)</span>
+					@if (d != null)
+					{
+						<span class="@d.Value.Css">@d.Value.Text</span>
+					}
+				</div>
+			</a>
+		}
+
+		@if (Model.CanTreasury)
+		{
+			<a class="d-kpi" style="--k:#1fa9c4" asp-controller="Treasury" asp-action="Index">
+				<div class="d-kpi-label">رصيد الخزينة والبنوك <i class="bi bi-cash-stack"></i></div>
+				<div class="d-kpi-value">@Money0(Model.CashBalance) <small>ج.م</small></div>
+				<div class="d-kpi-foot">
+					<span class="d-delta-good">اليوم: قبض @Money0(Model.TodayReceipts)</span>
+					<span class="d-delta-bad">صرف @Money0(Model.TodayPayments)</span>
+				</div>
+			</a>
+		}
+
+		@if (Model.CanCustomers)
+		{
+			<a class="d-kpi" style="--k:#6b57f0" asp-controller="Customer" asp-action="Index">
+				<div class="d-kpi-label">مستحقات لدى العملاء <i class="bi bi-people"></i></div>
+				<div class="d-kpi-value">@Money0(Model.Receivables) <small>ج.م</small></div>
+				<div class="d-kpi-foot"><span>@Model.Customers.ToString("N0", ar) عميل</span></div>
+			</a>
+		}
+
+		@if (Model.CanSuppliers)
+		{
+			<a class="d-kpi" style="--k:#c8343f" asp-controller="Supplier" asp-action="Index">
+				<div class="d-kpi-label">مستحقات للموردين <i class="bi bi-shop"></i></div>
+				<div class="d-kpi-value">@Money0(Model.Payables) <small>ج.م</small></div>
+				<div class="d-kpi-foot"><span>@Model.Suppliers.ToString("N0", ar) مورد</span></div>
+			</a>
+		}
+
+		@if (Model.CanInventory)
+		{
+			<a class="d-kpi" style="--k:#27c08b" asp-controller="Inventory" asp-action="Index">
+				<div class="d-kpi-label">قيمة المخزون <i class="bi bi-boxes"></i></div>
+				<div class="d-kpi-value">@Money0(Model.StockValue) <small>ج.م</small></div>
+				<div class="d-kpi-foot">
+					<span>@Model.Products.ToString("N0", ar) منتج</span>
+					@if (Model.LowStockProducts > 0)
+					{
+						<span class="d-delta-bad">@Model.LowStockProducts.ToString("N0", ar) تحت الحد الأدنى</span>
+					}
+				</div>
+			</a>
+		}
+
+	</div>
+
+	<!-- المنحنى + التنبيهات -->
+	<div class="d-grid-main">
+
+		<div class="d-panel">
+			<div class="d-panel-title">
+				<span>المبيعات والمشتريات</span>
+				<span class="d-legend">
+					@if (Model.CanSales)
+					{
+						<span style="--c:#3a6fe0">مبيعات</span>
+					}
+					@if (Model.CanPurchases)
+					{
+						<span style="--c:#e0821f">مشتريات</span>
+					}
+				</span>
+			</div>
+			<div id="trendChart" role="img" aria-label="رسم بياني للمبيعات والمشتريات خلال الفترة"></div>
+			<script type="application/json" id="trendData">@Html.Raw(trendJson)</script>
+		</div>
+
+		<div class="d-panel">
+			<div class="d-panel-title">يحتاج إجراء</div>
+			@if (attention.Count == 0)
+			{
+				<div class="d-ok"><i class="bi bi-check-circle-fill"></i> لا توجد عناصر تحتاج متابعة الآن</div>
+			}
+			else
+			{
+				<div class="d-list">
+					@foreach (var a in attention)
+					{
+						<a class="d-row" href="@a.Url">
+							<span class="d-ico d-tone-@a.Tone"><i class="bi @a.Icon"></i></span>
+							<span class="d-row-main">
+								<span class="d-row-title d-block">@a.Title</span>
+								<span class="d-row-sub">@a.Sub</span>
+							</span>
+						</a>
+					}
+				</div>
+			}
+		</div>
+
+	</div>
+
+	@if (Model.CanSales)
+	{
+		<!-- تحليل المبيعات -->
+		<div class="d-grid-3">
+
+			<div class="d-panel">
+				<div class="d-panel-title">طرق الدفع</div>
+				@if (Model.PaymentMix.Count == 0)
+				{
+					<p class="d-empty">لا توجد مبيعات في هذه الفترة.</p>
+				}
+				else
+				{
+					const double circ = 2 * Math.PI * 54;
+					double offset = 0;
+					<div class="d-donut">
+						<svg viewBox="0 0 150 150" role="img" aria-label="توزيع المبيعات حسب طريقة الدفع">
+							<g transform="rotate(-90 75 75)">
+								@for (var i = 0; i < Model.PaymentMix.Count; i++)
+								{
+									var share = (double)(Model.PaymentMix[i].Amount / mixTotal);
+									var len = share * circ;
+									<circle cx="75" cy="75" r="54" fill="none" stroke="@donutColors[i % donutColors.Length]" stroke-width="22"
+											stroke-dasharray="@len.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) @((circ - len).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))"
+											stroke-dashoffset="@((-offset).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" />
+									offset += len;
+								}
+							</g>
+							<text x="75" y="72" text-anchor="middle" font-size="11" fill="#6b7696">الإجمالي</text>
+							<text x="75" y="90" text-anchor="middle" font-size="14" font-weight="800" fill="#16204a">@Money0(mixTotal)</text>
+						</svg>
+						<div class="d-donut-legend">
+							@for (var i = 0; i < Model.PaymentMix.Count; i++)
+							{
+								<div style="--c:@donutColors[i % donutColors.Length]">
+									<span>@Model.PaymentMix[i].Name</span>
+									<b>@Pct(Model.PaymentMix[i].Amount, mixTotal)</b>
+								</div>
+							}
+						</div>
+					</div>
+				}
+			</div>
+
+			<div class="d-panel">
+				<div class="d-panel-title">
+					<span>أعلى المنتجات مبيعًا</span>
+					<a asp-controller="Product" asp-action="Index">كل المنتجات</a>
+				</div>
+				@if (Model.TopProducts.Count == 0)
+				{
+					<p class="d-empty">لا توجد مبيعات في هذه الفترة.</p>
+				}
+				@foreach (var p in Model.TopProducts)
+				{
+					<div class="d-bar-row">
+						<div class="d-bar-top"><span>@p.Name</span><span>@Money0(p.Amount) ج.م</span></div>
+						<div class="d-bar"><i style="width:@((p.Amount / maxProduct * 100m).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i></div>
+					</div>
+				}
+			</div>
+
+			<div class="d-panel">
+				<div class="d-panel-title">
+					<span>أعلى العملاء شراءً</span>
+					<a asp-controller="Customer" asp-action="Index">كل العملاء</a>
+				</div>
+				@if (Model.TopCustomers.Count == 0)
+				{
+					<p class="d-empty">لا توجد مبيعات لعملاء مسجلين في هذه الفترة.</p>
+				}
+				@foreach (var c in Model.TopCustomers)
+				{
+					<div class="d-bar-row">
+						<div class="d-bar-top"><span>@c.Name</span><span>@Money0(c.Amount) ج.م</span></div>
+						<div class="d-bar"><i style="--b:#6b57f0;width:@((c.Amount / maxCustomer * 100m).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i></div>
+					</div>
+				}
+			</div>
+
+		</div>
+	}
+
+	@if (Model.CanCustomers || Model.CanSuppliers || Model.CanTreasury || Model.CanInventory)
+	{
+		<!-- الأرصدة -->
+		<div class="d-grid-3">
+
+			@if (Model.CanCustomers)
+			{
+				<div class="d-panel">
+					<div class="d-panel-title">
+						<span>أكبر مديونيات العملاء</span>
+						<a asp-controller="Customer" asp-action="Index">عرض الكل</a>
+					</div>
+					@if (Model.TopDebtors.Count == 0)
+					{
+						<p class="d-empty">لا توجد مديونيات مستحقة.</p>
+					}
+					@foreach (var c in Model.TopDebtors)
+					{
+						<div class="d-bar-row">
+							<div class="d-bar-top"><span>@c.Name</span><span>@Money0(c.Amount) ج.م</span></div>
+							<div class="d-bar"><i style="--b:#6b57f0;width:@((c.Amount / maxDebtor * 100m).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i></div>
+						</div>
+					}
+				</div>
+			}
+
+			@if (Model.CanSuppliers)
+			{
+				<div class="d-panel">
+					<div class="d-panel-title">
+						<span>أكبر مستحقات الموردين</span>
+						<a asp-controller="Supplier" asp-action="Index">عرض الكل</a>
+					</div>
+					@if (Model.TopCreditors.Count == 0)
+					{
+						<p class="d-empty">لا توجد مستحقات للموردين.</p>
+					}
+					@foreach (var s in Model.TopCreditors)
+					{
+						<div class="d-bar-row">
+							<div class="d-bar-top"><span>@s.Name</span><span>@Money0(s.Amount) ج.م</span></div>
+							<div class="d-bar"><i style="--b:#c8343f;width:@((s.Amount / maxCreditor * 100m).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i></div>
+						</div>
+					}
+				</div>
+			}
+
+			@if (Model.CanTreasury)
+			{
+				<div class="d-panel">
+					<div class="d-panel-title">
+						<span>الخزينة والبنوك</span>
+						<a asp-controller="Treasury" asp-action="Index">الحركات</a>
+					</div>
+					@if (Model.CashAccounts.Count == 0)
+					{
+						<p class="d-empty">لا توجد حسابات نقدية.</p>
+					}
+					<div class="d-list">
+						@foreach (var a in Model.CashAccounts)
+						{
+							<div class="d-row">
+								<span class="d-ico" style="--t:#1fa9c4"><i class="bi bi-wallet2"></i></span>
+								<span class="d-row-main"><span class="d-row-title">@a.Name</span></span>
+								<span class="d-num" style="color:@(a.Amount < 0 ? "#c8343f" : "#16204a")">@Money2(a.Amount)</span>
+							</div>
+						}
+					</div>
+				</div>
+			}
+
+			@if (Model.CanInventory)
+			{
+				<div class="d-panel">
+					<div class="d-panel-title">
+						<span>نواقص المخزون</span>
+						<a asp-controller="Inventory" asp-action="Index">المخزون</a>
+					</div>
+					@if (Model.LowStockList.Count == 0)
+					{
+						<div class="d-ok"><i class="bi bi-check-circle-fill"></i> كل المنتجات فوق الحد الأدنى</div>
+					}
+					<div class="d-list">
+						@foreach (var p in Model.LowStockList)
+						{
+							<div class="d-row">
+								<span class="d-ico d-tone-@(p.Remaining <= 0 ? "bad" : "warn")"><i class="bi bi-box"></i></span>
+								<span class="d-row-main">
+									<span class="d-row-title d-block">@p.Name</span>
+									<span class="d-row-sub">الحد الأدنى @p.Min.ToString("N0", ar)</span>
+								</span>
+								<span class="d-num">@p.Remaining.ToString("N0", ar)</span>
+							</div>
+						}
+					</div>
+				</div>
+			}
+
+		</div>
+	}
+
+	@if (Model.CanSales || Model.CanPurchases)
+	{
+		<!-- أحدث الفواتير -->
+		<div class="d-grid-2">
+
+			@if (Model.CanSales)
+			{
+				<div class="d-panel">
+					<div class="d-panel-title">
+						<span>أحدث فواتير البيع</span>
+						<a asp-controller="SalesInvoice" asp-action="Index">عرض الكل</a>
+					</div>
+					@if (Model.RecentSales.Count == 0)
+					{
+						<p class="d-empty">لا توجد فواتير بيع مؤكدة بعد.</p>
+					}
+					else
+					{
+						<div class="table-responsive">
+							<table class="d-table">
+								<thead><tr><th>رقم الفاتورة</th><th>العميل</th><th>التاريخ</th><th>الإجمالي</th></tr></thead>
+								<tbody>
+									@foreach (var inv in Model.RecentSales)
+									{
+										<tr>
+											<td><a asp-controller="SalesInvoice" asp-action="Details" asp-route-id="@inv.Id">@inv.InvoiceNumber</a></td>
+											<td>@(inv.Customer?.Name ?? "عميل نقدي")</td>
+											<td>@inv.InvoiceDate.ToString("yyyy/MM/dd")</td>
+											<td class="d-num">@Money2(inv.TotalAmount)</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						</div>
+					}
+				</div>
+			}
+
+			@if (Model.CanPurchases)
+			{
+				<div class="d-panel">
+					<div class="d-panel-title">
+						<span>أحدث فواتير الشراء</span>
+						<a asp-controller="PurchaseInvoice" asp-action="Index">عرض الكل</a>
+					</div>
+					@if (Model.RecentPurchases.Count == 0)
+					{
+						<p class="d-empty">لا توجد فواتير شراء مرحّلة بعد.</p>
+					}
+					else
+					{
+						<div class="table-responsive">
+							<table class="d-table">
+								<thead><tr><th>رقم الفاتورة</th><th>المورد</th><th>التاريخ</th><th>الإجمالي</th></tr></thead>
+								<tbody>
+									@foreach (var inv in Model.RecentPurchases)
+									{
+										<tr>
+											<td><a asp-controller="PurchaseInvoice" asp-action="Details" asp-route-id="@inv.Id">@inv.InvoiceNumber</a></td>
+											<td>@(inv.Supplier?.Name ?? "-")</td>
+											<td>@inv.InvoiceDate.ToString("yyyy/MM/dd")</td>
+											<td class="d-num">@Money2(inv.TotalAmount)</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						</div>
+					}
+				</div>
+			}
+
+		</div>
+	}
+
+</div>
+
+<!-- =========================================
+ نافذة إعادة ضبط المصنع
+ ========================================= -->
+@if (User.IsInRole("Admin"))
+{
+	<div class="modal fade" id="factoryResetModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header bg-danger text-white">
+					<h5 class="modal-title">إعادة ضبط المصنع</h5>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+				</div>
+
+				<form asp-action="FactoryReset" asp-controller="Home" method="post">
+					@Html.AntiForgeryToken()
+
+					<div class="modal-body">
+						<div class="alert alert-danger small">
+							<strong>تنبيه:</strong> سيتم حذف جميع بيانات العمل نهائيًا —
+							الفواتير، المخزون، الحركات، الحسابات، العملاء، الموردين،
+							الموظفون، وكل شيء عدا حساب الأدمن والأدوار والصلاحيات.
+							لا يمكن التراجع عن هذه العملية.
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">كلمة مرور الأدمن</label>
+							<input type="password"
+								   name="Password"
+								   class="form-control"
+								   required
+								   autocomplete="new-password" />
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">
+								اكتب كلمة التأكيد التالية بالضبط:
+								<strong>@Html.Raw(AccountingSystem.Controllers.HomeController.ResetConfirmationWord)</strong>
+							</label>
+							<input type="text"
+								   name="ConfirmationWord"
+								   class="form-control"
+								   required
+								   autocomplete="off" />
+						</div>
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+							إلغاء
+						</button>
+						<button type="submit" class="btn btn-danger">
+							تأكيد إعادة الضبط
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+}
+
+@section Scripts {
+	<script>
+		(function() {
+			var host = document.getElementById('trendChart');
+			var raw = document.getElementById('trendData');
+			if (!host || !raw) return;
+
+			var data = JSON.parse(raw.textContent || '[]');
+			var showSales = @(Model.CanSales ? "true" : "false");
+			var showPurch = @(Model.CanPurchases ? "true" : "false");
+			var nf = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 });
+			var compact = new Intl.NumberFormat('ar-EG', { notation: 'compact', maximumFractionDigits: 1 });
+			var C_SALES = '#3a6fe0', C_PURCH = '#e0821f', GRID = '#e4e9f5', MUTED = '#6b7696';
+
+			var tip = document.createElement('div');
+			tip.className = 'd-tip';
+
+			function niceStep(max) {
+				var raw = max / 4;
+				var pow = Math.pow(10, Math.floor(Math.log10(raw)));
+				var f = raw / pow;
+				var nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+				return nice * pow;
+			}
+
+			function render() {
+				host.innerHTML = '';
+				var peak = 0;
+				data.forEach(function(d) {
+					if (showSales) peak = Math.max(peak, d.s);
+					if (showPurch) peak = Math.max(peak, d.p);
+				});
+
+				if (!data.length || peak <= 0) {
+					host.innerHTML = '<p class="d-empty" style="direction:rtl;padding-top:90px;text-align:center">لا توجد حركة في هذه الفترة.</p>';
+					return;
+				}
+
+				var W = host.clientWidth || 600, H = 280;
+				var m = { l: 52, r: 8, t: 10, b: 28 };
+				var pw = W - m.l - m.r, ph = H - m.t - m.b;
+				var step = niceStep(peak), top = Math.ceil(peak / step) * step;
+				var y = function(v) { return m.t + ph - (v / top) * ph; };
+				var gw = pw / data.length;
+				var series = [];
+				if (showSales) series.push({ k: 's', c: C_SALES });
+				if (showPurch) series.push({ k: 'p', c: C_PURCH });
+				var bw = Math.max(3, Math.min(20, gw * 0.7 / series.length));
+
+				var NS = 'http://www.w3.org/2000/svg';
+				var svg = document.createElementNS(NS, 'svg');
+				svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+				svg.setAttribute('preserveAspectRatio', 'none');
+
+				function el(name, attrs, text) {
+					var e = document.createElementNS(NS, name);
+					for (var k in attrs) e.setAttribute(k, attrs[k]);
+					if (text != null) e.textContent = text;
+					svg.appendChild(e);
+					return e;
+				}
+
+				for (var v = 0; v <= top + step / 2; v += step) {
+					el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: GRID, 'stroke-width': 1 });
+					el('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: MUTED }, compact.format(v));
+				}
+
+				var every = Math.max(1, Math.ceil(data.length / Math.max(1, Math.floor(pw / 56))));
+
+				data.forEach(function(d, i) {
+					var cx = m.l + gw * i + gw / 2;
+					series.forEach(function(s, j) {
+						var h = Math.max(0, (d[s.k] / top) * ph);
+						var x = cx - (series.length * bw) / 2 + j * bw;
+						if (h > 0) el('rect', { x: x + 0.5, y: m.t + ph - h, width: Math.max(1, bw - 1), height: h, rx: Math.min(3, bw / 2), fill: s.c });
+					});
+					if (i % every === 0) el('text', { x: cx, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: MUTED }, d.l);
+
+					var hit = el('rect', { x: m.l + gw * i, y: m.t, width: gw, height: ph, fill: 'transparent' });
+					var show = function() {
+						var html = '<b>' + d.l + '</b>';
+						if (showSales) html += '<br>مبيعات: ' + nf.format(d.s) + ' ج.م';
+						if (showPurch) html += '<br>مشتريات: ' + nf.format(d.p) + ' ج.م';
+						tip.innerHTML = html;
+						tip.classList.add('on');
+						var tw = tip.offsetWidth;
+						var left = Math.min(Math.max(cx - tw / 2, 0), W - tw);
+						tip.style.left = left + 'px';
+						tip.style.top = '0px';
+					};
+					hit.addEventListener('mouseenter', show);
+					hit.addEventListener('focus', show);
+					hit.addEventListener('click', show);
+					hit.addEventListener('mouseleave', function() { tip.classList.remove('on'); });
+				});
+
+				host.appendChild(svg);
+				host.appendChild(tip);
+
+				// جدول مخفي لقارئات الشاشة
+				var t = '<table class="visually-hidden-table"><caption>المبيعات والمشتريات</caption><tr><th>الفترة</th>' +
+					(showSales ? '<th>مبيعات</th>' : '') + (showPurch ? '<th>مشتريات</th>' : '') + '</tr>';
+				data.forEach(function(d) {
+					t += '<tr><td>' + d.l + '</td>' + (showSales ? '<td>' + nf.format(d.s) + '</td>' : '') +
+						(showPurch ? '<td>' + nf.format(d.p) + '</td>' : '') + '</tr>';
+				});
+				host.insertAdjacentHTML('beforeend', t + '</table>');
+			}
+
+			render();
+			var timer;
+			window.addEventListener('resize', function() {
+				clearTimeout(timer);
+				timer = setTimeout(render, 150);
+			});
+		})();
+	</script>
+}

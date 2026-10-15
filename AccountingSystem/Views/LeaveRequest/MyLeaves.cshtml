@@ -1,0 +1,79 @@
+@model List<AccountingSystem.Models.LeaveRequest>
+
+@{
+	ViewData["Title"] = "إجازاتي";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">طلبات إجازاتي</h2>
+		<p class="text-muted mb-0 small">متابعة طلبات الإجازات المقدمة</p>
+	</div>
+	<a asp-action="Create" class="btn btn-success">طلب إجازة جديد</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show">
+		@TempData["Success"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (TempData["Error"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show">
+		@TempData["Error"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+	</div>
+}
+
+@if (Model == null || !Model.Any())
+{
+	<div class="alert alert-info">لا يوجد طلبات إجازات حتى الآن.</div>
+}
+else
+{
+	<div class="card border-0 shadow-sm">
+		<div class="card-body p-0">
+			<div class="table-responsive">
+				<table class="table table-hover mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>من تاريخ</th>
+							<th>إلى تاريخ</th>
+							<th>السبب</th>
+							<th>الحالة</th>
+							<th>وافق عليه</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var request in Model)
+						{
+							<tr>
+								<td>@request.StartDate.ToString("yyyy-MM-dd")</td>
+								<td>@request.EndDate.ToString("yyyy-MM-dd")</td>
+								<td>@request.Reason</td>
+								<td>
+									@if (request.Status == LeaveStatus.Pending)
+									{
+										<span class="badge bg-warning text-dark">قيد الانتظار</span>
+									}
+									else if (request.Status == LeaveStatus.Approved)
+									{
+										<span class="badge bg-success">تمت الموافقة</span>
+									}
+									else if (request.Status == LeaveStatus.Rejected)
+									{
+										<span class="badge bg-danger">مرفوض</span>
+									}
+								</td>
+								<td>@(request.ApprovedByUser?.FullName ?? "-")</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+}

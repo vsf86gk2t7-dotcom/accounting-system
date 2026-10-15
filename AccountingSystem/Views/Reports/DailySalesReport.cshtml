@@ -1,0 +1,83 @@
+@model AccountingSystem.Models.ViewModels.Reports.DailySalesReportViewModel
+
+@{
+	ViewData["Title"] = "تقرير المبيعات اليومي";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تقرير المبيعات اليومي</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">كل التقارير</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+	<div class="card-body">
+		<div class="row g-3 align-items-end">
+			<div class="col-md-3">
+				<label class="form-label fw-semibold">من تاريخ</label>
+				<input type="date"
+					   name="fromDate"
+					   class="form-control"
+					   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+			</div>
+
+			<div class="col-md-3">
+				<label class="form-label fw-semibold">إلى تاريخ</label>
+				<input type="date"
+					   name="toDate"
+					   class="form-control"
+					   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+			</div>
+
+			<div class="col-md-3">
+				<button type="submit" class="btn btn-primary">عرض التقرير</button>
+			</div>
+		</div>
+	</div>
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد مبيعات في الفترة المحددة.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>التاريخ</th>
+					<th>عدد الفواتير</th>
+					<th>المبيعات</th>
+					<th>المرتجعات</th>
+					<th>الصافي</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td>@row.Date.ToString("yyyy-MM-dd")</td>
+						<td>@row.InvoiceCount</td>
+						<td>@row.Sales.ToString("N2")</td>
+						<td class="text-warning">@row.Returns.ToString("N2")</td>
+						<td class="fw-bold @(row.Net < 0 ? "text-danger" : "text-success")">
+							@row.Net.ToString("N2")
+						</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot class="table-secondary fw-bold">
+				<tr>
+					<td>الإجمالي</td>
+					<td>@Model.InvoiceCount</td>
+					<td>@Model.GrandSales.ToString("N2")</td>
+					<td>@Model.GrandReturns.ToString("N2")</td>
+					<td>@Model.GrandNet.ToString("N2")</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

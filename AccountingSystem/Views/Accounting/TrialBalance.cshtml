@@ -1,0 +1,77 @@
+@model AccountingSystem.Models.ViewModels.Accounting.TrialBalanceViewModel
+
+@{
+	ViewData["Title"] = "ميزان المراجعة";
+
+	string TypeLabel(AccountingSystem.Models.AccountType t)
+	{
+		return t switch
+		{
+			AccountingSystem.Models.AccountType.Asset => "أصل",
+			AccountingSystem.Models.AccountType.Liability => "التزام",
+			AccountingSystem.Models.AccountType.Equity => "حقوق ملكية",
+			AccountingSystem.Models.AccountType.Revenue => "إيراد",
+			AccountingSystem.Models.AccountType.Expense => "مصروف",
+			_ => "-"
+		};
+	}
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>ميزان المراجعة</h3>
+
+	<a asp-action="Journal" class="btn btn-outline-secondary">
+		العودة للقيود
+	</a>
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد حركات محاسبية على القيود المعتمدة بعد.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>الكود</th>
+					<th>الحساب</th>
+					<th>النوع</th>
+					<th>مدين</th>
+					<th>دائن</th>
+					<th>الرصيد</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td>@(row.Code ?? "-")</td>
+						<td><strong>@row.Name</strong></td>
+						<td>@TypeLabel(row.Type)</td>
+						<td>@row.Debit.ToString("N2")</td>
+						<td>@row.Credit.ToString("N2")</td>
+						<td class="@((row.Balance < 0)
+							? "text-danger"
+							: "text-primary")">
+							@row.Balance.ToString("N2")
+						</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot class="table-dark fw-bold">
+				<tr>
+					<td colspan="3">الإجمالي</td>
+					<td>@Model.TotalDebit.ToString("N2")</td>
+					<td>@Model.TotalCredit.ToString("N2")</td>
+					<td>
+						@((Model.TotalDebit - Model.TotalCredit).ToString("N2"))
+					</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

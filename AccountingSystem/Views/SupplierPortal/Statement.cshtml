@@ -1,0 +1,133 @@
+﻿@model AccountingSystem.Models.ViewModels.Portal.PortalStatementViewModel
+
+@{
+	ViewData["Title"] = "كشف الحساب";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">كشف الحساب</h2>
+		<p class="text-muted mb-0 small">
+			حساب المورد: <strong>@Model.PartyName</strong>
+		</p>
+	</div>
+
+	<a asp-controller="SupplierPortal"
+	   asp-action="Index"
+	   class="btn btn-outline-secondary">
+		← رجوع
+	</a>
+</div>
+
+<!-- ملخص -->
+<div class="row mb-4">
+	<div class="col-md-3 mb-2">
+		<div class="card text-center">
+			<div class="card-body">
+				<div class="text-muted small">الرصيد الافتتاحي</div>
+				<div class="fs-4 fw-bold">
+					@Model.OpeningBalance.ToString("N2")
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-3 mb-2">
+		<div class="card text-center">
+			<div class="card-body">
+				<div class="text-muted small">إجمالي الفواتير</div>
+				<div class="fs-4 fw-bold text-primary">
+					@Model.TotalInvoices.ToString("N2")
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-3 mb-2">
+		<div class="card text-center">
+			<div class="card-body">
+				<div class="text-muted small">
+					إجمالي المدفوع والمرتجع
+				</div>
+				<div class="fs-4 fw-bold text-success">
+					@((Model.TotalPaid + Model.TotalReturns).ToString("N2"))
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-3 mb-2">
+		<div class="card text-center bg-dark text-white">
+			<div class="card-body">
+				<div class="small">الرصيد الحالي</div>
+				<div class="fs-4 fw-bold">
+					@Model.CurrentBalance.ToString("N2")
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- جدول الحركات -->
+<h5 class="mb-3">الحركات</h5>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد حركات حتى الآن.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>التاريخ</th>
+					<th>النوع</th>
+					<th>المرجع</th>
+					<th>مدين</th>
+					<th>دائن</th>
+					<th>الرصيد</th>
+				</tr>
+			</thead>
+			<tbody>
+				@if (Model.OpeningBalance != 0)
+				{
+					<tr class="table-light">
+						<td>—</td>
+						<td>رصيد افتتاحي</td>
+						<td>—</td>
+						<td>—</td>
+						<td>@Model.OpeningBalance.ToString("N2")</td>
+						<td>@Model.OpeningBalance.ToString("N2")</td>
+					</tr>
+				}
+
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td>@row.Date.ToString("yyyy-MM-dd")</td>
+						<td>
+							<span class="badge @row.BadgeClass">
+								@row.TypeLabel
+							</span>
+						</td>
+						<td>@row.Reference</td>
+						<td>
+							@(row.Debit > 0 ? row.Debit.ToString("N2") : "—")
+						</td>
+						<td>
+							@(row.Credit > 0 ? row.Credit.ToString("N2") : "—")
+						</td>
+						<td>@row.Balance.ToString("N2")</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot>
+				<tr class="table-secondary">
+					<th colspan="4" class="text-end">الإجمالي:</th>
+					<th>@((Model.TotalReturns + Model.TotalPaid).ToString("N2"))</th>
+					<th>@Model.CurrentBalance.ToString("N2")</th>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

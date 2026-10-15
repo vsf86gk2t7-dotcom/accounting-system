@@ -1,0 +1,183 @@
+@model AccountingSystem.Models.Employee
+
+@{
+	ViewData["Title"] = "إضافة موظف";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+	<div>
+		<h2 class="mb-1">إضافة موظف جديد</h2>
+		<p class="text-muted mb-0 small">
+			إدخال البيانات الأساسية للموظف
+		</p>
+	</div>
+
+	<a asp-action="Index"
+	   class="btn btn-outline-secondary">
+		← رجوع للقائمة
+	</a>
+</div>
+
+<div class="card shadow-sm border-0">
+	<div class="card-body">
+
+		<form asp-action="Create"
+			  method="post">
+
+			@Html.AntiForgeryToken()
+
+			<div asp-validation-summary="ModelOnly"
+				 class="text-danger mb-3">
+			</div>
+
+			<div class="row g-3">
+				<div class="col-md-6">
+					<label asp-for="NationalId" class="form-label">الرقم القومي</label>
+					<input asp-for="NationalId" class="form-control" maxlength="14" inputmode="numeric" autocomplete="off" />
+					<span asp-validation-for="NationalId" class="text-danger small"></span>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="EmployeeType" class="form-label">نوع الموظف</label>
+					<select asp-for="EmployeeType" class="form-select">
+						<option value="1">إداري / محاسب</option>
+						<option value="2">مندوب مبيعات (متنقل)</option>
+						<option value="3">أمين مخزن</option>
+						<option value="4">سائق / توصيل</option>
+						<option value="9">أخرى</option>
+					</select>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="DepartmentId" class="form-label">القسم</label>
+					<select asp-for="DepartmentId" class="form-select"
+							asp-items="@(new SelectList((IEnumerable<AccountingSystem.Models.Department>)ViewBag.Departments, "Id", "Name"))">
+						<option value="">— اختر —</option>
+					</select>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="PositionId" class="form-label">المسمى الوظيفي</label>
+					<select asp-for="PositionId" class="form-select"
+							asp-items="@(new SelectList((IEnumerable<AccountingSystem.Models.Position>)ViewBag.Positions, "Id", "Name"))">
+						<option value="">— اختر —</option>
+					</select>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="HireDate" class="form-label">تاريخ التعيين</label>
+					<input asp-for="HireDate" type="date" class="form-control" />
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="BirthDate" class="form-label">تاريخ الميلاد</label>
+					<input asp-for="BirthDate" type="date" class="form-control" />
+				</div>
+
+				<div class="col-12">
+					<label asp-for="Address" class="form-label">العنوان</label>
+					<input asp-for="Address" class="form-control" />
+				</div>
+				<div class="col-md-6">
+					<label asp-for="Name"
+						   class="form-label">
+						الاسم الكامل
+						<span class="text-danger">*</span>
+					</label>
+
+					<input asp-for="Name"
+						   class="form-control"
+						   placeholder="اكتب اسم الموظف"
+						   autocomplete="off"
+						   required />
+
+					<span asp-validation-for="Name"
+						  class="text-danger small">
+					</span>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="JobTitle"
+						   class="form-label">
+						المسمى الوظيفي
+					</label>
+
+					<input asp-for="JobTitle"
+						   class="form-control"
+						   placeholder="مثال: محاسب / مندوب مبيعات"
+						   autocomplete="off" />
+
+					<span asp-validation-for="JobTitle"
+						  class="text-danger small">
+					</span>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="Phone"
+						   class="form-label">
+						رقم الهاتف
+					</label>
+
+					<input asp-for="Phone"
+						   type="tel"
+						   class="form-control"
+						   placeholder="01xxxxxxxxx"
+						   autocomplete="off" />
+
+					<span asp-validation-for="Phone"
+						  class="text-danger small">
+					</span>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="Email"
+						   class="form-label">
+						البريد الإلكتروني
+					</label>
+
+					<input asp-for="Email"
+						   type="email"
+						   class="form-control"
+						   placeholder="example@email.com"
+						   autocomplete="off" />
+
+					<span asp-validation-for="Email"
+						  class="text-danger small">
+					</span>
+				</div>
+
+				<div class="col-md-6">
+					<label asp-for="Salary"
+						   class="form-label">
+						الراتب
+					</label>
+
+					<div class="input-group">
+						<input asp-for="Salary"
+							   type="number"
+							   step="0.01"
+							   min="0"
+							   class="form-control"
+							   value="@(Model.Salary > 0 ? Model.Salary.ToString() : "")" />
+
+						<span class="input-group-text">ج.م</span>
+					</div>
+
+					<span asp-validation-for="Salary"
+						  class="text-danger small">
+					</span>
+				</div>
+
+			</div>
+
+			<hr class="my-4" />
+
+			<button type="submit"
+					class="btn btn-success">
+				+ حفظ الموظف
+			</button>
+
+		</form>
+
+	</div>
+</div>

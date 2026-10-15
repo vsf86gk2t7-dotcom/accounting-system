@@ -1,0 +1,39 @@
+﻿@{
+	ViewData["Title"] = "تم إرسال الطلب";
+}
+
+<div class="container mt-5">
+	<div class="row justify-content-center">
+		<div class="col-md-6">
+			<div class="card shadow border-success">
+				<div class="card-body p-5 text-center">
+
+					<div style="font-size: 4rem;">
+						✅
+					</div>
+
+					<h3 class="mt-3 mb-3">
+						تم إرسال طلب التسجيل
+					</h3>
+
+					@if (TempData["RegisterSuccess"] != null)
+					{
+						<p class="text-muted">
+							@TempData["RegisterSuccess"]
+						</p>
+					}
+
+					<p class="text-muted mb-4">
+						سيتم التواصل معك في أقرب وقت.
+					</p>
+
+					<a asp-action="Login"
+					   class="btn btn-primary">
+						← رجوع لتسجيل الدخول
+					</a>
+
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

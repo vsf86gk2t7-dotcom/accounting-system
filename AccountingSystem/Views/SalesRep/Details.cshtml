@@ -1,0 +1,81 @@
+﻿@model AccountingSystem.ViewModels.SalesRepDetailsViewModel
+
+@{
+ViewData["Title"] = "تفاصيل المندوب";
+var rep = Model.Rep;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div>
+<h2 class="mb-1">@rep.Employee?.Name</h2>
+<p class="text-muted mb-0 small">@rep.Employee?.Phone</p>
+</div>
+<a asp-action="Index" class="btn btn-outline-secondary">رجوع</a>
+</div>
+
+<div class="row g-3 mb-4">
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">مبيعات الشهر</div>
+<div class="fs-4 fw-bold">@Model.MonthSales.ToString("N2")</div>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">فواتير الشهر</div>
+<div class="fs-4 fw-bold">@Model.MonthInvoicesCount</div>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">مخزن العهدة</div>
+<div class="fw-bold">@(rep.CustodyStore?.Name ?? "—")</div>
+</div></div>
+</div>
+<div class="col-md-3">
+<div class="card shadow-sm border-0"><div class="card-body">
+<div class="text-muted small">الخزنة النقدية</div>
+<div class="fw-bold">@(rep.CashAccount?.Name ?? "—")</div>
+</div></div>
+</div>
+</div>
+
+<div class="row g-4">
+<div class="col-lg-6">
+<div class="card shadow-sm border-0">
+<div class="card-header bg-white fw-bold">عملاء المندوب (@Model.Customers.Count)</div>
+<ul class="list-group list-group-flush">
+@foreach (var c in Model.Customers)
+{
+<li class="list-group-item d-flex justify-content-between">
+<span>@c.Name</span><span class="text-muted small">@c.Phone</span>
+</li>
+}
+@if (!Model.Customers.Any())
+{
+<li class="list-group-item text-muted">لا يوجد عملاء. اربط العملاء من شاشة تعديل العميل.</li>
+}
+</ul>
+</div>
+</div>
+
+<div class="col-lg-6">
+<div class="card shadow-sm border-0">
+<div class="card-header bg-white fw-bold">آخر الفواتير</div>
+<ul class="list-group list-group-flush">
+@foreach (var i in Model.LastInvoices)
+{
+<li class="list-group-item d-flex justify-content-between">
+<a asp-controller="SalesInvoice" asp-action="Details" asp-route-id="@i.Id">@i.InvoiceNumber</a>
+<span class="text-muted small">@(i.Customer?.Name ?? "نقدي")</span>
+<span>@i.TotalAmount.ToString("N2")</span>
+</li>
+}
+@if (!Model.LastInvoices.Any())
+{
+<li class="list-group-item text-muted">لا توجد فواتير</li>
+}
+</ul>
+</div>
+</div>
+</div>

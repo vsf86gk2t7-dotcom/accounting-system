@@ -1,0 +1,213 @@
+@using AccountingSystem.Models.ViewModels.Inventory
+@model InventoryProductMovementViewModel
+
+@{
+	ViewData["Title"] = "كشف حركة منتج";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>كشف حركة منتج (دخول/خروج)</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		العودة للأرصدة
+	</a>
+</div>
+
+<form method="get" class="card mb-3">
+	<div class="card-body row g-2">
+		<div class="col-md-4">
+			<label class="form-label">المنتج</label>
+			<select name="productId"
+					asp-items="@(Model.ProductId is > 0
+						? new SelectList(Model.Products, "Id", "Name", Model.ProductId)
+						: new SelectList(Model.Products, "Id", "Name"))"
+					class="form-select"
+					required>
+				<option value="">— اختر المنتج —</option>
+			</select>
+		</div>
+
+		<div class="col-md-3">
+			<label class="form-label">المخزن</label>
+			<select name="storeId" class="form-select">
+				<option value="">كل المخازن</option>
+
+				@foreach (var store in Model.Stores)
+				{
+					<option value="@store.Key"
+							selected="@(Model.StoreId == store.Key)">
+						@store.Value
+					</option>
+				}
+			</select>
+		</div>
+
+		<div class="col-md-2">
+			<label class="form-label">من تاريخ</label>
+			<input type="date"
+				   name="fromDate"
+				   value="@Model.FromDate?.ToString("yyyy-MM-dd")"
+				   class="form-control" />
+		</div>
+
+		<div class="col-md-2">
+			<label class="form-label">إلى تاريخ</label>
+			<input type="date"
+				   name="toDate"
+				   value="@Model.ToDate?.ToString("yyyy-MM-dd")"
+				   class="form-control" />
+		</div>
+
+		<div class="col-md-1 d-flex align-items-end">
+			<button type="submit" class="btn btn-primary w-100">عرض</button>
+		</div>
+	</div>
+</form>
+
+@if (Model.Rows.Count > 0)
+{
+	<div class="d-flex justify-content-between align-items-center mb-2">
+		<h5 class="mb-0">المنتج:
+			<span class="text-primary">@Model.ProductName</span>
+		</h5>
+
+		<div class="d-flex gap-2 flex-wrap">
+			@if (Model.FromDate != null)
+			{
+				<div class="alert alert-secondary py-1 px-3 mb-0">
+					رصيد مرحل:
+					<strong>@Model.OpeningBalance.ToString("N2")</strong>
+				</div>
+			}
+			<div class="alert alert-success py-1 px-3 mb-0">
+				دخول الفترة:
+				<strong>@Model.TotalIn.ToString("N2")</strong>
+			</div>
+			<div class="alert alert-danger py-1 px-3 mb-0">
+				خروج الفترة:
+				<strong>@Model.TotalOut.ToString("N2")</strong>
+			</div>
+			<div class="alert alert-info py-1 px-3 mb-0">
+				صافي الفترة:
+				<strong>@Model.NetBalance.ToString("N2")</strong>
+			</div>
+			@if (Model.FromDate != null)
+			{
+				<div class="alert alert-primary py-1 px-3 mb-0">
+					الرصيد النهائي (مع المرحل):
+					<strong>@((Model.OpeningBalance + Model.NetBalance).ToString("N2"))</strong>
+				</div>
+			}
+		</div>
+	</div>
+
+	<div class="table-responsive">
+		<table class="table table-bordered table-hover bg-white align-middle">
+			<thead class="table-light">
+			<tr>
+				<th>التاريخ</th>
+				<th>رقم الحركة</th>
+				<th>المصدر</th>
+				<th>النوع</th>
+				<th>الاتجاه</th>
+				<th>المخزن</th>
+				<th>المخزن المقابل</th>
+				<th class="text-end">الكمية</th>
+				<th class="text-end">تكلفة الوحدة</th>
+				<th class="text-end">إجمالي التكلفة</th>
+				<th class="text-end">الرصيد التراكمي</th>
+				<th>الملاحظات</th>
+			</tr>
+			</thead>
+			<tbody>
+			@if (Model.FromDate != null)
+			{
+				<tr class="table-warning">
+					<td>قبل @Model.FromDate.Value.ToString("yyyy-MM-dd")</td>
+					<td>رصيد مرحل</td>
+					<td>
+						<span class="badge bg-secondary bg-opacity-25 text-secondary">
+							افتتاحي
+						</span>
+					</td>
+					<td>
+						<span class="badge bg-secondary">رصيد مرحل</span>
+					</td>
+					<td>
+						<span class="badge bg-secondary">مرحل</span>
+					</td>
+					<td>—</td>
+					<td>—</td>
+					<td class="text-end fw-bold">
+						@Model.OpeningBalance.ToString("N2")
+					</td>
+					<td>—</td>
+					<td>—</td>
+					<td class="text-end fw-bold text-primary">
+						@Model.OpeningBalance.ToString("N2")
+					</td>
+					<td>حركات قبل تاريخ البداية</td>
+				</tr>
+			}
+			@foreach (var row in Model.Rows)
+			{
+				var dirClass =
+					row.DirectionLabel == "دخول" ? "bg-success" :
+					row.DirectionLabel == "خروج" ? "bg-danger" :
+					"bg-secondary";
+
+				string DirDisplay(string? dir)
+				{
+					return dir ?? "—";
+				}
+
+				<tr>
+					<td>@row.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+					<td>@row.TransactionNumber</td>
+					<td>
+						<span class="badge
+							@(row.Source == "شراء" ? "bg-success bg-opacity-25 text-success" :
+							  row.Source == "بيع" ? "bg-danger bg-opacity-25 text-danger" :
+							  "bg-secondary bg-opacity-25 text-secondary")">
+							@row.Source
+						</span>
+					</td>
+					<td>
+						<span class="badge @row.TypeBadgeClass">
+							@row.TypeLabel
+						</span>
+					</td>
+					<td>
+						<span class="badge @dirClass">
+							@DirDisplay(row.DirectionLabel)
+						</span>
+					</td>
+					<td>@(row.MovementStoreName ?? "—")</td>
+					<td>@(row.CounterStoreName ?? "—")</td>
+					<td class="text-end">@row.Quantity.ToString("N2")</td>
+					<td class="text-end">@row.UnitCost.ToString("N2")</td>
+					<td class="text-end">@row.TotalCost.ToString("N2")</td>
+					<td class="text-end fw-bold">
+						@row.RunningBalance.ToString("N2")
+					</td>
+					<td>@(row.Notes ?? "—")</td>
+				</tr>
+			}
+			</tbody>
+		</table>
+	</div>
+}
+else if (Model.ProductId is > 0)
+{
+	<div class="alert alert-info">
+		لا توجد حركات مسجلة لهذا المنتج في الفترة والمخزن المحددين.
+	</div>
+}
+else
+{
+	<div class="card">
+		<div class="card-body text-muted">
+			اختر منتجًا ثم اضغط «عرض» لاستعراض حركة الدخول والخروج.
+		</div>
+	</div>
+}

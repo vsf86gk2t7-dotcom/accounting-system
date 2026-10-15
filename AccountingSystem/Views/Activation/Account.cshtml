@@ -1,0 +1,158 @@
+﻿@model AccountingSystem.Models.ViewModels.ActivateAccountViewModel
+
+@{
+	ViewData["Title"] = "تفعيل الحساب";
+
+	var phoneFromQuery = Context.Request.Query["phone"].ToString();
+}
+
+<div class="auth-page">
+	<div class="auth-container">
+
+		<!-- Header -->
+		<div class="auth-header">
+			<div class="auth-logo">
+				<i class="bi bi-key-fill"></i>
+			</div>
+
+			<h1>تفعيل الحساب</h1>
+
+			<p>أدخل الكود وكلمة المرور لتفعيل حسابك</p>
+		</div>
+
+		<!-- Card -->
+		<div class="auth-card">
+			<div class="auth-card-body">
+
+				@if (!string.IsNullOrWhiteSpace(phoneFromQuery))
+				{
+					<div class="alert alert-info mb-3">
+						📱 تم تحميل رقم هاتفك تلقائيًا. اكتب كود التفعيل اللي وصلك.
+					</div>
+				}
+
+				<form asp-action="Account" method="post">
+					@Html.AntiForgeryToken()
+
+					<div asp-validation-summary="ModelOnly"
+						 class="alert alert-danger mb-3">
+					</div>
+
+					<!-- الهاتف -->
+					<div class="auth-form-section">
+						<label asp-for="Phone" class="auth-label">
+							رقم الهاتف
+							<span class="required">*</span>
+						</label>
+
+						<div class="auth-input">
+							<i class="bi bi-telephone"></i>
+
+							<input asp-for="Phone"
+								   class="form-control"
+								   readonly
+								   value="@phoneFromQuery"
+								   style="background: #f8fafc; cursor: not-allowed;" />
+						</div>
+
+						<span asp-validation-for="Phone"
+							  class="auth-error">
+						</span>
+					</div>
+
+					<!-- الكود -->
+					<div class="auth-form-section">
+						<label asp-for="ActivationCode" class="auth-label">
+							كود التفعيل (6 أرقام)
+							<span class="required">*</span>
+						</label>
+
+						<div class="auth-input">
+							<i class="bi bi-shield-lock"></i>
+
+							<input asp-for="ActivationCode"
+								   class="form-control"
+								   maxlength="6"
+								   placeholder="XXXXXX"
+								   style="font-family: monospace; letter-spacing: 4px; text-align: center; font-size: 18px; font-weight: 700;" />
+						</div>
+
+						<span asp-validation-for="ActivationCode"
+							  class="auth-error">
+						</span>
+					</div>
+
+					<!-- الباسورد -->
+					<div class="auth-form-section">
+						<label asp-for="Password" class="auth-label">
+							كلمة المرور الجديدة
+							<span class="required">*</span>
+						</label>
+
+						<div class="auth-input">
+							<i class="bi bi-lock"></i>
+
+							<input asp-for="Password"
+								   type="password"
+								   class="form-control"
+								   placeholder="8 أحرف على الأقل" />
+						</div>
+
+						<span asp-validation-for="Password"
+							  class="auth-error">
+						</span>
+					</div>
+
+					<!-- تأكيد -->
+					<div class="auth-form-section">
+						<label asp-for="ConfirmPassword" class="auth-label">
+							تأكيد كلمة المرور
+							<span class="required">*</span>
+						</label>
+
+						<div class="auth-input">
+							<i class="bi bi-lock-fill"></i>
+
+							<input asp-for="ConfirmPassword"
+								   type="password"
+								   class="form-control"
+								   placeholder="••••••••" />
+						</div>
+
+						<span asp-validation-for="ConfirmPassword"
+							  class="auth-error">
+						</span>
+					</div>
+
+					<button type="submit"
+							class="auth-submit">
+						<i class="bi bi-check-circle-fill"></i>
+						تفعيل الحساب
+					</button>
+
+				</form>
+
+				<!-- Footer -->
+				<div class="auth-footer">
+					<a asp-controller="Account"
+					   asp-action="Login"
+					   class="auth-link">
+						<i class="bi bi-arrow-right"></i>
+						رجوع لتسجيل الدخول
+					</a>
+				</div>
+
+			</div>
+		</div>
+
+		<div class="auth-page-footer">
+			<i class="bi bi-shield-lock-fill"></i>
+			الكود صالح لمدة 24 ساعة فقط
+		</div>
+
+	</div>
+</div>
+
+@section Scripts {
+	<partial name="_ValidationScriptsPartial" />
+}

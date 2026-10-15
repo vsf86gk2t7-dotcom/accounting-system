@@ -1,0 +1,109 @@
+@model AccountingSystem.Models.ViewModels.Reports.AccountingReportViewModel
+
+@{
+	ViewData["Title"] = "تقرير القيود المحاسبية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>تقرير القيود المحاسبية</h3>
+
+	<a asp-action="Index" class="btn btn-outline-secondary">
+		كل التقارير
+	</a>
+</div>
+
+<form method="get" class="card shadow-sm mb-3">
+
+	<div class="card-body">
+
+		<div class="row g-3 align-items-end">
+
+			<div class="col-md-3">
+
+				<label class="form-label fw-semibold">من تاريخ</label>
+
+				<input type="date"
+					   name="fromDate"
+					   class="form-control"
+					   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-3">
+
+				<label class="form-label fw-semibold">إلى تاريخ</label>
+
+				<input type="date"
+					   name="toDate"
+					   class="form-control"
+					   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+
+			</div>
+
+			<div class="col-md-3">
+
+				<button type="submit"
+						class="btn btn-primary">
+					عرض التقرير
+				</button>
+
+			</div>
+
+		</div>
+
+	</div>
+
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+	<div class="alert alert-info">
+		لا توجد قيود محاسبية في هذه الفترة.
+	</div>
+}
+else
+{
+	<div class="table-responsive">
+		<table class="table table-striped table-hover">
+			<thead class="table-dark">
+				<tr>
+					<th>رقم القيد</th>
+					<th>التاريخ</th>
+					<th>البيان</th>
+					<th>الحالة</th>
+					<th>المدين</th>
+					<th>الدائن</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var row in Model.Rows)
+				{
+					<tr>
+						<td><strong>@row.EntryNumber</strong></td>
+						<td>@row.EntryDate.ToString("yyyy-MM-dd")</td>
+						<td>@(row.Description ?? "-")</td>
+						<td>
+							@if (row.IsPosted)
+							{
+								<span class="badge bg-success">معتمد</span>
+							}
+							else
+							{
+								<span class="badge bg-warning text-dark">مسودة</span>
+							}
+						</td>
+						<td>@row.Debit.ToString("N2")</td>
+						<td>@row.Credit.ToString("N2")</td>
+					</tr>
+				}
+			</tbody>
+			<tfoot class="table-dark fw-bold">
+				<tr>
+					<td colspan="4">الإجمالي</td>
+					<td>@Model.GrandDebit.ToString("N2")</td>
+					<td>@Model.GrandCredit.ToString("N2")</td>
+				</tr>
+			</tfoot>
+		</table>
+	</div>
+}

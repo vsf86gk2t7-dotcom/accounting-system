@@ -1,0 +1,159 @@
+@model AccountingSystem.Models.ViewModels.Accounting.LedgerViewModel
+
+@{
+	ViewData["Title"] = "دفتر الأستاذ";
+
+	string SideClass(decimal value)
+	{
+		return value < 0 ? "text-danger" : "text-primary";
+	}
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+	<h3>دفتر الأستاذ</h3>
+
+	<div>
+		<a asp-action="Accounts" class="btn btn-outline-primary">شجرة الحسابات</a>
+		<a asp-action="Journal" class="btn btn-outline-secondary">القيود</a>
+		<a asp-action="TrialBalance" class="btn btn-outline-secondary">ميزان المراجعة</a>
+	</div>
+</div>
+
+<!-- الفلتر -->
+<form method="get" class="card mb-3">
+	<div class="card-body row g-2 align-items-end">
+		<div class="col-md-4">
+			<label class="form-label">الحساب</label>
+			<select name="accountId" class="form-select">
+				@foreach (var account in Model.Accounts)
+				{
+					<option value="@account.Key"
+							selected="@(account.Key == Model.AccountId ? "selected" : null)">
+						@account.Value
+					</option>
+				}
+			</select>
+		</div>
+
+		<div class="col-md-3">
+			<label class="form-label">من تاريخ</label>
+			<input type="date"
+				   name="fromDate"
+				   class="form-control"
+				   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+		</div>
+
+		<div class="col-md-3">
+			<label class="form-label">إلى تاريخ</label>
+			<input type="date"
+				   name="toDate"
+				   class="form-control"
+				   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+		</div>
+
+		<div class="col-md-2">
+			<button type="submit" class="btn btn-primary w-100">
+				عرض
+			</button>
+		</div>
+	</div>
+</form>
+
+@if (string.IsNullOrEmpty(Model.AccountName))
+{
+	<div class="alert alert-info">لا يوجد حساب لعرضه.</div>
+}
+else
+{
+	<div class="row mb-3">
+		<div class="col-md-3">
+			<div class="card text-center">
+				<div class="card-body">
+					<div class="text-muted small">الرصيد الافتتاحي</div>
+					<div class="fs-5 fw-bold @SideClass(Model.OpeningBalance)">
+						@Model.OpeningBalance.ToString("N2")
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-3">
+			<div class="card text-center">
+				<div class="card-body">
+					<div class="text-muted small">إجمالي المدين</div>
+					<div class="fs-5 fw-bold text-primary">
+						@Model.TotalDebit.ToString("N2")
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-3">
+			<div class="card text-center">
+				<div class="card-body">
+					<div class="text-muted small">إجمالي الدائن</div>
+					<div class="fs-5 fw-bold text-success">
+						@Model.TotalCredit.ToString("N2")
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-3">
+			<div class="card text-center bg-dark text-white">
+				<div class="card-body">
+					<div class="small">الرصيد الختامي</div>
+					<div class="fs-5 fw-bold">
+						@Model.ClosingBalance.ToString("N2")
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<h5 class="mb-3">حركات الحساب: @Model.AccountName</h5>
+
+	@if (Model.Rows.Count == 0)
+	{
+		<div class="alert alert-info">
+			لا توجد حركات على هذا الحساب في الفترة المحددة.
+		</div>
+	}
+	else
+	{
+		<div class="table-responsive">
+			<table class="table table-striped table-hover">
+				<thead class="table-dark">
+					<tr>
+						<th>التاريخ</th>
+						<th>رقم القيد</th>
+						<th>البيان</th>
+						<th>مدين</th>
+						<th>دائن</th>
+						<th>الرصيد</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var row in Model.Rows)
+					{
+						<tr>
+							<td>@row.Date.ToString("yyyy-MM-dd")</td>
+							<td>@row.EntryNumber</td>
+							<td>@(row.Description ?? "-")</td>
+							<td>@(row.Debit > 0 ? row.Debit.ToString("N2") : "—")</td>
+							<td>@(row.Credit > 0 ? row.Credit.ToString("N2") : "—")</td>
+							<td class="@SideClass(row.Balance)">
+								@row.Balance.ToString("N2")
+							</td>
+						</tr>
+					}
+				</tbody>
+				<tfoot class="table-secondary fw-bold">
+					<tr>
+						<td colspan="3">الإجمالي</td>
+						<td>@Model.TotalDebit.ToString("N2")</td>
+						<td>@Model.TotalCredit.ToString("N2")</td>
+						<td>@Model.ClosingBalance.ToString("N2")</td>
+					</tr>
+				</tfoot>
+			</table>
+		</div>
+	}
+}

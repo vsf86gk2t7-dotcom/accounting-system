@@ -1,0 +1,658 @@
+﻿@model AccountingSystem.Models.ViewModels.Reports.TaxReportViewModel
+
+@{
+    ViewData["Title"] = "التقرير الضريبي";
+}
+
+<style>
+    .tx-shell {
+        --tx-bg: #f4f6fa;
+        --tx-surface: #fff;
+        --tx-line: #e4e8f0;
+        --tx-line-soft: #eef1f7;
+        --tx-ink: #0f172a;
+        --tx-body: #475569;
+        --tx-muted: #94a3b8;
+        --tx-primary: #2563eb;
+        --tx-primary-dark: #1d4ed8;
+        --tx-vat: #2563eb;
+        --tx-st: #7c3aed;
+        --tx-green: #059669;
+        --tx-red: #dc2626;
+        --tx-amber: #d97706;
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 12px;
+        font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+        color: var(--tx-ink);
+    }
+
+        .tx-shell * {
+            box-sizing: border-box;
+        }
+
+    /* ── Header ── */
+    .tx-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        background: #fff;
+        border: 1px solid var(--tx-line);
+        border-radius: 14px;
+        box-shadow: 0 6px 22px rgba(15,23,42,.05);
+    }
+
+        .tx-header .tx-ico {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, var(--tx-primary), #60a5fa);
+            color: #fff;
+            font-size: 1.15rem;
+        }
+
+        .tx-header h1 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .tx-header p {
+            margin: 0;
+            font-size: .76rem;
+            color: var(--tx-muted);
+        }
+
+        .tx-header .tx-spacer {
+            flex: 1;
+        }
+
+    .tx-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 9px;
+        font-size: .84rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+        cursor: pointer;
+        text-decoration: none;
+        transition: .16s;
+    }
+
+        .tx-btn:hover {
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+    .tx-btn-primary {
+        background: var(--tx-primary);
+        color: #fff;
+    }
+
+        .tx-btn-primary:hover {
+            background: var(--tx-primary-dark);
+            color: #fff;
+        }
+
+    .tx-btn-light {
+        background: #fff;
+        color: var(--tx-body);
+        border-color: var(--tx-line);
+    }
+
+        .tx-btn-light:hover {
+            background: var(--tx-bg);
+            color: var(--tx-ink);
+        }
+
+    /* ── Filter ── */
+    .tx-filter {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        padding: 16px 18px;
+        background: #fff;
+        border: 1px solid var(--tx-line);
+        border-radius: 14px;
+        margin-bottom: 16px;
+    }
+
+    .tx-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .tx-field label {
+            font-size: .74rem;
+            font-weight: 700;
+            color: var(--tx-body);
+        }
+
+        .tx-field input,
+        .tx-field select {
+            border: 1.5px solid #dbe3f0;
+            border-radius: 9px;
+            padding: 8px 11px;
+            font-size: .88rem;
+            width: 100%;
+        }
+
+            .tx-field input:focus,
+            .tx-field select:focus {
+                outline: none;
+                border-color: var(--tx-primary);
+                box-shadow: 0 0 0 .2rem rgba(37,99,235,.14);
+            }
+
+    .tx-filter-actions {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    /* ── KPI cards ── */
+    .tx-kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .tx-kpi {
+        padding: 16px 18px;
+        background: #fff;
+        border: 1px solid var(--tx-line);
+        border-radius: 14px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .tx-kpi::before {
+            content: '';
+            position: absolute;
+            inset-inline-start: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+        }
+
+        .tx-kpi.vat::before {
+            background: var(--tx-vat);
+        }
+
+        .tx-kpi.st::before {
+            background: var(--tx-st);
+        }
+
+        .tx-kpi.net::before {
+            background: var(--tx-amber);
+        }
+
+        .tx-kpi.total::before {
+            background: var(--tx-green);
+        }
+
+    .tx-kpi-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .74rem;
+        font-weight: 700;
+        color: var(--tx-muted);
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        margin-bottom: 8px;
+    }
+
+        .tx-kpi-label i {
+            font-size: .95rem;
+        }
+
+    .tx-kpi.vat .tx-kpi-label i {
+        color: var(--tx-vat);
+    }
+
+    .tx-kpi.st .tx-kpi-label i {
+        color: var(--tx-st);
+    }
+
+    .tx-kpi.net .tx-kpi-label i {
+        color: var(--tx-amber);
+    }
+
+    .tx-kpi.total .tx-kpi-label i {
+        color: var(--tx-green);
+    }
+
+    .tx-kpi-value {
+        font-size: 1.4rem;
+        font-weight: 900;
+        font-family: 'Consolas', monospace;
+        direction: ltr;
+        color: var(--tx-ink);
+    }
+
+    .tx-kpi-sub {
+        font-size: .72rem;
+        color: var(--tx-muted);
+        margin-top: 4px;
+    }
+
+    /* ── Table ── */
+    .tx-card {
+        background: #fff;
+        border: 1px solid var(--tx-line);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 16px;
+    }
+
+    .tx-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        background: #fafbfd;
+        border-bottom: 1px solid var(--tx-line-soft);
+    }
+
+        .tx-card-head h2 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: .88rem;
+            font-weight: 800;
+        }
+
+            .tx-card-head h2 i {
+                color: var(--tx-primary);
+            }
+
+    .tx-table-wrap {
+        overflow-x: auto;
+    }
+
+    .tx-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .84rem;
+    }
+
+        .tx-table thead th {
+            background: #f8fafc;
+            color: var(--tx-body);
+            font-size: .7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            padding: 10px 10px;
+            border-bottom: 1.5px solid var(--tx-line);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+            .tx-table thead th.num {
+                text-align: left;
+                direction: ltr;
+            }
+
+            .tx-table thead th.vat-col {
+                color: var(--tx-vat);
+            }
+
+            .tx-table thead th.st-col {
+                color: var(--tx-st);
+            }
+
+        .tx-table tbody td {
+            padding: 9px 10px;
+            border-bottom: 1px solid var(--tx-line-soft);
+            vertical-align: middle;
+        }
+
+        .tx-table tbody tr:hover {
+            background: #fafbfd;
+        }
+
+        .tx-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .tx-table .tx-num {
+            font-family: 'Consolas', monospace;
+            direction: ltr;
+            text-align: left;
+            font-weight: 700;
+        }
+
+            .tx-table .tx-num.zero {
+                color: var(--tx-muted);
+                font-weight: 400;
+            }
+
+            .tx-table .tx-num.vat {
+                color: var(--tx-vat);
+            }
+
+            .tx-table .tx-num.st {
+                color: var(--tx-st);
+            }
+
+    .tx-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: .7rem;
+        font-weight: 700;
+        background: #eff6ff;
+        color: var(--tx-primary-dark);
+    }
+
+        .tx-badge.cancel {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .tx-badge.return {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+    .tx-empty {
+        text-align: center;
+        padding: 40px 16px;
+        color: var(--tx-muted);
+        font-size: .88rem;
+    }
+
+        .tx-empty i {
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 8px;
+            opacity: .4;
+        }
+
+    .tx-total-row {
+        background: #f8fafc;
+        font-weight: 800;
+    }
+
+        .tx-total-row td {
+            border-top: 2px solid var(--tx-line);
+            padding: 12px 10px;
+        }
+
+    @@media (max-width: 767.98px) {
+        .tx-shell {
+            padding: 8px;
+        }
+
+        .tx-header {
+            padding: 12px;
+        }
+
+        .tx-kpi-value {
+            font-size: 1.15rem;
+        }
+    }
+
+    @@media print {
+        .app-sidebar, .app-topbar, .app-footer,
+        .tx-header, .tx-filter, .tx-filter-actions {
+            display: none !important;
+        }
+
+        .tx-shell {
+            padding: 0;
+            max-width: 100%;
+        }
+
+        .tx-card {
+            box-shadow: none;
+            border-color: #ddd;
+            page-break-inside: avoid;
+        }
+
+        .tx-kpis {
+            page-break-inside: avoid;
+        }
+    }
+</style>
+
+<div class="tx-shell">
+
+    <!-- ═══════ Header ═══════ -->
+    <div class="tx-header">
+        <div class="tx-ico"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div>
+            <h1>التقرير الضريبي</h1>
+            <p>
+                من <strong dir="ltr">@Model.FromDate.ToString("yyyy-MM-dd")</strong>
+                إلى <strong dir="ltr">@Model.ToDate.ToString("yyyy-MM-dd")</strong>
+            </p>
+        </div>
+        <div class="tx-spacer"></div>
+        <button type="button" class="tx-btn tx-btn-light" onclick="window.print();">
+            <i class="bi bi-printer"></i> طباعة
+        </button>
+        <a asp-action="Index" class="tx-btn tx-btn-light">
+            <i class="bi bi-arrow-right"></i> رجوع
+        </a>
+    </div>
+
+    <!-- ═══════ Filter ═══════ -->
+    <form method="get" asp-action="TaxReport">
+        <div class="tx-filter">
+            <div class="tx-field">
+                <label for="fromDate">من تاريخ</label>
+                <input type="date" id="fromDate" name="fromDate"
+                       value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="tx-field">
+                <label for="toDate">إلى تاريخ</label>
+                <input type="date" id="toDate" name="toDate"
+                       value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="tx-field">
+                <label for="storeId">المخزن</label>
+                <select id="storeId" name="storeId">
+                    <option value="">— كل المخازن —</option>
+                    @foreach (var store in Model.AvailableStores)
+                    {
+                        var selected = Model.StoreId == store.Id ? "selected" : null;
+                        <option value="@store.Id" selected="@selected">
+                            @store.BranchName — @store.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="tx-field">
+                <label for="supplierId">المورد</label>
+                <select id="supplierId" name="supplierId">
+                    <option value="">— كل الموردين —</option>
+                    @foreach (var supplier in Model.AvailableSuppliers)
+                    {
+                        var selected = Model.SupplierId == supplier.Id ? "selected" : null;
+                        <option value="@supplier.Id" selected="@selected">
+                            @supplier.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="tx-filter-actions">
+                <button type="submit" class="tx-btn tx-btn-primary">
+                    <i class="bi bi-search"></i> عرض
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- ═══════ KPIs ═══════ -->
+    <div class="tx-kpis">
+
+        <!-- ض.ق.م مشتريات -->
+        <div class="tx-kpi vat">
+            <div class="tx-kpi-label">
+                <i class="bi bi-percent"></i>
+                ض.ق.م (مشتريات) — [1105]
+            </div>
+            <div class="tx-kpi-value">@Model.VatClosingBalance.ToString("N2")</div>
+            <div class="tx-kpi-sub">
+                افتتاحي: @Model.VatOpeningBalance.ToString("N2") |
+                مدين: @Model.VatDebit.ToString("N2") |
+                دائن: @Model.VatCredit.ToString("N2")
+            </div>
+        </div>
+
+        <!-- ضريبة المبيعات -->
+        <div class="tx-kpi st">
+            <div class="tx-kpi-label">
+                <i class="bi bi-receipt"></i>
+                ضريبة المبيعات — [1106]
+            </div>
+            <div class="tx-kpi-value">@Model.SalesTaxClosingBalance.ToString("N2")</div>
+            <div class="tx-kpi-sub">
+                افتتاحي: @Model.SalesTaxOpeningBalance.ToString("N2") |
+                مدين: @Model.SalesTaxDebit.ToString("N2") |
+                دائن: @Model.SalesTaxCredit.ToString("N2")
+            </div>
+        </div>
+
+        <!-- إجمالي الفترة -->
+        <div class="tx-kpi net">
+            <div class="tx-kpi-label">
+                <i class="bi bi-arrow-left-right"></i>
+                حركة الفترة
+            </div>
+            <div class="tx-kpi-value">
+                @((Model.VatDebit + Model.SalesTaxDebit).ToString("N2"))
+            </div>
+            <div class="tx-kpi-sub">
+                إجمالي المدين على حسابي الضريبة خلال الفترة
+            </div>
+        </div>
+
+        <!-- صافي الرصيد -->
+        <div class="tx-kpi total">
+            <div class="tx-kpi-label">
+                <i class="bi bi-cash-stack"></i>
+                إجمالي الرصيد المسترد
+            </div>
+            <div class="tx-kpi-value">
+                @((Model.VatClosingBalance + Model.SalesTaxClosingBalance).ToString("N2"))
+            </div>
+            <div class="tx-kpi-sub">
+                مجموع الرصيد الختامي للضريبتين
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ Details Table ═══════ -->
+    <div class="tx-card">
+        <div class="tx-card-head">
+            <h2>
+                <i class="bi bi-list-ul"></i>
+                تفاصيل الحركات (@Model.Lines.Count سطر)
+            </h2>
+        </div>
+
+        @if (!Model.Lines.Any())
+        {
+            <div class="tx-empty">
+                <i class="bi bi-inbox"></i>
+                لا توجد حركات ضريبية في الفترة المحددة
+            </div>
+        }
+        else
+        {
+            <div class="tx-table-wrap">
+                <table class="tx-table">
+                    <thead>
+                        <tr>
+                            <th style="width:110px;">رقم القيد</th>
+                            <th style="width:100px;">التاريخ</th>
+                            <th style="width:130px;">المصدر</th>
+                            <th style="min-width:150px;">البيان</th>
+                            <th style="width:130px;">المورد</th>
+                            <th style="width:130px;">المخزن</th>
+                            <th class="num vat-col" style="width:100px;">ض.ق.م مدين</th>
+                            <th class="num vat-col" style="width:100px;">ض.ق.م دائن</th>
+                            <th class="num st-col" style="width:100px;">ض.مبيعات مدين</th>
+                            <th class="num st-col" style="width:100px;">ض.مبيعات دائن</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.Lines)
+                        {
+                            var sourceClass = line.SourceTypeName.Contains("إلغاء")
+                                ? "cancel"
+                                : (line.SourceTypeName.Contains("مرتجع") ? "return" : "");
+
+                            <tr>
+                                <td>
+                                    <span dir="ltr" style="font-family:Consolas,monospace; font-weight:700;">
+                                        @line.EntryNumber
+                                    </span>
+                                </td>
+                                <td>
+                                    <span dir="ltr" style="font-family:Consolas,monospace;">
+                                        @line.EntryDate.ToString("yyyy-MM-dd")
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="tx-badge @sourceClass">
+                                        @line.SourceTypeName
+                                    </span>
+                                </td>
+                                <td style="font-size:.82rem; color:var(--tx-body);">
+                                    @line.Description
+                                </td>
+                                <td>@(line.SupplierName ?? "—")</td>
+                                <td>@(line.StoreName ?? "—")</td>
+                                <td class="tx-num vat @(line.VatDebit == 0 ? "zero" : "")">
+                                    @(line.VatDebit > 0 ? line.VatDebit.ToString("N2") : "—")
+                                </td>
+                                <td class="tx-num vat @(line.VatCredit == 0 ? "zero" : "")">
+                                    @(line.VatCredit > 0 ? line.VatCredit.ToString("N2") : "—")
+                                </td>
+                                <td class="tx-num st @(line.SalesTaxDebit == 0 ? "zero" : "")">
+                                    @(line.SalesTaxDebit > 0 ? line.SalesTaxDebit.ToString("N2") : "—")
+                                </td>
+                                <td class="tx-num st @(line.SalesTaxCredit == 0 ? "zero" : "")">
+                                    @(line.SalesTaxCredit > 0 ? line.SalesTaxCredit.ToString("N2") : "—")
+                                </td>
+                            </tr>
+                        }
+
+                        <!-- الإجمالي -->
+                        <tr class="tx-total-row">
+                            <td colspan="6" style="text-align:left;">
+                                الإجمالي خلال الفترة
+                            </td>
+                            <td class="tx-num vat">@Model.VatDebit.ToString("N2")</td>
+                            <td class="tx-num vat">@Model.VatCredit.ToString("N2")</td>
+                            <td class="tx-num st">@Model.SalesTaxDebit.ToString("N2")</td>
+                            <td class="tx-num st">@Model.SalesTaxCredit.ToString("N2")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+</div>
