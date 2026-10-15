@@ -67,10 +67,8 @@ namespace AccountingSystem.Services
 					result =
 						await NextCoreAsync(dbKey, ambient);
 
-					// =========================================
-					// [إصلاح] التزام المعاملة — بدونه تُلغى كل
+					// التزام المعاملة — بدونه تُلغى كل
 					// التغييرات عند Dispose للـ Transaction
-					// =========================================
 					await transaction.CommitAsync();
 				});
 
@@ -83,17 +81,7 @@ namespace AccountingSystem.Services
 		{
 			try
 			{
-				// =========================================
-				// [إصلاح] قفل الصف (UPDLOCK + ROWLOCK)
-				// لمنع قراءتين متزامنتين لنفس العداد قبل
-				// التحديث، مما يمنع تكرار الأرقام.
-				// =========================================
-				var counter = await context.SequenceCounters
-					.FromSqlInterpolated($@"
-						SELECT * FROM [SequenceCounters]
-						WITH (UPDLOCK, ROWLOCK)
-						WHERE [Key] = {dbKey}")
-					.FirstOrDefaultAsync();
+				var counter = await LoadWithLockAsync(dbKey);
 
 				if (counter == null)
 				{
@@ -122,26 +110,34 @@ namespace AccountingSystem.Services
 			}
 			catch (DbUpdateException)
 			{
-				// تعارض إدراج متزامن على نفس المفتاح —
-				// معاملة خاصة: أعد المحاولة مرة واحدة
-				// معاملة محيطة: دعها تفشل فتتراجع كلها
+				// تعارض إدراج متزامن على نفس المفتاح.
+				// - معاملة محيطة: دعها تفشل فتتراجع كلها.
+				// - معاملة خاصة: أعد المحاولة مرة واحدة.
 				if (ambient)
 				{
 					throw;
 				}
 
 				// =========================================
-				// [إصلاح] نفس قفل الصف في إعادة المحاولة
+				// [إصلاح] نفصل فقط كيانات SequenceCounter
+				// اللي في حالة Added. استخدام Clear() بيفصل
+				// كل كيانات الـ context، وده بيضيّع تعديلات
+				// المستدعي بدون ما يعرف.
 				// =========================================
-				var retry = await context.SequenceCounters
-					.FromSqlInterpolated($@"
-						SELECT * FROM [SequenceCounters]
-						WITH (UPDLOCK, ROWLOCK)
-						WHERE [Key] = {dbKey}")
-					.FirstOrDefaultAsync();
+				foreach (var entry in context.ChangeTracker
+					.Entries<SequenceCounter>()
+					.Where(e => e.State == EntityState.Added)
+					.ToList())
+				{
+					entry.State = EntityState.Detached;
+				}
+
+				var retry = await LoadWithLockAsync(dbKey);
 
 				if (retry == null)
 				{
+					// الصف اختفى (transaction تانية اترجعت)
+					// — نعيد رمي الاستثناء الأصلي.
 					throw;
 				}
 
@@ -159,6 +155,37 @@ namespace AccountingSystem.Services
 		}
 
 		// =========================================
+		// قراءة العداد بقفل صف.
+		//
+		// UPDLOCK: قفل تحديث — يمنع قراءتين متزامنتين
+		//          لنفس الصف قبل التحديث.
+		// HOLDLOCK: يوسّع القفل لنطاق المفتاح كله، فيمنع
+		//           أي إدراج جديد لنفس المفتاح لحد ما
+		//           المعاملة تخلص. ضروري لأول رقم في اليوم
+		//           (لما الصف مش موجود أصلاً).
+		// ROWLOCK:  قفل على مستوى الصف مش الصفحة.
+		//
+		// InMemory: قراءة عادية (مفيش قفل صف).
+		// =========================================
+
+		private async Task<SequenceCounter?> LoadWithLockAsync(
+			string dbKey)
+		{
+			if (context.Database.IsRelational())
+			{
+				return await context.SequenceCounters
+					.FromSqlInterpolated($@"
+						SELECT * FROM [SequenceCounters]
+						WITH (UPDLOCK, HOLDLOCK, ROWLOCK)
+						WHERE [Key] = {dbKey}")
+					.FirstOrDefaultAsync();
+			}
+
+			return await context.SequenceCounters
+				.FirstOrDefaultAsync(x => x.Key == dbKey);
+		}
+
+		// =========================================
 		// رقم مركّب مثل: JRN-20260923-0001
 		// =========================================
 
@@ -168,13 +195,16 @@ namespace AccountingSystem.Services
 			DateTime? date = null,
 			int digits = 6)
 		{
+			// [إصلاح] نحسب التاريخ مرة واحدة ونستخدمه
+			// للعداد وللنص، حتى لا يختلفا لو عبرت الساعة
+			// منتصف الليل بين السطرين.
+			var effectiveDate = (date ?? DateTime.Today).Date;
+
 			var value = await NextValueAsync(
 				suffix,
-				date);
+				effectiveDate);
 
-			var datePart =
-				(date ?? DateTime.Today)
-					.ToString("yyyyMMdd");
+			var datePart = effectiveDate.ToString("yyyyMMdd");
 
 			return
 				$"{prefix}-{datePart}-{value.ToString().PadLeft(digits, '0')}";

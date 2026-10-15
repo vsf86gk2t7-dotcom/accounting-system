@@ -806,61 +806,6 @@ namespace AccountingSystem.Data
 					Description = "صرف سلفة لموظف."
 				},
 				
-				// =====================================
-				// Payroll (الرواتب)
-				// =====================================
-
-				new Permission
-				{
-					Code = "payroll.view",
-					Name = "عرض الرواتب",
-					Group = "Payroll",
-					Description = "عرض قائمة أشهر الرواتب."
-				},
-
-				new Permission
-				{
-					Code = "payroll.manage",
-					Name = "إدارة الرواتب",
-					Group = "Payroll",
-					Description = "إنشاء وتعديل أشهر الرواتب."
-				},
-
-				new Permission
-				{
-					Code = "payroll.approve",
-					Name = "اعتماد الرواتب",
-					Group = "Payroll",
-					Description = "اعتماد قيد استحقاق الرواتب."
-				},
-
-				new Permission
-				{
-					Code = "payroll.pay",
-					Name = "صرف الرواتب",
-					Group = "Payroll",
-					Description = "صرف الرواتب من الخزينة."
-				},
-
-				// =====================================
-				// Employee Advances (السلف)
-				// =====================================
-
-				new Permission
-				{
-					Code = "advance.view",
-					Name = "عرض سلف الموظفين",
-					Group = "Advance",
-					Description = "عرض سجل السلف."
-				},
-
-				new Permission
-				{
-					Code = "advance.create",
-					Name = "صرف سلفة",
-					Group = "Advance",
-					Description = "صرف سلفة لموظف."
-				},
 							// =====================================
 				// Sales Rep (المناديب)
 				// =====================================
@@ -1831,8 +1776,6 @@ namespace AccountingSystem.Data
 					System = true },
 									new { Code = "1107", Name = "سلف موظفين", Type = AccountType.Asset, Parent = "11",
 					System = true },
-									new { Code = "1107", Name = "سلف موظفين", Type = AccountType.Asset, Parent = "11",
-					System = true },
 
 				// ═════════════════════════════════════
 				// الالتزامات (2)
@@ -1846,8 +1789,6 @@ namespace AccountingSystem.Data
 				new { Code = "2102", Name = "الموردون", Type = AccountType.Liability, Parent = "21",
 					System = true },
 				new { Code = "2103", Name = "ضريبة المبيعات (المبيعات)", Type = AccountType.Liability, Parent = "21",
-					System = true },
-									new { Code = "2105", Name = "رواتب مستحقة", Type = AccountType.Liability, Parent = "21",
 					System = true },
 									new { Code = "2105", Name = "رواتب مستحقة", Type = AccountType.Liability, Parent = "21",
 					System = true },
@@ -1878,8 +1819,6 @@ namespace AccountingSystem.Data
 				new { Code = "5101", Name = "مصروف رواتب", Type = AccountType.Expense, Parent = "5",
 					System = true },
 
-				new { Code = "5101", Name = "مصروف رواتب", Type = AccountType.Expense, Parent = "5",
-					System = true }
 			};
 
 			var existing =

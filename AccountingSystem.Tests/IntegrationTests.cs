@@ -1,16 +1,15 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace AccountingSystem.Tests
 {
-	public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+	public class IntegrationTests : IClassFixture<TestWebApplicationFactory>
 	{
 		private readonly HttpClient _client;
 
-		public IntegrationTests(WebApplicationFactory<Program> factory)
+		public IntegrationTests(TestWebApplicationFactory factory)
 		{
 			_client = factory.CreateClient();
 		}
