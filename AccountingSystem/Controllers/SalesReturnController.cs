@@ -15,21 +15,24 @@ namespace AccountingSystem.Controllers
 	public class SalesReturnController : Controller
 	{
 		private readonly ApplicationDbContext _context;
-		private readonly IEmployeeScopeService _employeeScopeService;
-		private readonly IPostingService _postingService;
-		private readonly IDocumentNumberService _documentNumberService;
+private readonly IEmployeeScopeService _employeeScopeService;
+private readonly IPostingService _postingService;
+private readonly IDocumentNumberService _documentNumberService;
+private readonly ILogger<SalesReturnController> _logger;
 
-		public SalesReturnController(
-			ApplicationDbContext context,
-			IEmployeeScopeService employeeScopeService,
-			IPostingService postingService,
-			IDocumentNumberService documentNumberService)
-		{
-			_context = context;
-			_employeeScopeService = employeeScopeService;
-			_postingService = postingService;
-			_documentNumberService = documentNumberService;
-		}
+public SalesReturnController(
+        ApplicationDbContext context,
+        IEmployeeScopeService employeeScopeService,
+        IPostingService postingService,
+        IDocumentNumberService documentNumberService,
+        ILogger<SalesReturnController> logger)
+{
+        _context = context;
+        _employeeScopeService = employeeScopeService;
+        _postingService = postingService;
+        _documentNumberService = documentNumberService;
+        _logger = logger;
+}
 
 		// =========================================
 		//                  
@@ -500,22 +503,16 @@ namespace AccountingSystem.Controllers
 						transactionError =
 							"                                          .             .";
 					}
-					catch (Exception ex)
+catch (Exception ex)
 {
     await transaction.RollbackAsync();
 
-    // اطبع الاستثناء كاملًا في stdout (يظهر في dotnet test)
-    Console.WriteLine("=== SalesReturn.Create Error ===");
-    Console.WriteLine(ex.ToString());
+    _logger.LogError(ex,
+        "SalesReturn.Create failed. OriginalInvoiceId={InvoiceId}, UserId={UserId}",
+        model.OriginalSalesInvoiceId,
+        CurrentUserId());
 
-    // ادمج الـ Inner في الرسالة لتظهر في الاختبار
-    var inner = ex.InnerException;
-    var deepest = inner?.InnerException?.Message ?? "";
-    var innerMsg = inner?.Message ?? "";
-
-    transactionError = "فشل: " + ex.Message
-        + (string.IsNullOrEmpty(innerMsg) ? "" : " | Inner: " + innerMsg)
-        + (string.IsNullOrEmpty(deepest) ? "" : " | Deepest: " + deepest);
+    transactionError = "فشل حفظ المرتجع. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.";
 }
 				});
 

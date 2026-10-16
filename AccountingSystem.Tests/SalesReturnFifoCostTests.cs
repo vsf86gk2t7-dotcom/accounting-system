@@ -15,8 +15,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
+
 
 namespace AccountingSystem.Tests;
 
@@ -299,20 +301,21 @@ END";
                 (inv, cost, uid) => onCostCaptured(cost))
             .ReturnsAsync(JournalPostingResult.Ok(1, "JRN-TEST-001"));
 
-var docNumberMock = new Mock<IDocumentNumberService>();
+        var docNumberMock = new Mock<IDocumentNumberService>();
 
-docNumberMock
-    .Setup(x => x.GenerateNumberAsync(
-        It.IsAny<string>(),
-        It.IsAny<string>(),
-        It.IsAny<string>()))
-    .ReturnsAsync(() => $"SRT-{Guid.NewGuid():N}");
+        docNumberMock
+            .Setup(x => x.GenerateNumberAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .ReturnsAsync(() => $"SRT-{Guid.NewGuid():N}");
 
         var controller = new SalesReturnController(
             ctx,
             scopeService.Object,
             postingMock.Object,
-            docNumberMock.Object);
+            docNumberMock.Object,
+            NullLogger<SalesReturnController>.Instance);   // ← جديد
 
         // ===== HttpContext مع Claims — userId الفعلي =====
         var httpContext = new DefaultHttpContext();
