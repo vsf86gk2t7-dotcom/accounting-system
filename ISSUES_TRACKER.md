@@ -92,18 +92,24 @@
 
 ## 🟠 المرحلة 2 — الأداء والمحاسبة (P1)
 
-### 8️⃣ إزالة DatabaseKeepAlive الثقيل
+### 8️⃣ إزالة DatabaseKeepAlive الثقيل — ✅ مكتمل
 
-- [ ] `SELECT COUNT_BIG(*)` → `SELECT 1`
-- [ ] أو حذف الخدمة بالكامل
-- **الحالة:** ⬜ لم يبدأ
+- [x] `SELECT COUNT_BIG(*)` → `SELECT 1` (6 استعلامات اتشالت)
+- [x] Build succeeded
+- **الحالة:** ✅ مكتمل
 
-### 9️⃣ Purchase Payment Accounting
+### 9️⃣ Purchase Payment Accounting — ✅ مكتمل
 
-- [ ] إضافة `PaymentMethod` + `CashAccountId` في `PurchaseInvoice`
-- [ ] تعديل `PostingService` للتعامل مع الدفع النقدي
-- [ ] تعديل `PurchaseInvoiceCreateViewModel` والـ View
-- **الحالة:** ⬜ لم يبدأ
+- [x] `PurchasePaymentMethod` enum (Cash/BankTransfer/Cheque/Credit/Wallet)
+- [x] `PaymentMethod` + `CashAccountId` + `PaymentDetails` في `PurchaseInvoice`
+- [x] DbContext relationship لـ `CashAccount`
+- [x] `PostPurchaseInvoiceAsync` — يقيد الخزنة نقدي أو الموردون آجل
+- [x] `TreasuryTransaction` (Pay) عند الدفع النقدي
+- [x] `PurchaseInvoiceCreateViewModel` + `CashAccountOptionViewModel`
+- [x] Controller: validation + تحميل قائمة الخزائن
+- [x] View: dropdown طريقة الدفع + الخزنة + تفاصيل الدفع (JS للتبديل)
+- [x] Migration: `20261016003854_AddPurchasePaymentMethod`
+- **الحالة:** ✅ مكتمل — Build succeeded + DB updated
 
 ### 🔟 إصلاح Encoding التالف
 
@@ -214,10 +220,10 @@
 | المرحلة | العدد | تم |
 |---|---|---|
 | 🔴 P0 حماية البيانات | 7 | 7 |
-| 🟠 P1 أداء ومحاسبة | 8 | 0 |
+| 🟠 P1 أداء ومحاسبة | 8 | 2 |
 | 🟡 P2 تحسينات | 4 | 0 |
 | 🟢 P3 تنظيف | 4 | 0 |
-| **الإجمالي** | **23** | **7** |
+| **الإجمالي** | **23** | **9** |
 
 ---
 
@@ -230,5 +236,8 @@
 5. ~~StockTransactionItem → StockLot~~ ✅
 6. ~~Posting Idempotency~~ ✅
 7. ~~Model/Migration Sync~~ ✅
+8. ~~DatabaseKeepAlive~~ ✅
+9. ~~Purchase Payment Accounting~~ ✅
+10. إصلاح Encoding التالف ← **التالي**
 
-**المرحلة P0 كلها مكتملة! 🎉**
+**المرحلة P0 كلها مكتملة! 🎉 — وبدأنا P1 (2/8)**
