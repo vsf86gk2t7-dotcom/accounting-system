@@ -106,6 +106,14 @@ else
 									data-file-name="@backup.FileName">
 								🗑️ حذف
 							</button>
+
+							<button type="button"
+									class="btn btn-sm btn-outline-warning"
+									data-bs-toggle="modal"
+									data-bs-target="#restoreBackupModal"
+									data-file-name="@backup.FileName">
+								♻️ استرجاع
+							</button>
 						</td>
 					</tr>
 				}
@@ -113,6 +121,53 @@ else
 		</table>
 	</div>
 }
+<!-- مودال تأكيد الاسترجاع -->
+<div class="modal fade" id="restoreBackupModal" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content border-warning">
+			<form asp-action="RestoreBackup" method="post">
+				@Html.AntiForgeryToken()
+				<input type="hidden" name="fileName" id="restoreFileName" value="" />
+
+				<div class="modal-header bg-warning text-dark">
+					<h5 class="modal-title">⚠️ استرجاع نسخة احتياطية</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+
+				<div class="modal-body">
+					<div class="alert alert-danger">
+						<strong>تحذير:</strong> هذه العملية ستستبدل
+						<strong>كل البيانات الحالية</strong>
+						بالبيانات الموجودة في النسخة الاحتياطية.
+						<br>
+						لا يمكن التراجع عن هذه العملية.
+					</div>
+
+					<p>الملف: <code id="restoreFileNameLabel"></code></p>
+
+					<p class="mb-2">
+						للتأكيد، اكتب اسم الداتابيز يدويًا:
+						<code>AccountingSystemDb</code>
+					</p>
+
+					<input type="text"
+						   name="confirmText"
+						   id="restoreConfirmText"
+						   class="form-control"
+						   placeholder="اكتب اسم الداتابيز هنا..."
+						   autocomplete="off" />
+				</div>
+
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-warning">
+						♻️ استرجاع النسخة
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
 
 <!-- مودال تأكيد الحذف -->
 <div class="modal fade" id="deleteBackupModal" tabindex="-1">
@@ -149,6 +204,15 @@ else
 			var fileName = button.getAttribute('data-file-name');
 			document.getElementById('deleteFileName').value = fileName;
 			document.getElementById('deleteFileNameLabel').textContent = fileName;
+		});
+
+		var restoreModal = document.getElementById('restoreBackupModal');
+		restoreModal.addEventListener('show.bs.modal', function (event) {
+			var button = event.relatedTarget;
+			var fileName = button.getAttribute('data-file-name');
+			document.getElementById('restoreFileName').value = fileName;
+			document.getElementById('restoreFileNameLabel').textContent = fileName;
+			document.getElementById('restoreConfirmText').value = '';
 		});
 	</script>
 }

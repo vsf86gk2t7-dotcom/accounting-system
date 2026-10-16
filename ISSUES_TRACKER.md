@@ -178,13 +178,18 @@
 
 ## 🟡 المرحلة 3 — تحسينات (P2)
 
-### 1️⃣6️⃣ Cloud Backup + Restore
+### 1️⃣6️⃣ Cloud Backup + Restore — ⚠️ جزئي (3/4)
 
-- [ ] Restore من Backup
-- [ ] Cloud Backup
-- [ ] Backup Verification
-- [ ] Automatic Retention
-- **الحالة:** ⬜ لم يبدأ
+- [x] **Backup Verification** — `RESTORE VERIFYONLY` + endpoint + زر في UI
+- [x] **Automatic Retention** — `BackupRetentionService` (24h, 30 يوم, min 5)
+- [x] **Restore من Backup** — endpoint كامل مع:
+  - تأكيد مزدوج (كتابة اسم الداتابيز يدويًا)
+  - VERIFYONLY قبل الـ Restore
+  - SINGLE_USER + MULTI_USER
+  - قفل يمنع Restore متزامن
+  - صفحة HTML نهائية (لأن DbContext يتعطل بعد الاسترجاع)
+- [ ] **Cloud Backup** — مؤجل (يحتاج اختيار provider: Azure/AWS/GCP)
+- **الحالة:** ⚠️ جزئي (3/4 مكتمل)
 
 ### 1️⃣7️⃣ Background WhatsApp/PDF
 
