@@ -157,6 +157,50 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =====================================
+		// «· Õﬁﬁ „‰ ”·«„… ‰”Œ… «Õ Ì«ÿÌ…
+		// =====================================
+
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> VerifyBackup(string fileName)
+		{
+			var folder =
+				_configuration["BackupSettings:Folder"];
+
+			if (!BackupFileGuard.TryGetSafeBackupPath(
+					folder,
+					fileName,
+					out var fullPath) ||
+				!System.IO.File.Exists(fullPath))
+			{
+				TempData["Error"] =
+					"„·› «·‰”Œ… €Ì— „ÊÃÊœ √Ê €Ì— ’«·Õ.";
+
+				return RedirectToAction(nameof(Backups));
+			}
+
+			try
+			{
+				// RESTORE VERIFYONLY Ì Õﬁﬁ „‰ ”·«„… «·„·›
+				// »œÊ‰ «” —Ã«⁄Â ›⁄·Ì«.
+				var sql =
+					$"RESTORE VERIFYONLY FROM DISK = N'{fullPath.Replace("'", "''")}'";
+
+				await _context.Database.ExecuteSqlRawAsync(sql);
+
+				TempData["Success"] =
+					$"? «·‰”Œ… ´{fileName}ª ”·Ì„… Êﬁ«»·… ··«” —Ã«⁄.";
+			}
+			catch (Exception ex)
+			{
+				TempData["Error"] =
+					$"? «·‰”Œ… ´{fileName}ª  «·›…: {ex.Message}";
+			}
+
+			return RedirectToAction(nameof(Backups));
+		}
+
+		// =====================================
 		// ÿ·»«  «· ”ÃÌ· «·„ÊÕœ…
 		// =====================================
 
@@ -164,17 +208,9 @@ namespace AccountingSystem.Controllers
 		public async Task<IActionResult> RegistrationRequests(
 			string? type)
 		{
-			// =====================================
-			// Ã·» «·ÿ·»«  „‰ ﬂ· ‰Ê⁄
-			// =====================================
-
 			var customers = new List<RegistrationRequestItem>();
 			var suppliers = new List<RegistrationRequestItem>();
 			var employees = new List<RegistrationRequestItem>();
-
-			// =====================================
-			// «·„ÊŸ›Ì‰
-			// =====================================
 
 			if (string.IsNullOrEmpty(type) ||
 				type.Equals("employee", StringComparison.OrdinalIgnoreCase))
@@ -199,10 +235,6 @@ namespace AccountingSystem.Controllers
 				}).ToList();
 			}
 
-			// =====================================
-			// «·⁄„·«¡
-			// =====================================
-
 			if (string.IsNullOrEmpty(type) ||
 				type.Equals("customer", StringComparison.OrdinalIgnoreCase))
 			{
@@ -225,10 +257,6 @@ namespace AccountingSystem.Controllers
 					HasAccount = x.HasPortalAccount
 				}).ToList();
 			}
-
-			// =====================================
-			// «·„Ê—œÌ‰
-			// =====================================
 
 			if (string.IsNullOrEmpty(type) ||
 				type.Equals("supplier", StringComparison.OrdinalIgnoreCase))
@@ -253,16 +281,6 @@ namespace AccountingSystem.Controllers
 				}).ToList();
 			}
 
-			// =====================================
-			// «·„ÊŸ›Ì‰ (·Ê ⁄«Ì“ - ·”Â „Õ «Ã 3 ÕﬁÊ·)
-			// =====================================
-
-			// „ƒﬁ «: ‰√Ã¯· «·„ÊŸ›Ì‰
-
-			// =====================================
-			// «·œ„Ã
-			// =====================================
-
 			var all = new List<RegistrationRequestItem>();
 			all.AddRange(customers);
 			all.AddRange(suppliers);
@@ -277,6 +295,7 @@ namespace AccountingSystem.Controllers
 
 			return View(all);
 		}
+
 		// =====================================
 		// ÿ·»«  «” ⁄«œ… ﬂ·„… «·„—Ê—
 		// =====================================
@@ -288,10 +307,6 @@ namespace AccountingSystem.Controllers
 			var query = _context.PasswordResetRequests
 				.AsNoTracking()
 				.AsQueryable();
-
-			// =====================================
-			// «·›· —
-			// =====================================
 
 			switch (filter)
 			{

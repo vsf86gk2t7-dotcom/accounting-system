@@ -87,6 +87,18 @@ else
 								⬇️ تحميل
 							</a>
 
+							<form asp-action="VerifyBackup"
+							      method="post"
+							      class="d-inline">
+								@Html.AntiForgeryToken()
+								<input type="hidden" name="fileName" value="@backup.FileName" />
+								<button type="submit"
+								        class="btn btn-sm btn-outline-info"
+								        title="التحقق من سلامة الملف">
+									✓ تحقق
+								</button>
+							</form>
+
 							<button type="button"
 									class="btn btn-sm btn-outline-danger"
 									data-bs-toggle="modal"

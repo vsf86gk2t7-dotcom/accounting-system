@@ -164,6 +164,11 @@ builder.Services.AddHostedService<DatabaseKeepAliveService>();
 // خدمة التذكيرات اليومية للفواتير المستحقة
 builder.Services.AddHostedService<DailyInvoiceReminderService>();
 
+// خدمة تنظيف النسخ الاحتياطية القديمة تلقائيًا
+builder.Services.AddHostedService<BackupRetentionService>();
+// خدمة تنظيف النسخ الاحتياطية القديمة تلقائيًا
+builder.Services.AddHostedService<BackupRetentionService>();
+
 // In-app notification service (topbar bell).
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
