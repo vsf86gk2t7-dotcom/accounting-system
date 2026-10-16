@@ -108,3 +108,6 @@ WhatsAppGateway/*.out.txt
 check-status.ps1
 collect_project.ps1
 update_state.ps1
+# Test diagnostic outputs
+AccountingSystem.Tests/error-detail.txt
+AccountingSystem.Tests/test-output.txt

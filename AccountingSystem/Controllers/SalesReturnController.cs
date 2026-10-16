@@ -501,11 +501,22 @@ namespace AccountingSystem.Controllers
 							"                                          .             .";
 					}
 					catch (Exception ex)
-					{
-						await transaction.RollbackAsync();
-						transactionError =
-							"                    : " + ex.Message;
-					}
+{
+    await transaction.RollbackAsync();
+
+    // اطبع الاستثناء كاملًا في stdout (يظهر في dotnet test)
+    Console.WriteLine("=== SalesReturn.Create Error ===");
+    Console.WriteLine(ex.ToString());
+
+    // ادمج الـ Inner في الرسالة لتظهر في الاختبار
+    var inner = ex.InnerException;
+    var deepest = inner?.InnerException?.Message ?? "";
+    var innerMsg = inner?.Message ?? "";
+
+    transactionError = "فشل: " + ex.Message
+        + (string.IsNullOrEmpty(innerMsg) ? "" : " | Inner: " + innerMsg)
+        + (string.IsNullOrEmpty(deepest) ? "" : " | Deepest: " + deepest);
+}
 				});
 
 			if (transactionError != null)
@@ -610,36 +621,45 @@ namespace AccountingSystem.Controllers
 		//             
 		// =========================================
 
-		private async Task LoadLookupsAsync(SalesReturnViewModel model)
-		{
-			model.Customers = await _context.Customers
-				.AsNoTracking()
-				.Where(x => x.IsActive)
-				.OrderBy(x => x.Name)
-				.Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
-				.ToListAsync();
+	private async Task LoadLookupsAsync(SalesReturnViewModel model)
+{
+    var customers = await _context.Customers
+        .AsNoTracking()
+        .Where(x => x.IsActive)
+        .OrderBy(x => x.Name)
+        .ToListAsync();
 
-			var scope = await _employeeScopeService.GetScopeAsync();
+    model.Customers = customers
+        .Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
+        .ToList();
 
-			var storesQuery = _context.Stores
-				.AsNoTracking()
-				.Where(x => x.IsActive);
+    var scope = await _employeeScopeService.GetScopeAsync();
 
-			storesQuery = _employeeScopeService
-				.ApplyStoreFilter(storesQuery, scope);
+    var storesQuery = _context.Stores
+        .AsNoTracking()
+        .Where(x => x.IsActive);
 
-			model.Stores = await storesQuery
-				.OrderBy(x => x.Name)
-				.Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
-				.ToListAsync();
+    storesQuery = _employeeScopeService
+        .ApplyStoreFilter(storesQuery, scope);
 
-			model.CashAccounts = await _context.CashAccounts
-				.AsNoTracking()
-				.Where(x => x.IsActive)
-				.OrderBy(x => x.Name)
-				.Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
-				.ToListAsync();
-		}
+    var stores = await storesQuery
+        .OrderBy(x => x.Name)
+        .ToListAsync();
+
+    model.Stores = stores
+        .Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
+        .ToList();
+
+    var cashAccounts = await _context.CashAccounts
+        .AsNoTracking()
+        .Where(x => x.IsActive)
+        .OrderBy(x => x.Name)
+        .ToListAsync();
+
+    model.CashAccounts = cashAccounts
+        .Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
+        .ToList();
+}
 
 		private async Task<bool> LoadInvoiceForReturnAsync(
 			SalesReturnViewModel model,
