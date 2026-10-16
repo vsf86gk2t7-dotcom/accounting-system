@@ -205,6 +205,16 @@ builder.Services.AddScoped<
 	WhatsAppService>();
 
 // =========================================
+// WhatsApp Queue + Background Worker
+// =========================================
+
+builder.Services.AddSingleton<
+	AccountingSystem.Services.WhatsApp.IWhatsAppQueue,
+	AccountingSystem.Services.WhatsApp.WhatsAppQueue>();
+
+builder.Services.AddHostedService<
+	AccountingSystem.Services.WhatsApp.WhatsAppBackgroundService>();
+// =========================================
 // PDF
 // =========================================
 

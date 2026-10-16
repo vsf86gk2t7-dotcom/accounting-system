@@ -124,10 +124,20 @@
 - [ ] Cloud Backup — مؤجل (يحتاج اختيار provider)
 - **الحالة:** ⚠️ جزئي (3/4)
 
-### 1️⃣7️⃣ Background WhatsApp/PDF
+### 1️⃣7️⃣ Background WhatsApp/PDF — ✅ مكتمل
 
-- [ ] Queue + Background Worker + إرسال بعد Commit
-- **الحالة:** ⬜ لم يبدأ
+- [x] `WhatsAppQueue` (Channel-based in-memory queue)
+- [x] `WhatsAppBackgroundService` (BackgroundService)
+- [x] تسجيل Queue + Worker في `Program.cs`
+- [x] `SalesInvoiceController` يستخدم الـ queue بدل الإرسال المباشر
+  - إرسال تلقائي بعد Confirm
+  - SendWhatsApp اليدوي
+- [x] `PurchaseInvoiceController` يستخدم الـ queue
+  - إرسال تلقائي بعد Post
+  - SendWhatsApp اليدوي
+- [x] حذف ملف الـ PDF بعد الإرسال تلقائياً
+- [x] Build succeeded
+- **الحالة:** ✅ مكتمل
 
 ### 1️⃣8️⃣ زيادة الاختبارات
 

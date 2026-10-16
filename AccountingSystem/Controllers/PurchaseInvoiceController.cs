@@ -19,7 +19,8 @@ namespace AccountingSystem.Controllers
 		private readonly IEmployeeScopeService _employeeScopeService;
 		private readonly Services.Permissions.IPermissionService _permissionService;
 		private readonly IPostingService _postingService;
-		private readonly IDocumentNumberService _documentNumberService;
+				private readonly IDocumentNumberService _documentNumberService;
+		private readonly Services.WhatsApp.IWhatsAppQueue _whatsAppQueue;
 
 		public PurchaseInvoiceController(
 			ApplicationDbContext context,
@@ -28,7 +29,8 @@ namespace AccountingSystem.Controllers
 			IEmployeeScopeService employeeScopeService,
 			Services.Permissions.IPermissionService permissionService,
 			IPostingService postingService,
-			IDocumentNumberService documentNumberService)
+			IDocumentNumberService documentNumberService,
+			Services.WhatsApp.IWhatsAppQueue whatsAppQueue)
 		{
 			_context = context;
 			_whatsAppService = whatsAppService;
@@ -37,6 +39,7 @@ namespace AccountingSystem.Controllers
 			_permissionService = permissionService;
 			_postingService = postingService;
 			_documentNumberService = documentNumberService;
+			_whatsAppQueue = whatsAppQueue;
 		}
 
 		// =========================================
@@ -446,7 +449,7 @@ namespace AccountingSystem.Controllers
 		// إرسال فاتورة شراء واتساب PDF (يدوي)
 		// =========================================
 
-		[HttpPost]
+				[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequirePermission("purchase.view")]
 		public async Task<IActionResult> SendWhatsApp(int id)
@@ -481,42 +484,44 @@ namespace AccountingSystem.Controllers
 				return RedirectToAction(nameof(Details), new { id });
 			}
 
-			var pdfPath =
-				await _pdfInvoiceService
-					.GeneratePurchaseInvoicePdfAsync(invoice.Id);
-
-			if (string.IsNullOrEmpty(pdfPath))
-			{
-				TempData["Error"] =
-					"تعذر توليد ملف PDF للفاتورة.";
-
-				return RedirectToAction(nameof(Details), new { id });
-			}
-
-			var fileName =
-				$"فاتورة-شراء-{invoice.InvoiceNumber}.pdf";
-
-						var whatsappResult =
-				await _whatsAppService.SendDocumentAsync(
-					invoice.Supplier.Phone,
-					invoice.Supplier.Name,
-					pdfPath,
-					fileName,
-					$"فاتورة شراء {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م");
-
 			try
 			{
-				System.IO.File.Delete(pdfPath);
-			}
-			catch
-			{
-				// حذف مؤقت
-			}
+				var pdfPath =
+					await _pdfInvoiceService
+						.GeneratePurchaseInvoicePdfAsync(invoice.Id);
 
-			TempData[whatsappResult.Success ? "Success" : "Error"] =
-				whatsappResult.Success
-					? "تم إرسال الفاتورة للمورد عبر واتساب."
-					: "تعذر إرسال الفاتورة عبر واتساب. تأكد من إعداداتنا (Token/PhoneNumberId).";
+				if (string.IsNullOrEmpty(pdfPath))
+				{
+					TempData["Error"] =
+						"تعذر توليد ملف PDF للفاتورة.";
+
+					return RedirectToAction(nameof(Details), new { id });
+				}
+
+				var fileName =
+					$"فاتورة-شراء-{invoice.InvoiceNumber}.pdf";
+
+				await _whatsAppQueue.EnqueueAsync(
+					new Services.WhatsApp.WhatsAppJob
+					{
+						Kind = Services.WhatsApp.WhatsAppJobKind.Document,
+						Phone = invoice.Supplier.Phone,
+						RecipientName = invoice.Supplier.Name,
+						DocumentPath = pdfPath,
+						FileName = fileName,
+						Caption = $"فاتورة شراء {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م",
+						DeleteFileAfterSend = true,
+						Context = $"PurchaseInvoice #{invoice.Id} (manual)"
+					});
+
+				TempData["Success"] =
+					"تم جدولة إرسال الفاتورة للمورد عبر واتساب.";
+			}
+			catch (Exception ex)
+			{
+				TempData["Error"] =
+					"تعذر جدولة الإرسال: " + ex.Message;
+			}
 
 			return RedirectToAction(nameof(Details), new { id });
 		}
@@ -1023,7 +1028,7 @@ namespace AccountingSystem.Controllers
 				return RedirectToAction(nameof(Index));
 			}
 
-			if (!string.IsNullOrWhiteSpace(supplier.Phone))
+						if (!string.IsNullOrWhiteSpace(supplier.Phone))
 			{
 				try
 				{
@@ -1036,21 +1041,18 @@ namespace AccountingSystem.Controllers
 						var fileName =
 							$"فاتورة-شراء-{invoice.InvoiceNumber}.pdf";
 
-						await _whatsAppService.SendDocumentAsync(
-							supplier.Phone,
-							supplier.Name,
-							pdfPath,
-							fileName,
-							$"فاتورة شراء {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م");
-
-						try
-						{
-							System.IO.File.Delete(pdfPath);
-						}
-						catch
-						{
-							// حذف مؤقت
-						}
+						await _whatsAppQueue.EnqueueAsync(
+							new Services.WhatsApp.WhatsAppJob
+							{
+								Kind = Services.WhatsApp.WhatsAppJobKind.Document,
+								Phone = supplier.Phone,
+								RecipientName = supplier.Name,
+								DocumentPath = pdfPath,
+								FileName = fileName,
+								Caption = $"فاتورة شراء {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م",
+								DeleteFileAfterSend = true,
+								Context = $"PurchaseInvoice #{invoice.Id} (auto)"
+							});
 					}
 				}
 				catch

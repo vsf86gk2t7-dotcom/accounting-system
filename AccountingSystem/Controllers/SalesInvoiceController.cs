@@ -21,29 +21,32 @@ namespace AccountingSystem.Controllers
 		private readonly IPostingService _postingService;
 		private readonly IInvoiceReminderService _reminderService;
 		private readonly IDocumentNumberService _documentNumberService;
-		private readonly ISalesRepService _salesRepService;
+			private readonly ISalesRepService _salesRepService;
+	private readonly Services.WhatsApp.IWhatsAppQueue _whatsAppQueue;
 
-		public SalesInvoiceController(
-			ApplicationDbContext context,
-			IEmployeeScopeService employeeScopeService,
-			Services.Pdf.IPdfInvoiceService pdfInvoiceService,
-			Services.WhatsApp.IWhatsAppService whatsAppService,
-			Services.Permissions.IPermissionService permissionService,
-			IPostingService postingService,
-			IInvoiceReminderService reminderService,
-			IDocumentNumberService documentNumberService,
-			ISalesRepService salesRepService)
-		{
-			_context = context;
-			_employeeScopeService = employeeScopeService;
-			_pdfInvoiceService = pdfInvoiceService;
-			_whatsAppService = whatsAppService;
-			_permissionService = permissionService;
-			_postingService = postingService;
-			_reminderService = reminderService;
-			_documentNumberService = documentNumberService;
-			_salesRepService = salesRepService;
-		}
+	public SalesInvoiceController(
+		ApplicationDbContext context,
+		IEmployeeScopeService employeeScopeService,
+		Services.Pdf.IPdfInvoiceService pdfInvoiceService,
+		Services.WhatsApp.IWhatsAppService whatsAppService,
+		Services.Permissions.IPermissionService permissionService,
+		IPostingService postingService,
+		IInvoiceReminderService reminderService,
+		IDocumentNumberService documentNumberService,
+		ISalesRepService salesRepService,
+		Services.WhatsApp.IWhatsAppQueue whatsAppQueue)
+	{
+		_context = context;
+		_employeeScopeService = employeeScopeService;
+		_pdfInvoiceService = pdfInvoiceService;
+		_whatsAppService = whatsAppService;
+		_permissionService = permissionService;
+		_postingService = postingService;
+		_reminderService = reminderService;
+		_documentNumberService = documentNumberService;
+		_salesRepService = salesRepService;
+		_whatsAppQueue = whatsAppQueue;
+	}
 
 		// =========================================
 		// قائمة فواتير البيع (مفلترة بالـScope)
@@ -1264,7 +1267,7 @@ namespace AccountingSystem.Controllers
 			TempData["Success"] =
 				"تم اعتماد الفاتورة وصرف الكميات من المخزون.";
 
-			if (invoice.Customer != null &&
+						if (invoice.Customer != null &&
 				!string.IsNullOrWhiteSpace(invoice.Customer.Phone))
 			{
 				try
@@ -1278,33 +1281,27 @@ namespace AccountingSystem.Controllers
 						var fileName =
 							$"فاتورة-{invoice.InvoiceNumber}.pdf";
 
-						var whatsappResult =
-							await _whatsAppService.SendDocumentAsync(
-								invoice.Customer.Phone,
-								invoice.Customer.Name,
-								pdfPath,
-								fileName,
-								$"فاتورة بيع {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م");
+						await _whatsAppQueue.EnqueueAsync(
+							new Services.WhatsApp.WhatsAppJob
+							{
+								Kind = Services.WhatsApp.WhatsAppJobKind.Document,
+								Phone = invoice.Customer.Phone,
+								RecipientName = invoice.Customer.Name,
+								DocumentPath = pdfPath,
+								FileName = fileName,
+								Caption = $"فاتورة بيع {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م",
+								DeleteFileAfterSend = true,
+								Context = $"SalesInvoice #{invoice.Id} (auto)"
+							});
 
 						TempData["Success"] +=
-							whatsappResult.Success
-								? " وتم إرسال الفاتورة للعميل عبر واتساب."
-								: " (تعذر إرسال واتساب للعميل).";
-
-						try
-						{
-							System.IO.File.Delete(pdfPath);
-						}
-						catch
-						{
-							// حذف مؤقت
-						}
+							" (سيتم إرسال الفاتورة عبر واتساب خلال لحظات).";
 					}
 				}
 				catch (Exception whatsappEx)
 				{
 					TempData["Success"] +=
-						" (تعذر إرسال واتساب للعميل: " +
+						" (تعذر تجهيز إرسال واتساب: " +
 						whatsappEx.Message + ").";
 				}
 			}
@@ -1503,7 +1500,7 @@ namespace AccountingSystem.Controllers
 		// إرسال فاتورة بيع واتساب PDF (يدوي)
 		// =========================================
 
-		[HttpPost]
+				[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequirePermission("sales.view")]
 		public async Task<IActionResult> SendWhatsApp(int id)
@@ -1538,42 +1535,44 @@ namespace AccountingSystem.Controllers
 				return RedirectToAction(nameof(Details), new { id });
 			}
 
-			var pdfPath =
-				await _pdfInvoiceService
-					.GenerateSalesInvoicePdfAsync(invoice.Id);
-
-			if (string.IsNullOrEmpty(pdfPath))
-			{
-				TempData["Error"] =
-					"تعذر توليد ملف PDF للفاتورة.";
-
-				return RedirectToAction(nameof(Details), new { id });
-			}
-
-			var fileName =
-				$"فاتورة-{invoice.InvoiceNumber}.pdf";
-
-			var whatsappResult =
-				await _whatsAppService.SendDocumentAsync(
-					invoice.Customer.Phone,
-					invoice.Customer.Name,
-					pdfPath,
-					fileName,
-					$"فاتورة بيع {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م");
-
 			try
 			{
-				System.IO.File.Delete(pdfPath);
-			}
-			catch
-			{
-				// حذف مؤقت
-			}
+				var pdfPath =
+					await _pdfInvoiceService
+						.GenerateSalesInvoicePdfAsync(invoice.Id);
 
-			TempData[whatsappResult.Success ? "Success" : "Error"] =
-				whatsappResult.Success
-					? "تم إرسال الفاتورة للعميل عبر واتساب."
-					: "تعذر إرسال الفاتورة عبر واتساب. تأكد من إعداداتك (Token/PhoneNumberId).";
+				if (string.IsNullOrEmpty(pdfPath))
+				{
+					TempData["Error"] =
+						"تعذر توليد ملف PDF للفاتورة.";
+
+					return RedirectToAction(nameof(Details), new { id });
+				}
+
+				var fileName =
+					$"فاتورة-{invoice.InvoiceNumber}.pdf";
+
+				await _whatsAppQueue.EnqueueAsync(
+					new Services.WhatsApp.WhatsAppJob
+					{
+						Kind = Services.WhatsApp.WhatsAppJobKind.Document,
+						Phone = invoice.Customer.Phone,
+						RecipientName = invoice.Customer.Name,
+						DocumentPath = pdfPath,
+						FileName = fileName,
+						Caption = $"فاتورة بيع {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م",
+						DeleteFileAfterSend = true,
+						Context = $"SalesInvoice #{invoice.Id} (manual)"
+					});
+
+				TempData["Success"] =
+					"تم جدولة إرسال الفاتورة للعميل عبر واتساب.";
+			}
+			catch (Exception ex)
+			{
+				TempData["Error"] =
+					"تعذر جدولة الإرسال: " + ex.Message;
+			}
 
 			return RedirectToAction(nameof(Details), new { id });
 		}
