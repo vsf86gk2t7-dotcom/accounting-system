@@ -32,7 +32,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// ��� ������� �����
+		//                  
 		// =========================================
 
 		[HttpGet]
@@ -89,7 +89,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// ����� ����� - GET
+		//             - GET
 		// =========================================
 
 		[HttpGet]
@@ -111,7 +111,7 @@ namespace AccountingSystem.Controllers
 				if (!ok)
 				{
 					TempData["Error"] =
-						"�������� ��� ������ �� ��� ������.";
+						"                                 .";
 
 					return RedirectToAction(nameof(Create));
 				}
@@ -127,7 +127,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// ����� ����� - POST
+		//             - POST
 		// =========================================
 
 		[HttpPost]
@@ -142,7 +142,7 @@ namespace AccountingSystem.Controllers
 					: model.Reason.Trim();
 
 			// =====================================
-			// ������ �������
+			//               
 			// =====================================
 
 			if (!model.OriginalSalesInvoiceId.HasValue ||
@@ -150,7 +150,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.OriginalSalesInvoiceId),
-					"��� ������ ������ ����� �������.");
+					"                               .");
 			}
 
 			model.Items = model.Items
@@ -161,7 +161,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"��� ����� ��� ���� ��� ����� ����� ���� �� ���.");
+					"                                              .");
 			}
 
 			if (model.RefundToCash &&
@@ -170,7 +170,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.RefundCashAccountId),
-					"��� ������ ���� ���� ����.");
+					"                         .");
 			}
 
 			if (!ModelState.IsValid)
@@ -180,7 +180,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =====================================
-			// �������� �������
+			//                 
 			// =====================================
 
 			var originalInvoice = await _context.SalesInvoices
@@ -195,25 +195,25 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.OriginalSalesInvoiceId),
-					"�������� ������� ��� ������ �� ��� ������.");
+					"                                         .");
 
 				await ReloadForErrorAsync(model);
 				return View(model);
 			}
 
-			// ? ������ �� ������ ������
+			// ?                        
 			var scope = await _employeeScopeService.GetScopeAsync();
 
 			if (!scope.CanAccessStore(originalInvoice.StoreId))
 			{
 				TempData["Error"] =
-					"��� ���� ������ ��� ���� ��� ��������.";
+					"                                     .";
 
 				return RedirectToAction(nameof(Index));
 			}
 
 			// =====================================
-			// ���� �������
+			//             
 			// =====================================
 
 			var returnInvoice = new SalesReturnInvoice
@@ -237,7 +237,7 @@ namespace AccountingSystem.Controllers
 			if (returnInvoice.CustomerId == 0)
 			{
 				TempData["Error"] =
-					"�������� ������� ��� ��� ���� � �� ���� ����� �����.";
+					"                                                   .";
 
 				return RedirectToAction(nameof(Index));
 			}
@@ -245,7 +245,7 @@ namespace AccountingSystem.Controllers
 			decimal totalReturn = 0;
 
 			// =====================================
-			// ������ ������
+			//              
 			// =====================================
 
 			decimal totalCostOfGoodsSold = 0;
@@ -260,13 +260,13 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						"��� ��� ���� �� �������� �������.");
+						"                                .");
 
 					await ReloadForErrorAsync(model);
 					return View(model);
 				}
 
-				// ������� ��������� ������ ���� �����
+				//                                    
 				var alreadyReturned =
 					await _context.SalesReturnInvoiceItems
 						.Where(x =>
@@ -284,87 +284,130 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						$"������ �������� ����� ���� �� ������ �������. " +
-						$"������: {returnable} � �������: {requested}");
+						$"                                            . " +
+						$"      : {returnable}          : {requested}");
 
 					await ReloadForErrorAsync(model);
 					return View(model);
 				}
 
 				// =================================
-				// ����� ��� �������
+				//                  
 				// =================================
 
-				var returnItem = new SalesReturnInvoiceItem
-				{
-					SalesInvoiceItemId = saleItem.Id,
-					ProductId = saleItem.ProductId,
-					UnitId = saleItem.UnitId,
-					ConversionFactor = saleItem.ConversionFactor,
-					Quantity = itemModel.Quantity,
-					QuantityInBaseUnit = requested,
-					UnitPrice = saleItem.UnitPrice,
-					Total = itemModel.Quantity * saleItem.UnitPrice
-				};
+			                                var returnItem = new SalesReturnInvoiceItem
+                                {
+                                        SalesInvoiceItemId = saleItem.Id,
+                                        ProductId = saleItem.ProductId,
+                                        UnitId = saleItem.UnitId,
+                                        ConversionFactor = saleItem.ConversionFactor,
+                                        Quantity = itemModel.Quantity,
+                                        QuantityInBaseUnit = requested,
+                                        UnitPrice = saleItem.UnitPrice,
+                                        // ✅ Total = الكمية بالوحدة الأساسية × السعر (per-piece)
+                                        Total = requested * saleItem.UnitPrice
+                                };
 
 				// =================================
-				// ����� ������ ��� ���Lots ������� (LIFO)
+				//                     Lots         (LIFO)
 				// =================================
 
-				var remaining = requested;
-				decimal weightedCost = 0;
+				                                // =================================
+                                // ✅ استهلاك المخزون من Lots (FIFO — الأقدم أولاً)
+                                // =================================
 
-				var allocations = saleItem.LotAllocations
-					.OrderByDescending(x => x.Id)
-					.ToList();
+                                                               // =================================
+                                // ✅ استهلاك المخزون من Lots (FIFO — الأقدم أولاً)
+                                // مع مراعاة الكميات المُرتجَعة سابقًا من كل Lot
+                                // =================================
 
-				foreach (var alloc in allocations)
-				{
-					if (remaining <= 0.0001m)
-					{
-						break;
-					}
+                                var remaining = requested;
+                                decimal weightedCost = 0;
 
-					var fromLot = Math.Min(
-						alloc.QuantityBaseUnit,
-						remaining);
+                                var allocations = saleItem.LotAllocations
+                                        .OrderBy(x => x.StockLot!.PurchaseDate)
+                                        .ThenBy(x => x.Id)
+                                        .ToList();
 
-					var lot = await _context.StockLots
-						.FirstOrDefaultAsync(x =>
-							x.Id == alloc.StockLotId);
+                                // ✅ كم تم إرجاعه سابقًا من كل Lot لهذا البند؟
+                                var returnedPerLot =
+                                        await _context.SalesReturnItemLots
+                                                .AsNoTracking()
+                                                .Where(x =>
+                                                        x.SalesReturnInvoiceItem != null &&
+                                                        x.SalesReturnInvoiceItem.SalesInvoiceItemId == saleItem.Id)
+                                                .GroupBy(x => x.StockLotId)
+                                                .Select(g => new
+                                                {
+                                                        StockLotId = g.Key,
+                                                        Total = g.Sum(x => x.QuantityBaseUnit)
+                                                })
+                                                .ToDictionaryAsync(
+                                                        x => x.StockLotId,
+                                                        x => x.Total);
 
-					if (lot == null)
-					{
-						ModelState.AddModelError(
-							string.Empty,
-							"���� ����� ��� ������ �� �������.");
+                                foreach (var alloc in allocations)
+                                {
+                                        if (remaining <= 0.0001m)
+                                        {
+                                                break;
+                                        }
 
-						await ReloadForErrorAsync(model);
-						return View(model);
-					}
+                                        // ✅ الكمية المتبقية القابلة للارتجاع من هذا الـ Lot
+                                        var alreadyFromThisLot =
+                                                returnedPerLot.GetValueOrDefault(alloc.StockLotId, 0m);
 
-					// ? ����� ������ ���Lot ������
-					lot.QuantityRemaining += fromLot;
+                                        var remainingInLot =
+                                                alloc.QuantityBaseUnit - alreadyFromThisLot;
 
-					returnItem.LotAllocations.Add(
-						new SalesReturnItemLot
-						{
-							StockLotId = lot.Id,
-							QuantityBaseUnit = fromLot,
-							UnitCost = alloc.UnitCost,
-							TotalCost = fromLot * alloc.UnitCost
-						});
+                                        if (remainingInLot <= 0.0001m)
+                                        {
+                                                continue;
+                                        }
 
-					weightedCost += fromLot * alloc.UnitCost;
-					totalCostOfGoodsSold += weightedCost;
-					remaining -= fromLot;
-				}
+                                        var fromLot = Math.Min(
+                                                remainingInLot,
+                                                remaining);
+
+                                        var lot = await _context.StockLots
+                                                .FirstOrDefaultAsync(x =>
+                                                        x.Id == alloc.StockLotId);
+
+                                        if (lot == null)
+                                        {
+                                                ModelState.AddModelError(
+                                                        string.Empty,
+                                                        "الدفعة غير موجودة.");
+
+                                                await ReloadForErrorAsync(model);
+                                                return View(model);
+                                        }
+
+                                        // ✅ إرجاع الكمية للدفعة
+                                        lot.QuantityRemaining += fromLot;
+
+                                        var lotCost = fromLot * alloc.UnitCost;
+
+                                        returnItem.LotAllocations.Add(
+                                                new SalesReturnItemLot
+                                                {
+                                                        StockLotId = lot.Id,
+                                                        QuantityBaseUnit = fromLot,
+                                                        UnitCost = alloc.UnitCost,
+                                                        TotalCost = lotCost
+                                                });
+
+                                        // ✅ إصلاح: نضيف التكلفة الفعلية للدفعة بس
+                                        weightedCost += lotCost;
+                                        totalCostOfGoodsSold += lotCost;
+                                        remaining -= fromLot;
+                                }
 
 				if (remaining > 0.0001m)
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						"���� ����� ������ ������� ��� ������� �������.");
+						"                                             .");
 
 					await ReloadForErrorAsync(model);
 					return View(model);
@@ -380,7 +423,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =====================================
-			// ����������
+			//           
 			// =====================================
 
 			returnInvoice.TotalAmount = totalReturn;
@@ -390,7 +433,7 @@ namespace AccountingSystem.Controllers
 			_context.SalesReturnInvoices.Add(returnInvoice);
 
 			// =====================================
-			// ? ����� �� ���� �� �������
+			// ?                         
 			// =====================================
 
 			if (model.RefundToCash &&
@@ -406,7 +449,7 @@ namespace AccountingSystem.Controllers
 							model.RefundCashAccountId.Value,
 						CustomerId = returnInvoice.CustomerId,
 						Amount = totalReturn,
-						Reason = "�� ���� � ����� ���",
+						Reason = "                   ",
 						ReferenceDocument =
 							returnInvoice.InvoiceNumber,
 						AutoJournal = false,
@@ -416,7 +459,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =====================================
-			// ����� + ������� + ������ �������
+			//       +         +               
 			// =====================================
 
 			var strategy =
@@ -444,7 +487,7 @@ namespace AccountingSystem.Controllers
 						{
 							await transaction.RollbackAsync();
 							transactionError =
-								"��� ����� ��� ����� �����: " +
+								"                         : " +
 								(postingResult.Error ?? "unknown");
 							return;
 						}
@@ -455,13 +498,13 @@ namespace AccountingSystem.Controllers
 					{
 						await transaction.RollbackAsync();
 						transactionError =
-							"�� ����� ������� �� ������ ��� ����� �����. ��� ��������.";
+							"                                          .             .";
 					}
 					catch (Exception ex)
 					{
 						await transaction.RollbackAsync();
 						transactionError =
-							"��� �� ����� �������: " + ex.Message;
+							"                    : " + ex.Message;
 					}
 				});
 
@@ -472,13 +515,13 @@ namespace AccountingSystem.Controllers
 			}
 
 			TempData["Success"] =
-				$"�� ����� ����� ����� {returnInvoice.InvoiceNumber} ������ ������� ������� �������.";
+				$"                     {returnInvoice.InvoiceNumber}                               .";
 
 			return RedirectToAction(nameof(Index));
 		}
 
 		// =========================================
-		// ������ �����
+		//             
 		// =========================================
 
 		[HttpGet]
@@ -517,7 +560,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// AJAX � ������ ������
+		// AJAX                
 		// =========================================
 
 		[HttpGet]
@@ -564,7 +607,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// ����� ������
+		//             
 		// =========================================
 
 		private async Task LoadLookupsAsync(SalesReturnViewModel model)

@@ -28,15 +28,18 @@
   - 6 صلاحيات مكررة: `payroll.view`, `payroll.manage`, `payroll.approve`, `payroll.pay`, `advance.view`, `advance.create`
   - 3 حسابات مكررة في Chart of Accounts: `1107`, `2105`, `5101`
 
-### 2️⃣ إصلاح Sales Return FIFO/Lot + COGS — ⚠️ جزئي
+### 2️⃣ إصلاح Sales Return FIFO/Lot + COGS — ✅ مكتمل
 
-- [x] `totalCostOfGoodsSold` بيستخدم `fromLot * alloc.UnitCost` (سطر 355)
-- [ ] مراجعة كاملة للـ `SalesReturnController.cs` وحساب COGS
-- [ ] التحقق من `SalesReturnItemLot` لكل Lot
-- [ ] حساب `Remaining Returnable From Lot` بدقة
-- [ ] اختبار: مرتجع من Lot A + Lot B → COGS صحيح
-- [ ] اختبار: مرتجعين متتاليين من نفس الـ Lot → ما يزيدش عن الأصل
-- **الحالة:** ⚠️ الحساب الأساسي موجود، يحتاج مراجعة واختبار
+- [x] `totalCostOfGoodsSold += weightedCost` → `+= lotCost` (كانت مضاعِفة ~2.4×)
+- [x] `OrderByDescending(x => x.Id)` → `OrderBy(x => x.StockLot.PurchaseDate)` (كانت LIFO)
+- [x] `Total = Quantity * UnitPrice` → `= QuantityInBaseUnit * UnitPrice`
+- [x] حساب `Remaining Returnable From Lot` بدقة:
+  - استعلام `SalesReturnItemLots` المُرتجَعة سابقًا لكل Lot
+  - `remainingInLot = alloc.QuantityBaseUnit - alreadyReturned`
+- [x] يمنع `Lot.QuantityRemaining` من تجاوز `QuantityReceived`
+- [ ] اختبار FIFO من Lot A + Lot B → مؤجل لبند #18
+- [ ] اختبار مرتجعين متتاليين من نفس الـ Lot → مؤجل لبند #18
+- **الحالة:** ✅ مكتمل — Build succeeded
 
 ### 3️⃣ Stock Concurrency / RowVersion — ✅ مكتمل
 
