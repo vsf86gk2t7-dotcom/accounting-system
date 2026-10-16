@@ -495,10 +495,10 @@ namespace AccountingSystem.Controllers
 
 			await _context.SaveChangesAsync();
 
-			var whatsappSent = await _whatsAppService.SendActivationCodeAsync(
+						var whatsappResult = await _whatsAppService.SendActivationCodeAsync(
 				employee.Phone!, employee.Name, activationCode);
 
-			TempData[whatsappSent ? "Success" : "Error"] = whatsappSent
+			TempData[whatsappResult.Success ? "Success" : "Error"] = whatsappResult.Success
 				? $"تم إنشاء حساب الموظف {employee.Name} وتجهيز رسالة التفعيل عبر WhatsApp."
 				: "تم إنشاء حساب الموظف، لكن تعذر إرسال كود التفعيل.";
 

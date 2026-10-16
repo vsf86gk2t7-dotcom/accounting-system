@@ -238,10 +238,10 @@ namespace AccountingSystem.Controllers
 			supplier.HasPortalAccount = true;
 			await _context.SaveChangesAsync();
 
-			var whatsappSent = await _whatsAppService.SendActivationCodeAsync(
+						var whatsappResult = await _whatsAppService.SendActivationCodeAsync(
 				supplier.Phone!, supplier.Name, activationCode);
 
-			TempData[whatsappSent ? "Success" : "Error"] = whatsappSent
+			TempData[whatsappResult.Success ? "Success" : "Error"] = whatsappResult.Success
 				? $"تم إنشاء حساب المورد {supplier.Name} وتجهيز رسالة التفعيل عبر WhatsApp."
 				: "تم إنشاء حساب المورد، لكن تعذر إرسال كود التفعيل عبر WhatsApp.";
 

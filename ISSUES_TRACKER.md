@@ -145,11 +145,15 @@
 - [ ] توحيد `BranchOptionViewModel` / `StoreOptionViewModel` — متروك (تكرار غير ضار)
 - **الحالة:** ⚠️ جزئي — الكود شغّال، التحسينات الجمالية مؤجلة
 
-### 1️⃣4️⃣ WhatsApp Result حقيقي
+### 1️⃣4️⃣ WhatsApp Result حقيقي — ✅ مكتمل
 
-- [ ] تغيير `return true` في حالة NotConfigured → `Simulated`
-- [ ] إنشاء `WhatsAppResult { Status, MessageId, Error }`
-- **الحالة:** ⬜ لم يبدأ
+- [x] إنشاء `WhatsAppResult` (enum `Sent/Simulated/Failed` + `MessageId` + `Error`)
+- [x] `IWhatsAppService` كل method ترجع `WhatsAppResult` بدل `bool`
+- [x] `WhatsAppService`: Meta/Gateway غير معد → `Simulated` (بدل `return true` المضلل)
+- [x] تحديث 6 call sites (Account/Customer/Employee/Supplier/PurchaseInvoice/SalesInvoice)
+- [x] `InvoiceReminderService` — لا يحتاج تعديل (ignore return value)
+- [x] Build succeeded
+- **الحالة:** ✅ مكتمل
 
 ### 1️⃣5️⃣ PDF A5 / Receipt
 
@@ -226,10 +230,10 @@
 | المرحلة | العدد | تم |
 |---|---|---|
 | 🔴 P0 حماية البيانات | 7 | 7 |
-| 🟠 P1 أداء ومحاسبة | 8 | 5 |
+| 🟠 P1 أداء ومحاسبة | 8 | 6 |
 | 🟡 P2 تحسينات | 4 | 0 |
 | 🟢 P3 تنظيف | 4 | 0 |
-| **الإجمالي** | **23** | **12** |
+| **الإجمالي** | **23** | **14** |
 
 ---
 
@@ -248,6 +252,7 @@
 11. ~~Reports SQL Aggregation~~ ✅
 12. ~~Document Number Service~~ ✅
 13. ~~Entities/ViewModels Unification~~ ⚠️ جزئي
-14. WhatsApp Result حقيقي ← **التالي**
+14. ~~WhatsApp Result~~ ✅
+15. PDF A5 / Receipt ← **التالي**
 
-**P0 كامل + P1 (5/8)**
+**P0 كامل + P1 (6/8) — آخر بند في P1**

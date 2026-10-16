@@ -496,7 +496,7 @@ namespace AccountingSystem.Controllers
 			var fileName =
 				$"فاتورة-شراء-{invoice.InvoiceNumber}.pdf";
 
-			var ok =
+						var whatsappResult =
 				await _whatsAppService.SendDocumentAsync(
 					invoice.Supplier.Phone,
 					invoice.Supplier.Name,
@@ -513,8 +513,8 @@ namespace AccountingSystem.Controllers
 				// حذف مؤقت
 			}
 
-			TempData[ok ? "Success" : "Error"] =
-				ok
+			TempData[whatsappResult.Success ? "Success" : "Error"] =
+				whatsappResult.Success
 					? "تم إرسال الفاتورة للمورد عبر واتساب."
 					: "تعذر إرسال الفاتورة عبر واتساب. تأكد من إعداداتنا (Token/PhoneNumberId).";
 

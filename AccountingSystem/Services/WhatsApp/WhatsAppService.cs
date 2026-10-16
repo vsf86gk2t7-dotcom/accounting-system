@@ -21,8 +21,8 @@ namespace AccountingSystem.Services.WhatsApp
 		}
 
 		// =====================================
-		// رقم الهاتف: تحويل صيغة 01xxxxxxxxx
-		// إلى صيغة دولية 2010xxxxxxxxx
+		// توحيد رقم الهاتف: 01xxxxxxxxx
+		// إلى الصيغة الدولية 2010xxxxxxxxx
 		// =====================================
 
 		private static string NormalizePhone(string phone)
@@ -34,29 +34,26 @@ namespace AccountingSystem.Services.WhatsApp
 						.Where(char.IsDigit)
 						.ToArray());
 
-			// الصيغة القياسية المصرية:
-			// 01XXXXXXXXX (11 رقمًا) → 201XXXXXXXXX
-			// (احذف الصفر الرائد وأضف 20 قبله)
+			// الصيغة المحلية المصرية: 01XXXXXXXXX (11 رقم)
 			if (digits.Length == 11 &&
 				digits.StartsWith("01"))
 			{
 				return "20" + digits.Substring(1);
 			}
 
-			// الصيغة الدولية 201XXXXXXXXX (12 رقمًا)
+			// الصيغة الدولية بدون + (12 رقم)
 			if (digits.Length == 12 &&
 				digits.StartsWith("201"))
 			{
 				return digits;
 			}
 
-			// صيغة القديمة 10XXXXXXXXX → احذف 0 وأضف 20
+			// رقم بدون 0 في البداية: 1XXXXXXXXX
 			if (digits.Length == 10 &&
 				digits.StartsWith("1"))
 			{
 				return "20" + digits;
 			}
-
 
 			return digits;
 		}
@@ -65,7 +62,7 @@ namespace AccountingSystem.Services.WhatsApp
 		// إرسال مستند (PDF)
 		// =====================================
 
-		public async Task<bool> SendDocumentAsync(
+		public async Task<WhatsAppResult> SendDocumentAsync(
 			string phone,
 			string recipientName,
 			string documentPath,
@@ -84,7 +81,7 @@ namespace AccountingSystem.Services.WhatsApp
 			var gatewayKey =
 				_configuration["WhatsAppLocal:GatewayKey"];
 
-			// لو البوابة المحلية مفعّلة → استخدمها (الأولوية)
+			// إن كانت هناك بوابة محلية → نستخدمها
 			if (!string.IsNullOrWhiteSpace(gatewayUrl))
 			{
 				return await SendDocumentViaGatewayAsync(
@@ -97,13 +94,13 @@ namespace AccountingSystem.Services.WhatsApp
 					caption);
 			}
 
-			// لو غير مُعد → نسخة تجريبية/تطبع فقط
+			// إن لم تكن إعدادات Meta مضبوطة → نحاكي الإرسال
 			if (string.IsNullOrWhiteSpace(accessToken) ||
 				string.IsNullOrWhiteSpace(phoneNumberId))
 			{
 				LogAndPrint(
 					$"\n" +
-					$"📄 WhatsApp Document (لا يوجد إعداد Meta — عرض فقط)\n" +
+					$"[MOCK] WhatsApp Document (Meta غير معد)\n" +
 					$"----------------------------------------\n" +
 					$"Recipient : {recipientName}\n" +
 					$"Phone     : {phone}\n" +
@@ -112,7 +109,8 @@ namespace AccountingSystem.Services.WhatsApp
 					$"Path      : {documentPath}\n" +
 					$"========================================\n");
 
-				return true;
+				return WhatsAppResult.Simulated(
+					"إعدادات Meta WhatsApp غير مضبوطة");
 			}
 
 			if (!File.Exists(documentPath))
@@ -121,7 +119,8 @@ namespace AccountingSystem.Services.WhatsApp
 					"ملف PDF غير موجود: {Path}",
 					documentPath);
 
-				return false;
+				return WhatsAppResult.Failed(
+					$"ملف PDF غير موجود: {documentPath}");
 			}
 
 			var recipient =
@@ -133,12 +132,13 @@ namespace AccountingSystem.Services.WhatsApp
 					"رقم هاتف غير صالح: {Phone}",
 					phone);
 
-				return false;
+				return WhatsAppResult.Failed(
+					$"رقم هاتف غير صالح: {phone}");
 			}
 
 			try
 			{
-				// 1) ارفع الملف
+				// 1) رفع الوسائط
 				var mediaId =
 					await UploadMediaAsync(
 						accessToken,
@@ -147,10 +147,11 @@ namespace AccountingSystem.Services.WhatsApp
 
 				if (string.IsNullOrWhiteSpace(mediaId))
 				{
-					return false;
+					return WhatsAppResult.Failed(
+						"فشل رفع المستند إلى WhatsApp");
 				}
 
-				// 2) أرسل رسالة من نوع document
+				// 2) إرسال رسالة document
 				var payload = new
 				{
 					messaging_product = "whatsapp",
@@ -193,36 +194,38 @@ namespace AccountingSystem.Services.WhatsApp
 				if (!response.IsSuccessStatusCode)
 				{
 					_logger.LogError(
-						"فشل إرسال رسالة الواتساب: {Status} {Body}",
+						"فشل إرسال المستند: {Status} {Body}",
 						(int)response.StatusCode,
 						body);
 
-					return false;
+					return WhatsAppResult.Failed(
+						$"HTTP {(int)response.StatusCode}: {body}");
 				}
 
 				_logger.LogInformation(
-					"تم إرسال مستند واتساب إلى {Phone}: {File}",
+					"تم إرسال المستند إلى {Phone}: {File}",
 					recipient,
 					fileName);
 
-				return true;
+				return WhatsAppResult.Sent();
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(
 					ex,
-					"خطأ أثناء إرسال واتساب إلى {Phone}",
+					"خطأ أثناء إرسال المستند إلى {Phone}",
 					phone);
 
-				return false;
+				return WhatsAppResult.Failed(
+					$"خطأ أثناء الإرسال: {ex.Message}");
 			}
 		}
 
 		// =====================================
-		// اختبار الاتصال ويرجع تفاصيل الاستجابة
+		// اختبار الاتصال بواتساب
 		// =====================================
 
-		public async Task<(bool Ok, string Details)> SendTestAsync(
+		public async Task<WhatsAppResult> SendTestAsync(
 			string phone)
 		{
 			var gatewayUrl =
@@ -252,27 +255,21 @@ namespace AccountingSystem.Services.WhatsApp
 
 					if (!ready)
 					{
-						return (false,
-							"البوابة المحلية غير جاهزة (لم تُمسح الجلسة بعد أو الخادم متوقف).");
+						return WhatsAppResult.Failed(
+							"بوابة الواتساب غير جاهزة (لم يتم مسح QR بعد أو تم فقد الاتصال).");
 					}
 
-					var ok =
-						await SendMessageViaGatewayAsync(
-							gatewayUrl,
-							_configuration["WhatsAppLocal:GatewayKey"],
-							phone,
-							"اختبار",
-							"اختبار اتصال من نظام الفواتير ✔");
-
-					return (ok,
-						ok
-							? "تم الإرسال بنجاح عبر البوابة المحلية."
-							: "فشل الإرسال عبر البوابة المحلية — راجع سجل الخادم.");
+					return await SendMessageViaGatewayAsync(
+						gatewayUrl,
+						_configuration["WhatsAppLocal:GatewayKey"],
+						phone,
+						"اختبار",
+						"اختبار الواتساب تم بنجاح");
 				}
 				catch (Exception ex)
 				{
-					return (false,
-						$"تعذر الاتصال بالبوابة المحلية: {ex.Message}");
+					return WhatsAppResult.Failed(
+						$"تعذر الاتصال ببوابة الواتساب: {ex.Message}");
 				}
 			}
 
@@ -285,8 +282,8 @@ namespace AccountingSystem.Services.WhatsApp
 			if (string.IsNullOrWhiteSpace(accessToken) ||
 				string.IsNullOrWhiteSpace(phoneNumberId))
 			{
-				return (false,
-					"لم يتم تعيين WhatsApp:AccessToken / WhatsApp:PhoneNumberId في appsettings.json.");
+				return WhatsAppResult.Failed(
+					"لم يتم إعداد WhatsApp:AccessToken / WhatsApp:PhoneNumberId في appsettings.json.");
 			}
 
 			var recipient =
@@ -294,7 +291,7 @@ namespace AccountingSystem.Services.WhatsApp
 
 			if (string.IsNullOrEmpty(recipient))
 			{
-				return (false,
+				return WhatsAppResult.Failed(
 					$"رقم هاتف غير صالح: {phone}");
 			}
 
@@ -306,7 +303,7 @@ namespace AccountingSystem.Services.WhatsApp
 				type = "text",
 				text = new
 				{
-					body = "اختبار اتصال من نظام الفواتير ✔"
+					body = "اختبار الواتساب تم بنجاح"
 				}
 			};
 
@@ -339,22 +336,21 @@ namespace AccountingSystem.Services.WhatsApp
 
 				if (!response.IsSuccessStatusCode)
 				{
-					return (false,
+					return WhatsAppResult.Failed(
 						$"HTTP {(int)response.StatusCode}: {body}");
 				}
 
-				return (true,
-					$"تم الإرسال إلى {recipient} بنجاح: {body}");
+				return WhatsAppResult.Sent();
 			}
 			catch (Exception ex)
 			{
-				return (false,
-					$"استثناء: {ex.Message}");
+				return WhatsAppResult.Failed(
+					$"السوكيت: {ex.Message}");
 			}
 		}
 
 		// =====================================
-		// رفع الملف للحصول على media id
+		// رفع الوسائط وإرجاع media id
 		// =====================================
 
 		private async Task<string?> UploadMediaAsync(
@@ -421,14 +417,14 @@ namespace AccountingSystem.Services.WhatsApp
 		// كود التفعيل
 		// =====================================
 
-		public async Task<bool> SendActivationCodeAsync(
+		public async Task<WhatsAppResult> SendActivationCodeAsync(
 			string phone,
 			string recipientName,
 			string activationCode)
 		{
 			var message =
 				$"مرحبًا {recipientName}،\n\n" +
-				$"كود التفعيل الخاص بك: {activationCode}\n\n" +
+				$"كود التفعيل الخاص بك هو: {activationCode}\n\n" +
 				$"شكرًا لك.";
 
 			return await SendMessageAsync(
@@ -441,7 +437,7 @@ namespace AccountingSystem.Services.WhatsApp
 		// رسالة عامة
 		// =====================================
 
-		public async Task<bool> SendMessageAsync(
+		public async Task<WhatsAppResult> SendMessageAsync(
 			string phone,
 			string recipientName,
 			string message)
@@ -471,7 +467,7 @@ namespace AccountingSystem.Services.WhatsApp
 				var fullMessage =
 					$"\n" +
 					$"========================================\n" +
-					$"📱 WhatsApp Message (لا يوجد إعداد Meta — عرض فقط)\n" +
+					$"[MOCK] WhatsApp Message (Meta غير معد)\n" +
 					$"----------------------------------------\n" +
 					$"Recipient : {recipientName}\n" +
 					$"Phone     : {phone}\n" +
@@ -481,7 +477,8 @@ namespace AccountingSystem.Services.WhatsApp
 
 				LogAndPrint(fullMessage);
 
-				return true;
+				return WhatsAppResult.Simulated(
+					"إعدادات Meta WhatsApp غير مضبوطة");
 			}
 
 			var recipient =
@@ -493,7 +490,8 @@ namespace AccountingSystem.Services.WhatsApp
 					"رقم هاتف غير صالح: {Phone}",
 					phone);
 
-				return false;
+				return WhatsAppResult.Failed(
+					$"رقم هاتف غير صالح: {phone}");
 			}
 
 			var payload = new
@@ -538,31 +536,33 @@ namespace AccountingSystem.Services.WhatsApp
 				if (!response.IsSuccessStatusCode)
 				{
 					_logger.LogError(
-						"فشل إرسال رسالة الواتساب: {Status} {Body}",
+						"فشل إرسال الرسالة: {Status} {Body}",
 						(int)response.StatusCode,
 						body);
 
-					return false;
+					return WhatsAppResult.Failed(
+						$"HTTP {(int)response.StatusCode}: {body}");
 				}
 
-				return true;
+				return WhatsAppResult.Sent();
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(
 					ex,
-					"خطأ أثناء إرسال واتساب إلى {Phone}",
+					"خطأ أثناء إرسال الرسالة إلى {Phone}",
 					phone);
 
-				return false;
+				return WhatsAppResult.Failed(
+					$"خطأ أثناء الإرسال: {ex.Message}");
 			}
 		}
 
 		// =====================================
-		// استعادة كلمة المرور
+		// إعادة تعيين كلمة المرور
 		// =====================================
 
-		public Task<bool> SendPasswordResetAsync(
+		public Task<WhatsAppResult> SendPasswordResetAsync(
 			string phone,
 			string recipientName,
 			string code,
@@ -571,11 +571,11 @@ namespace AccountingSystem.Services.WhatsApp
 		{
 			var message =
 				$"مرحبًا {recipientName}،\n\n" +
-				$"كود استعادة كلمة المرور: {code}\n" +
+				$"كود إعادة تعيين كلمة المرور: {code}\n" +
 				$"صالح حتى: {expiresAt:yyyy-MM-dd HH:mm}\n\n" +
-				$"لتعيين كلمة مرور جديدة:\n" +
+				$"لإعادة تعيين كلمة المرور اضغط:\n" +
 				$"{resetUrl}\n\n" +
-				$"لو مش إنت اللي طلبت، تجاهل الرسالة.";
+				$"لو مش انت من طلب ده، تجاهل الرسالة.";
 
 			return SendMessageAsync(
 				phone,
@@ -584,10 +584,10 @@ namespace AccountingSystem.Services.WhatsApp
 		}
 
 		// =====================================
-		// فاتورة شراء (نص، محفوظ للتوافق)
+		// ملخص فاتورة شراء (نص، مش ملف)
 		// =====================================
 
-		public Task<bool> SendPurchaseInvoiceAsync(
+		public Task<WhatsAppResult> SendPurchaseInvoiceAsync(
 			string phone,
 			string supplierName,
 			string invoiceNumber,
@@ -597,7 +597,7 @@ namespace AccountingSystem.Services.WhatsApp
 			string portalUrl)
 		{
 			var message =
-				$"فاتورة شراء جديدة\n" +
+				$"ملخص فاتورة شراء\n" +
 				$"-------------------------\n" +
 				$"المورد: {supplierName}\n" +
 				$"رقم الفاتورة: {invoiceNumber}\n" +
@@ -605,7 +605,7 @@ namespace AccountingSystem.Services.WhatsApp
 				$"عدد البنود: {itemCount}\n" +
 				$"الإجمالي: {totalAmount:N2} ج.م\n" +
 				$"-------------------------\n" +
-				$"تفاصيل أكثر: {portalUrl}";
+				$"يمكنك مراجعتها عبر: {portalUrl}";
 
 			return SendMessageAsync(
 				phone,
@@ -625,10 +625,10 @@ namespace AccountingSystem.Services.WhatsApp
 		}
 
 		// =====================================
-		// إرسال عبر البوابة المحلية (whatsapp-web.js)
+		// إرسال عبر البوابة المحلية
 		// =====================================
 
-		private async Task<bool> SendMessageViaGatewayAsync(
+		private async Task<WhatsAppResult> SendMessageViaGatewayAsync(
 			string gatewayUrl,
 			string gatewayKey,
 			string phone,
@@ -646,7 +646,8 @@ namespace AccountingSystem.Services.WhatsApp
 						"رقم هاتف غير صالح (بوابة محلية): {Phone}",
 						phone);
 
-					return false;
+					return WhatsAppResult.Failed(
+						$"رقم هاتف غير صالح: {phone}");
 				}
 
 				var payload = new
@@ -686,30 +687,32 @@ namespace AccountingSystem.Services.WhatsApp
 				{
 					LogAndPrint(
 						$"\n" +
-						$"📱 WhatsApp Gateway فشل الإرسال: {recipient}\n" +
+						$"[ERROR] WhatsApp Gateway فشل إرسال: {recipient}\n" +
 						$"{(int)response.StatusCode} {body}\n");
 
-					return false;
+					return WhatsAppResult.Failed(
+						$"HTTP {(int)response.StatusCode}: {body}");
 				}
 
 				_logger.LogInformation(
 					"تم إرسال رسالة عبر البوابة المحلية إلى {Phone}",
 					recipient);
 
-				return true;
+				return WhatsAppResult.Sent();
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(
 					ex,
-					"خطأ أثناء إرسال رسالة عبر البوابة المحلية إلى {Phone}",
+					"خطأ أثناء إرسال الرسالة عبر البوابة المحلية إلى {Phone}",
 					phone);
 
-				return false;
+				return WhatsAppResult.Failed(
+					$"خطأ أثناء الإرسال: {ex.Message}");
 			}
 		}
 
-		private async Task<bool> SendDocumentViaGatewayAsync(
+		private async Task<WhatsAppResult> SendDocumentViaGatewayAsync(
 			string gatewayUrl,
 			string gatewayKey,
 			string phone,
@@ -726,7 +729,8 @@ namespace AccountingSystem.Services.WhatsApp
 						"ملف PDF غير موجود (بوابة محلية): {Path}",
 						documentPath);
 
-					return false;
+					return WhatsAppResult.Failed(
+						$"ملف PDF غير موجود: {documentPath}");
 				}
 
 				var recipient =
@@ -738,7 +742,8 @@ namespace AccountingSystem.Services.WhatsApp
 						"رقم هاتف غير صالح (بوابة محلية): {Phone}",
 						phone);
 
-					return false;
+					return WhatsAppResult.Failed(
+						$"رقم هاتف غير صالح: {phone}");
 				}
 
 				var payload = new
@@ -780,28 +785,30 @@ namespace AccountingSystem.Services.WhatsApp
 				{
 					LogAndPrint(
 						$"\n" +
-						$"📄 WhatsApp Gateway فشل إرسال المستند: {recipient}\n" +
+						$"[ERROR] WhatsApp Gateway فشل إرسال المستند: {recipient}\n" +
 						$"{fileName}\n" +
 						$"{(int)response.StatusCode} {body}\n");
 
-					return false;
+					return WhatsAppResult.Failed(
+						$"HTTP {(int)response.StatusCode}: {body}");
 				}
 
 				_logger.LogInformation(
-					"تم إرسال مستند عبر البوابة المحلية إلى {Phone}: {File}",
+					"تم إرسال المستند عبر البوابة المحلية إلى {Phone}: {File}",
 					recipient,
 					fileName);
 
-				return true;
+				return WhatsAppResult.Sent();
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(
 					ex,
-					"خطأ أثناء إرسال مستند عبر البوابة المحلية إلى {Phone}",
+					"خطأ أثناء إرسال المستند عبر البوابة المحلية إلى {Phone}",
 					phone);
 
-				return false;
+				return WhatsAppResult.Failed(
+					$"خطأ أثناء الإرسال: {ex.Message}");
 			}
 		}
 	}

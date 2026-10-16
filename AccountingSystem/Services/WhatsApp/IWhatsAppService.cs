@@ -2,29 +2,20 @@ namespace AccountingSystem.Services.WhatsApp
 {
 	public interface IWhatsAppService
 	{
-		// =====================================
-		// كود التفعيل
-		// =====================================
-
-		Task<bool> SendActivationCodeAsync(
+		// إرسال كود تفعيل
+		Task<WhatsAppResult> SendActivationCodeAsync(
 			string phone,
 			string recipientName,
 			string activationCode);
 
-		// =====================================
-		// رسالة عامة
-		// =====================================
-
-		Task<bool> SendMessageAsync(
+		// إرسال رسالة نصية
+		Task<WhatsAppResult> SendMessageAsync(
 			string phone,
 			string recipientName,
 			string message);
 
-		// =====================================
-		// فاتورة شراء
-		// =====================================
-
-		Task<bool> SendPurchaseInvoiceAsync(
+		// إرسال ملخص فاتورة شراء
+		Task<WhatsAppResult> SendPurchaseInvoiceAsync(
 			string phone,
 			string supplierName,
 			string invoiceNumber,
@@ -33,29 +24,20 @@ namespace AccountingSystem.Services.WhatsApp
 			DateTime invoiceDate,
 			string portalUrl);
 
-		// =====================================
-		// إرسال مستند (PDF) عبر الواتساب
-		// =====================================
-
-		Task<bool> SendDocumentAsync(
+		// إرسال مستند (PDF) عبر واتساب
+		Task<WhatsAppResult> SendDocumentAsync(
 			string phone,
 			string recipientName,
 			string documentPath,
 			string fileName,
 			string caption);
 
-		// =====================================
-		// اختبار الاتصال ويرجع تفاصيل الاستجابة
-		// =====================================
-
-		Task<(bool Ok, string Details)> SendTestAsync(
+		// اختبار الاتصال بالواتساب
+		Task<WhatsAppResult> SendTestAsync(
 			string phone);
 
-		// =====================================
-		// استعادة كلمة المرور
-		// =====================================
-
-		Task<bool> SendPasswordResetAsync(
+		// إرسال كود استعادة كلمة المرور
+		Task<WhatsAppResult> SendPasswordResetAsync(
 			string phone,
 			string recipientName,
 			string code,

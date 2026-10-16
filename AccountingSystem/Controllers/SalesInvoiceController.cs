@@ -1331,7 +1331,7 @@ namespace AccountingSystem.Controllers
 						var fileName =
 							$"فاتورة-{invoice.InvoiceNumber}.pdf";
 
-						var whatsappOk =
+						var whatsappResult =
 							await _whatsAppService.SendDocumentAsync(
 								invoice.Customer.Phone,
 								invoice.Customer.Name,
@@ -1340,7 +1340,7 @@ namespace AccountingSystem.Controllers
 								$"فاتورة بيع {invoice.InvoiceNumber} — الإجمالي: {invoice.TotalAmount:N2} ج.م");
 
 						TempData["Success"] +=
-							whatsappOk
+							whatsappResult.Success
 								? " وتم إرسال الفاتورة للعميل عبر واتساب."
 								: " (تعذر إرسال واتساب للعميل).";
 
@@ -1544,8 +1544,10 @@ namespace AccountingSystem.Controllers
 			var result =
 				await _whatsAppService.SendTestAsync(phone);
 
-			TempData[result.Ok ? "Success" : "Error"] =
-				result.Details;
+			TempData[result.Success ? "Success" : "Error"] =
+				result.Success
+					? "تم إرسال رسالة اختبار بنجاح."
+					: (result.Error ?? "تعذر إرسال رسالة الاختبار.");
 
 			return RedirectToAction(nameof(Index));
 		}
@@ -1604,7 +1606,7 @@ namespace AccountingSystem.Controllers
 			var fileName =
 				$"فاتورة-{invoice.InvoiceNumber}.pdf";
 
-			var ok =
+			var whatsappResult =
 				await _whatsAppService.SendDocumentAsync(
 					invoice.Customer.Phone,
 					invoice.Customer.Name,
@@ -1621,8 +1623,8 @@ namespace AccountingSystem.Controllers
 				// حذف مؤقت
 			}
 
-			TempData[ok ? "Success" : "Error"] =
-				ok
+			TempData[whatsappResult.Success ? "Success" : "Error"] =
+				whatsappResult.Success
 					? "تم إرسال الفاتورة للعميل عبر واتساب."
 					: "تعذر إرسال الفاتورة عبر واتساب. تأكد من إعداداتك (Token/PhoneNumberId).";
 
