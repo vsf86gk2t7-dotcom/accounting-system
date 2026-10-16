@@ -1,4 +1,4 @@
-using AccountingSystem.Data;
+﻿using AccountingSystem.Data;
 using AccountingSystem.Filters;
 using AccountingSystem.Models;
 using AccountingSystem.Models.ViewModels.Inventory;
@@ -23,7 +23,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// عرض الأرصدة
+		// ط¹ط±ط¶ ط§ظ„ط£ط±طµط¯ط©
 		// =========================================
 
 		[HttpGet]
@@ -49,7 +49,7 @@ namespace AccountingSystem.Controllers
 					.Include(x => x.Store)
 					.Where(x => x.IsActive);
 
-			// ✅ فلترة المخازن المسموحة
+			// âœ… ظپظ„طھط±ط© ط§ظ„ظ…ط®ط§ط²ظ† ط§ظ„ظ…ط³ظ…ظˆط­ط©
 			if (scope.IsRestricted)
 			{
 				var allowedStores = scope.StoreIds.ToList();
@@ -150,7 +150,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// دفعات المخزون
+		// ط¯ظپط¹ط§طھ ط§ظ„ظ…ط®ط²ظˆظ†
 		// =========================================
 
 		[HttpGet]
@@ -191,7 +191,7 @@ namespace AccountingSystem.Controllers
 					.Include(x => x.Supplier)
 					.AsQueryable();
 
-			// ✅ فلترة المخازن المسموحة
+			// âœ… ظپظ„طھط±ط© ط§ظ„ظ…ط®ط§ط²ظ† ط§ظ„ظ…ط³ظ…ظˆط­ط©
 			if (scope.IsRestricted)
 			{
 				var allowedStores = scope.StoreIds.ToList();
@@ -259,7 +259,7 @@ namespace AccountingSystem.Controllers
 						StoreName =
 							lot.Store?.Name ?? "-",
 						SupplierName =
-							lot.Supplier?.Name ?? "دفعة نظامية",
+							lot.Supplier?.Name ?? "ط¯ظپط¹ط© ظ†ط¸ط§ظ…ظٹط©",
 						PurchaseDate = lot.PurchaseDate,
 						QuantityReceived =
 							lot.QuantityReceived,
@@ -278,7 +278,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// استلام مخزون - GET
+		// ط§ط³طھظ„ط§ظ… ظ…ط®ط²ظˆظ† - GET
 		// =========================================
 
 		[HttpGet]
@@ -297,7 +297,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// استلام مخزون - POST
+		// ط§ط³طھظ„ط§ظ… ظ…ط®ط²ظˆظ† - POST
 		// =========================================
 
 		[HttpPost]
@@ -322,7 +322,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"يجب إدخال بند واحد على الأقل.");
+					"ظٹط¬ط¨ ط¥ط¯ط®ط§ظ„ ط¨ظ†ط¯ ظˆط§ط­ط¯ ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„.");
 
 				await LoadReceiveDataAsync(model);
 
@@ -330,7 +330,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =========================================
-			// التحقق من وجود المخزن والمورد
+			// ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† ظˆط¬ظˆط¯ ط§ظ„ظ…ط®ط²ظ† ظˆط§ظ„ظ…ظˆط±ط¯
 			// =========================================
 
 			var storeExists =
@@ -343,20 +343,20 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"المخزن غير موجود أو غير نشط.");
+					"ط§ظ„ظ…ط®ط²ظ† ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadReceiveDataAsync(model);
 
 				return View(model);
 			}
 
-			// ✅ تحقق من صلاحية الوصول للمخزن
+			// âœ… طھط­ظ‚ظ‚ ظ…ظ† طµظ„ط§ط­ظٹط© ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ط®ط²ظ†
 			if (!await _employeeScopeService
 					.CanAccessStoreAsync(model.StoreId))
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"ليس لديك صلاحية على هذا المخزن.");
+					"ظ„ظٹط³ ظ„ط¯ظٹظƒ طµظ„ط§ط­ظٹط© ط¹ظ„ظ‰ ظ‡ط°ط§ ط§ظ„ظ…ط®ط²ظ†.");
 
 				await LoadReceiveDataAsync(model);
 
@@ -373,7 +373,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.SupplierId),
-					"المورد غير موجود أو غير نشط.");
+					"ط§ظ„ظ…ظˆط±ط¯ ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadReceiveDataAsync(model);
 
@@ -381,7 +381,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =========================================
-			// التحقق من المنتجات
+			// ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† ط§ظ„ظ…ظ†طھط¬ط§طھ
 			// =========================================
 
 			var productIds =
@@ -402,7 +402,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"يوجد منتج غير موجود أو غير نشط.");
+					"ظٹظˆط¬ط¯ ظ…ظ†طھط¬ ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadReceiveDataAsync(model);
 
@@ -415,7 +415,7 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						"الكمية يجب أن تكون أكبر من صفر.");
+						"ط§ظ„ظƒظ…ظٹط© ظٹط¬ط¨ ط£ظ† طھظƒظˆظ† ط£ظƒط¨ط± ظ…ظ† طµظپط±.");
 
 					await LoadReceiveDataAsync(model);
 
@@ -424,7 +424,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =========================================
-			// إنشاء الحركة
+			// ط¥ظ†ط´ط§ط، ط§ظ„ط­ط±ظƒط©
 			// =========================================
 
 			var transaction =
@@ -468,7 +468,7 @@ namespace AccountingSystem.Controllers
 						ProductId = item.ProductId,
 						Quantity = item.Quantity,
 						UnitCost = item.UnitCost,
-						StockLotId = lot.Id,
+						StockLot = lot,
 						Notes = null
 					});
 			}
@@ -487,13 +487,13 @@ namespace AccountingSystem.Controllers
 				});
 
 			TempData["Success"] =
-				$"تم استلام المخزون بنجاح - مستند {transaction.TransactionNumber}.";
+				$"طھظ… ط§ط³طھظ„ط§ظ… ط§ظ„ظ…ط®ط²ظˆظ† ط¨ظ†ط¬ط§ط­ - ظ…ط³طھظ†ط¯ {transaction.TransactionNumber}.";
 
 			return RedirectToAction(nameof(Index));
 		}
 
 		// =========================================
-		// صرف مخزون - GET
+		// طµط±ظپ ظ…ط®ط²ظˆظ† - GET
 		// =========================================
 
 		[HttpGet]
@@ -512,7 +512,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// صرف مخزون - POST
+		// طµط±ظپ ظ…ط®ط²ظˆظ† - POST
 		// =========================================
 
 		[HttpPost]
@@ -542,7 +542,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"يجب إدخال بند واحد على الأقل.");
+					"ظٹط¬ط¨ ط¥ط¯ط®ط§ظ„ ط¨ظ†ط¯ ظˆط§ط­ط¯ ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„.");
 
 				await LoadIssueDataAsync(model);
 
@@ -559,20 +559,20 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"المخزن غير موجود أو غير نشط.");
+					"ط§ظ„ظ…ط®ط²ظ† ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadIssueDataAsync(model);
 
 				return View(model);
 			}
 
-			// ✅ تحقق من صلاحية الوصول للمخزن
+			// âœ… طھط­ظ‚ظ‚ ظ…ظ† طµظ„ط§ط­ظٹط© ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ط®ط²ظ†
 			if (!await _employeeScopeService
 					.CanAccessStoreAsync(model.StoreId))
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"ليس لديك صلاحية على هذا المخزن.");
+					"ظ„ظٹط³ ظ„ط¯ظٹظƒ طµظ„ط§ط­ظٹط© ط¹ظ„ظ‰ ظ‡ط°ط§ ط§ظ„ظ…ط®ط²ظ†.");
 
 				await LoadIssueDataAsync(model);
 
@@ -597,7 +597,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"يوجد منتج غير موجود أو غير نشط.");
+					"ظٹظˆط¬ط¯ ظ…ظ†طھط¬ ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadIssueDataAsync(model);
 
@@ -605,7 +605,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =========================================
-			// التحقق من توفر الكميات قبل التغيير
+			// ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† طھظˆظپط± ط§ظ„ظƒظ…ظٹط§طھ ظ‚ط¨ظ„ ط§ظ„طھط؛ظٹظٹط±
 			// =========================================
 
 			foreach (var item in model.Items)
@@ -614,7 +614,7 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						"الكمية يجب أن تكون أكبر من صفر.");
+						"ط§ظ„ظƒظ…ظٹط© ظٹط¬ط¨ ط£ظ† طھظƒظˆظ† ط£ظƒط¨ط± ظ…ظ† طµظپط±.");
 
 					await LoadIssueDataAsync(model);
 
@@ -634,7 +634,7 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						$"الكمية المطلوبة أكبر من المتاح للمنتج.");
+						$"ط§ظ„ظƒظ…ظٹط© ط§ظ„ظ…ط·ظ„ظˆط¨ط© ط£ظƒط¨ط± ظ…ظ† ط§ظ„ظ…طھط§ط­ ظ„ظ„ظ…ظ†طھط¬.");
 
 					await LoadIssueDataAsync(model);
 
@@ -643,7 +643,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =========================================
-			// إنشاء الحركة
+			// ط¥ظ†ط´ط§ط، ط§ظ„ط­ط±ظƒط©
 			// =========================================
 
 			var transaction =
@@ -705,7 +705,7 @@ namespace AccountingSystem.Controllers
 					{
 						await dbTransaction.RollbackAsync();
 						transactionError =
-							"تم تعديل المخزون من مستخدم آخر أثناء الحفظ. أعد المحاولة.";
+							"طھظ… طھط¹ط¯ظٹظ„ ط§ظ„ظ…ط®ط²ظˆظ† ظ…ظ† ظ…ط³طھط®ط¯ظ… ط¢ط®ط± ط£ط«ظ†ط§ط، ط§ظ„ط­ظپط¸. ط£ط¹ط¯ ط§ظ„ظ…ط­ط§ظˆظ„ط©.";
 					}
 				});
 
@@ -716,13 +716,13 @@ namespace AccountingSystem.Controllers
 			}
 
 			TempData["Success"] =
-				$"تم صرف المخزون بنجاح - مستند {transaction.TransactionNumber}.";
+				$"طھظ… طµط±ظپ ط§ظ„ظ…ط®ط²ظˆظ† ط¨ظ†ط¬ط§ط­ - ظ…ط³طھظ†ط¯ {transaction.TransactionNumber}.";
 
 			return RedirectToAction(nameof(Index));
 		}
 
 		// =========================================
-		// تحويل بين المخازن - GET
+		// طھط­ظˆظٹظ„ ط¨ظٹظ† ط§ظ„ظ…ط®ط§ط²ظ† - GET
 		// =========================================
 
 		[HttpGet]
@@ -741,7 +741,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// تحويل بين المخازن - POST
+		// طھط­ظˆظٹظ„ ط¨ظٹظ† ط§ظ„ظ…ط®ط§ط²ظ† - POST
 		// =========================================
 
 		[HttpPost]
@@ -765,7 +765,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"لا يمكن التحويل إلى نفس المخزن.");
+					"ظ„ط§ ظٹظ…ظƒظ† ط§ظ„طھط­ظˆظٹظ„ ط¥ظ„ظ‰ ظ†ظپط³ ط§ظ„ظ…ط®ط²ظ†.");
 
 				await LoadTransferDataAsync(model);
 
@@ -777,7 +777,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"يجب إدخال بند واحد على الأقل.");
+					"ظٹط¬ط¨ ط¥ط¯ط®ط§ظ„ ط¨ظ†ط¯ ظˆط§ط­ط¯ ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„.");
 
 				await LoadTransferDataAsync(model);
 
@@ -795,20 +795,20 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"أحد المخازن غير موجود أو غير نشط.");
+					"ط£ط­ط¯ ط§ظ„ظ…ط®ط§ط²ظ† ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadTransferDataAsync(model);
 
 				return View(model);
 			}
 
-			// ✅ تحقق من صلاحية الوصول للمخزنين
+			// âœ… طھط­ظ‚ظ‚ ظ…ظ† طµظ„ط§ط­ظٹط© ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ط®ط²ظ†ظٹظ†
 			if (!await _employeeScopeService
 					.CanAccessStoreAsync(model.FromStoreId))
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"ليس لديك صلاحية على المخزن المصدر.");
+					"ظ„ظٹط³ ظ„ط¯ظٹظƒ طµظ„ط§ط­ظٹط© ط¹ظ„ظ‰ ط§ظ„ظ…ط®ط²ظ† ط§ظ„ظ…طµط¯ط±.");
 
 				await LoadTransferDataAsync(model);
 
@@ -820,7 +820,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"ليس لديك صلاحية على المخزن الوجهة.");
+					"ظ„ظٹط³ ظ„ط¯ظٹظƒ طµظ„ط§ط­ظٹط© ط¹ظ„ظ‰ ط§ظ„ظ…ط®ط²ظ† ط§ظ„ظˆط¬ظ‡ط©.");
 
 				await LoadTransferDataAsync(model);
 
@@ -845,7 +845,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					string.Empty,
-					"يوجد منتج غير موجود أو غير نشط.");
+					"ظٹظˆط¬ط¯ ظ…ظ†طھط¬ ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadTransferDataAsync(model);
 
@@ -858,7 +858,7 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						"الكمية يجب أن تكون أكبر من صفر.");
+						"ط§ظ„ظƒظ…ظٹط© ظٹط¬ط¨ ط£ظ† طھظƒظˆظ† ط£ظƒط¨ط± ظ…ظ† طµظپط±.");
 
 					await LoadTransferDataAsync(model);
 
@@ -878,7 +878,7 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						$"الكمية المطلوبة أكبر من المتاح في المخزن المصدر للمنتج.");
+						$"ط§ظ„ظƒظ…ظٹط© ط§ظ„ظ…ط·ظ„ظˆط¨ط© ط£ظƒط¨ط± ظ…ظ† ط§ظ„ظ…طھط§ط­ ظپظٹ ط§ظ„ظ…ط®ط²ظ† ط§ظ„ظ…طµط¯ط± ظ„ظ„ظ…ظ†طھط¬.");
 
 					await LoadTransferDataAsync(model);
 
@@ -887,7 +887,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =========================================
-			// إنشاء الحركة
+			// ط¥ظ†ط´ط§ط، ط§ظ„ط­ط±ظƒط©
 			// =========================================
 
 			var transaction =
@@ -964,7 +964,7 @@ namespace AccountingSystem.Controllers
 					{
 						await dbTransaction.RollbackAsync();
 						transactionError =
-							"تم تعديل المخزون من مستخدم آخر أثناء الحفظ. أعد المحاولة.";
+							"طھظ… طھط¹ط¯ظٹظ„ ط§ظ„ظ…ط®ط²ظˆظ† ظ…ظ† ظ…ط³طھط®ط¯ظ… ط¢ط®ط± ط£ط«ظ†ط§ط، ط§ظ„ط­ظپط¸. ط£ط¹ط¯ ط§ظ„ظ…ط­ط§ظˆظ„ط©.";
 					}
 				});
 
@@ -975,13 +975,13 @@ namespace AccountingSystem.Controllers
 			}
 
 			TempData["Success"] =
-				$"تم تحويل المخزون بين المخازن بنجاح - مستند {transaction.TransactionNumber}.";
+				$"طھظ… طھط­ظˆظٹظ„ ط§ظ„ظ…ط®ط²ظˆظ† ط¨ظٹظ† ط§ظ„ظ…ط®ط§ط²ظ† ط¨ظ†ط¬ط§ط­ - ظ…ط³طھظ†ط¯ {transaction.TransactionNumber}.";
 
 			return RedirectToAction(nameof(Index));
 		}
 
 		// =========================================
-		// تسوية مخزون - GET
+		// طھط³ظˆظٹط© ظ…ط®ط²ظˆظ† - GET
 		// =========================================
 
 		[HttpGet]
@@ -997,7 +997,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// تسوية مخزون - POST
+		// طھط³ظˆظٹط© ظ…ط®ط²ظˆظ† - POST
 		// =========================================
 
 		[HttpPost]
@@ -1026,20 +1026,20 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"المخزن غير موجود أو غير نشط.");
+					"ط§ظ„ظ…ط®ط²ظ† ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadAdjustDataAsync(model);
 
 				return View(model);
 			}
 
-			// ✅ تحقق من صلاحية الوصول للمخزن
+			// âœ… طھط­ظ‚ظ‚ ظ…ظ† طµظ„ط§ط­ظٹط© ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ط®ط²ظ†
 			if (!await _employeeScopeService
 					.CanAccessStoreAsync(model.StoreId))
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"ليس لديك صلاحية على هذا المخزن.");
+					"ظ„ظٹط³ ظ„ط¯ظٹظƒ طµظ„ط§ط­ظٹط© ط¹ظ„ظ‰ ظ‡ط°ط§ ط§ظ„ظ…ط®ط²ظ†.");
 
 				await LoadAdjustDataAsync(model);
 
@@ -1056,7 +1056,7 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.ProductId),
-					"المنتج غير موجود أو غير نشط.");
+					"ط§ظ„ظ…ظ†طھط¬ ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				await LoadAdjustDataAsync(model);
 
@@ -1064,7 +1064,7 @@ namespace AccountingSystem.Controllers
 			}
 
 			// =========================================
-			// حساب الكمية الحالية وسلوك التعديل
+			// ط­ط³ط§ط¨ ط§ظ„ظƒظ…ظٹط© ط§ظ„ط­ط§ظ„ظٹط© ظˆط³ظ„ظˆظƒ ط§ظ„طھط¹ط¯ظٹظ„
 			// =========================================
 
 			var currentQuantity =
@@ -1081,7 +1081,7 @@ namespace AccountingSystem.Controllers
 			if (Math.Abs(delta) < 0.0000001m)
 			{
 				TempData["Success"] =
-					"لا يوجد تغيير في الرصيد (الكمية الجديدة تطابق الحالية).";
+					"ظ„ط§ ظٹظˆط¬ط¯ طھط؛ظٹظٹط± ظپظٹ ط§ظ„ط±طµظٹط¯ (ط§ظ„ظƒظ…ظٹط© ط§ظ„ط¬ط¯ظٹط¯ط© طھط·ط§ط¨ظ‚ ط§ظ„ط­ط§ظ„ظٹط©).";
 
 				return RedirectToAction(nameof(Index));
 			}
@@ -1104,7 +1104,7 @@ namespace AccountingSystem.Controllers
 
 			if (delta > 0)
 			{
-				// زيادة رصيد
+				// ط²ظٹط§ط¯ط© ط±طµظٹط¯
 				var lotCost =
 					await AwaitLotCostForAddAsync(
 						model.ProductId,
@@ -1133,13 +1133,13 @@ namespace AccountingSystem.Controllers
 						ProductId = model.ProductId,
 						Quantity = delta,
 						UnitCost = lotCost,
-						StockLotId = lot.Id,
+						StockLot = lot,
 						Notes = model.Reason
 					});
 			}
 			else
 			{
-				// نقص رصيد (استهلاك FIFO)
+				// ظ†ظ‚طµ ط±طµظٹط¯ (ط§ط³طھظ‡ظ„ط§ظƒ FIFO)
 				var needQty = -delta;
 
 				var available =
@@ -1155,7 +1155,7 @@ namespace AccountingSystem.Controllers
 				{
 					ModelState.AddModelError(
 						string.Empty,
-						"لا يمكن تقليل الرصيد بهذا المقدار؛ الكمية المتاحة أقل.");
+						"ظ„ط§ ظٹظ…ظƒظ† طھظ‚ظ„ظٹظ„ ط§ظ„ط±طµظٹط¯ ط¨ظ‡ط°ط§ ط§ظ„ظ…ظ‚ط¯ط§ط±ط› ط§ظ„ظƒظ…ظٹط© ط§ظ„ظ…طھط§ط­ط© ط£ظ‚ظ„.");
 
 					await LoadAdjustDataAsync(model);
 
@@ -1201,7 +1201,7 @@ namespace AccountingSystem.Controllers
 					{
 						await dbTransaction.RollbackAsync();
 						transactionError =
-							"تم تعديل المخزون من مستخدم آخر أثناء الحفظ. أعد المحاولة.";
+							"طھظ… طھط¹ط¯ظٹظ„ ط§ظ„ظ…ط®ط²ظˆظ† ظ…ظ† ظ…ط³طھط®ط¯ظ… ط¢ط®ط± ط£ط«ظ†ط§ط، ط§ظ„ط­ظپط¸. ط£ط¹ط¯ ط§ظ„ظ…ط­ط§ظˆظ„ط©.";
 					}
 				});
 
@@ -1212,13 +1212,13 @@ namespace AccountingSystem.Controllers
 			}
 
 			TempData["Success"] =
-				$"تمت تسوية رصيد المنتج بنجاح - مستند {transaction.TransactionNumber}.";
+				$"طھظ…طھ طھط³ظˆظٹط© ط±طµظٹط¯ ط§ظ„ظ…ظ†طھط¬ ط¨ظ†ط¬ط§ط­ - ظ…ط³طھظ†ط¯ {transaction.TransactionNumber}.";
 
 			return RedirectToAction(nameof(Index));
 		}
 
 		// =========================================
-		// جرد مخزن - GET
+		// ط¬ط±ط¯ ظ…ط®ط²ظ† - GET
 		// =========================================
 
 		[HttpGet]
@@ -1235,7 +1235,7 @@ namespace AccountingSystem.Controllers
 			if (storeId.HasValue &&
 				storeId.Value > 0)
 			{
-				// ✅ تحقق من صلاحية الوصول للمخزن
+				// âœ… طھط­ظ‚ظ‚ ظ…ظ† طµظ„ط§ط­ظٹط© ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ط®ط²ظ†
 				if (!await _employeeScopeService
 						.CanAccessStoreAsync(storeId.Value))
 				{
@@ -1281,7 +1281,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// جرد مخزن - POST
+		// ط¬ط±ط¯ ظ…ط®ط²ظ† - POST
 		// =========================================
 
 		[HttpPost]
@@ -1305,20 +1305,20 @@ namespace AccountingSystem.Controllers
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"المخزن غير موجود أو غير نشط.");
+					"ط§ظ„ظ…ط®ط²ظ† ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ط؛ظٹط± ظ†ط´ط·.");
 
 				model.Stores = await LoadStoresAsync();
 
 				return View(model);
 			}
 
-			// ✅ تحقق من صلاحية الوصول للمخزن
+			// âœ… طھط­ظ‚ظ‚ ظ…ظ† طµظ„ط§ط­ظٹط© ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ط®ط²ظ†
 			if (!await _employeeScopeService
 					.CanAccessStoreAsync(model.StoreId))
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
-					"ليس لديك صلاحية على هذا المخزن.");
+					"ظ„ظٹط³ ظ„ط¯ظٹظƒ طµظ„ط§ط­ظٹط© ط¹ظ„ظ‰ ظ‡ط°ط§ ط§ظ„ظ…ط®ط²ظ†.");
 
 				model.Stores = await LoadStoresAsync();
 
@@ -1380,13 +1380,13 @@ namespace AccountingSystem.Controllers
 			if (changed.Count == 0)
 			{
 				TempData["Success"] =
-					"الجرد مطابق للرصيد؛ لا توجد فروقات.";
+					"ط§ظ„ط¬ط±ط¯ ظ…ط·ط§ط¨ظ‚ ظ„ظ„ط±طµظٹط¯ط› ظ„ط§ طھظˆط¬ط¯ ظپط±ظˆظ‚ط§طھ.";
 
 				return RedirectToAction(nameof(Index));
 			}
 
 			// =========================================
-			// إنشاء حركة جرد
+			// ط¥ظ†ط´ط§ط، ط­ط±ظƒط© ط¬ط±ط¯
 			// =========================================
 
 			var transaction =
@@ -1442,8 +1442,8 @@ namespace AccountingSystem.Controllers
 							ProductId = productId,
 							Quantity = delta,
 							UnitCost = lotCost,
-							StockLotId = lot.Id,
-							Notes = "فرق جرد موجب"
+							StockLot = lot,
+							Notes = "ظپط±ظ‚ ط¬ط±ط¯ ظ…ظˆط¬ط¨"
 						});
 				}
 				else
@@ -1463,7 +1463,7 @@ namespace AccountingSystem.Controllers
 								? cost / consumed
 								: 0,
 							StockLotId = null,
-							Notes = "فرق جرد سالب"
+							Notes = "ظپط±ظ‚ ط¬ط±ط¯ ط³ط§ظ„ط¨"
 						});
 				}
 			}
@@ -1488,7 +1488,7 @@ namespace AccountingSystem.Controllers
 					{
 						await dbTransaction.RollbackAsync();
 						transactionError =
-							"تم تعديل المخزون من مستخدم آخر أثناء الحفظ. أعد المحاولة.";
+							"طھظ… طھط¹ط¯ظٹظ„ ط§ظ„ظ…ط®ط²ظˆظ† ظ…ظ† ظ…ط³طھط®ط¯ظ… ط¢ط®ط± ط£ط«ظ†ط§ط، ط§ظ„ط­ظپط¸. ط£ط¹ط¯ ط§ظ„ظ…ط­ط§ظˆظ„ط©.";
 					}
 				});
 
@@ -1499,13 +1499,13 @@ namespace AccountingSystem.Controllers
 			}
 
 			TempData["Success"] =
-				$"تم تنفيذ الجرد بنجاح - مستند {transaction.TransactionNumber}.";
+				$"طھظ… طھظ†ظپظٹط° ط§ظ„ط¬ط±ط¯ ط¨ظ†ط¬ط§ط­ - ظ…ط³طھظ†ط¯ {transaction.TransactionNumber}.";
 
 			return RedirectToAction(nameof(Index));
 		}
 
 		// =========================================
-		// الكمية المتاحة لمنتج في مخزن (AJAX)
+		// ط§ظ„ظƒظ…ظٹط© ط§ظ„ظ…طھط§ط­ط© ظ„ظ…ظ†طھط¬ ظپظٹ ظ…ط®ط²ظ† (AJAX)
 		// =========================================
 
 		[HttpGet]
@@ -1523,7 +1523,7 @@ namespace AccountingSystem.Controllers
 				});
 			}
 
-			// ✅ تحقق من صلاحية الوصول للمخزن
+			// âœ… طھط­ظ‚ظ‚ ظ…ظ† طµظ„ط§ط­ظٹط© ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ط®ط²ظ†
 			if (!await _employeeScopeService
 					.CanAccessStoreAsync(storeId))
 			{
@@ -1558,12 +1558,12 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// سجل الحركات
+		// ط³ط¬ظ„ ط§ظ„ط­ط±ظƒط§طھ
 		// =========================================
 
 		[HttpGet]
 		// =========================================
-		// كشف حركة منتج (دخول/خروج)
+		// ظƒط´ظپ ط­ط±ظƒط© ظ…ظ†طھط¬ (ط¯ط®ظˆظ„/ط®ط±ظˆط¬)
 		// =========================================
 
 		[HttpGet]
@@ -1626,7 +1626,7 @@ namespace AccountingSystem.Controllers
 				int selectedStore = storeId.GetValueOrDefault();
 
 				// -------------------------------------
-				// 1) حركات المخزون اليدوية
+				// 1) ط­ط±ظƒط§طھ ط§ظ„ظ…ط®ط²ظˆظ† ط§ظ„ظٹط¯ظˆظٹط©
 				// -------------------------------------
 
 				foreach (var transaction in transactions)
@@ -1652,7 +1652,7 @@ namespace AccountingSystem.Controllers
 						{
 							case StockTransactionType.Receive:
 								flows.Add(
-									("دخول", true,
+									("ط¯ط®ظˆظ„", true,
 										transaction.ToStore?.Name,
 										transaction.FromStore?.Name,
 										transaction.ToStoreId));
@@ -1660,7 +1660,7 @@ namespace AccountingSystem.Controllers
 
 							case StockTransactionType.Issue:
 								flows.Add(
-									("خروج", false,
+									("ط®ط±ظˆط¬", false,
 										transaction.FromStore?.Name,
 										transaction.ToStore?.Name,
 										transaction.FromStoreId));
@@ -1668,12 +1668,12 @@ namespace AccountingSystem.Controllers
 
 							case StockTransactionType.Transfer:
 								flows.Add(
-									("خروج", false,
+									("ط®ط±ظˆط¬", false,
 										transaction.FromStore?.Name,
 										transaction.ToStore?.Name,
 										transaction.FromStoreId));
 								flows.Add(
-									("دخول", true,
+									("ط¯ط®ظˆظ„", true,
 										transaction.ToStore?.Name,
 										transaction.FromStore?.Name,
 										transaction.ToStoreId));
@@ -1682,19 +1682,19 @@ namespace AccountingSystem.Controllers
 							case StockTransactionType.Adjust:
 							case StockTransactionType.Count:
 								if (subjectNotes?
-										.Contains("فرق جرد موجب") == true)
+										.Contains("ظپط±ظ‚ ط¬ط±ط¯ ظ…ظˆط¬ط¨") == true)
 								{
 									flows.Add(
-										("دخول", true,
+										("ط¯ط®ظˆظ„", true,
 											transaction.FromStore?.Name,
 											null,
 											transaction.FromStoreId));
 								}
 								else if (subjectNotes?
-											.Contains("فرق جرد سالب") == true)
+											.Contains("ظپط±ظ‚ ط¬ط±ط¯ ط³ط§ظ„ط¨") == true)
 								{
 									flows.Add(
-										("خروج", false,
+										("ط®ط±ظˆط¬", false,
 											transaction.FromStore?.Name,
 											null,
 											transaction.FromStoreId));
@@ -1702,7 +1702,7 @@ namespace AccountingSystem.Controllers
 								else
 								{
 									flows.Add(
-										("غير محدد", false,
+										("ط؛ظٹط± ظ…ط­ط¯ط¯", false,
 											transaction.FromStore?.Name,
 											null,
 											transaction.FromStoreId));
@@ -1721,15 +1721,15 @@ namespace AccountingSystem.Controllers
 							events.Add(
 								(transaction.CreatedAt,
 									transaction.TransactionNumber,
-									"مخزون يدوي",
+									"ظ…ط®ط²ظˆظ† ظٹط¯ظˆظٹ",
 									transaction.Type switch
 									{
-										StockTransactionType.Receive => "استلام",
-										StockTransactionType.Issue => "صرف",
-										StockTransactionType.Transfer => "تحويل",
-										StockTransactionType.Adjust => "تسوية",
-										StockTransactionType.Count => "جرد",
-										_ => "حركة"
+										StockTransactionType.Receive => "ط§ط³طھظ„ط§ظ…",
+										StockTransactionType.Issue => "طµط±ظپ",
+										StockTransactionType.Transfer => "طھط­ظˆظٹظ„",
+										StockTransactionType.Adjust => "طھط³ظˆظٹط©",
+										StockTransactionType.Count => "ط¬ط±ط¯",
+										_ => "ط­ط±ظƒط©"
 									},
 									transaction.Type switch
 									{
@@ -1741,7 +1741,7 @@ namespace AccountingSystem.Controllers
 										_ => "bg-dark"
 									},
 									flow.dir,
-									flow.dir == "غير محدد"
+									flow.dir == "ط؛ظٹط± ظ…ط­ط¯ط¯"
 										? (bool?)null
 										: flow.inc,
 									flow.store,
@@ -1754,8 +1754,8 @@ namespace AccountingSystem.Controllers
 				}
 
 				// -------------------------------------
-				// 2) دخول المشتريات عبر الدُفَع
-				// (دفعَات مرتبطة ببند شراء فعلي)
+				// 2) ط¯ط®ظˆظ„ ط§ظ„ظ…ط´طھط±ظٹط§طھ ط¹ط¨ط± ط§ظ„ط¯ظڈظپظژط¹
+				// (ط¯ظپط¹ظژط§طھ ظ…ط±طھط¨ط·ط© ط¨ط¨ظ†ط¯ ط´ط±ط§ط، ظپط¹ظ„ظٹ)
 				// -------------------------------------
 
 				var purchaseLots =
@@ -1782,25 +1782,25 @@ namespace AccountingSystem.Controllers
 					var purchaseDoc =
 						lot.PurchaseInvoiceItem?
 							.PurchaseInvoice?.InvoiceNumber ??
-						$"دفعة {lot.Id}";
+						$"ط¯ظپط¹ط© {lot.Id}";
 
 					events.Add(
 						(lot.CreatedAt,
 							purchaseDoc,
-							"شراء",
-							"شراء",
+							"ط´ط±ط§ط،",
+							"ط´ط±ط§ط،",
 							"bg-success",
-							"دخول",
+							"ط¯ط®ظˆظ„",
 							true,
 							lot.Store?.Name,
 							lot.Supplier?.Name,
 							lot.QuantityReceived,
 							lot.UnitCost,
-							$"استلام شراء - دفعة {lot.Id}"));
+							$"ط§ط³طھظ„ط§ظ… ط´ط±ط§ط، - ط¯ظپط¹ط© {lot.Id}"));
 				}
 
 				// -------------------------------------
-				// 3) خروج المبيعات عبر تخصيصات الدُفَع
+				// 3) ط®ط±ظˆط¬ ط§ظ„ظ…ط¨ظٹط¹ط§طھ ط¹ط¨ط± طھط®طµظٹطµط§طھ ط§ظ„ط¯ظڈظپظژط¹
 				// -------------------------------------
 
 				var saleAllocations =
@@ -1836,11 +1836,11 @@ namespace AccountingSystem.Controllers
 						(invoice?.InvoiceDate ??
 							DateTime.UtcNow,
 							invoice?.InvoiceNumber ??
-								$"بيع {alloc.Id}",
-							"بيع",
-							"فاتورة بيع",
+								$"ط¨ظٹط¹ {alloc.Id}",
+							"ط¨ظٹط¹",
+							"ظپط§طھظˆط±ط© ط¨ظٹط¹",
 							"bg-danger",
-							"خروج",
+							"ط®ط±ظˆط¬",
 							false,
 							lot?.Store?.Name,
 							invoice?.Customer?.Name,
@@ -1850,7 +1850,7 @@ namespace AccountingSystem.Controllers
 				}
 
 				// -------------------------------------
-				// الرصيد المرحّل قبل تاريخ البداية
+				// ط§ظ„ط±طµظٹط¯ ط§ظ„ظ…ط±ط­ظ‘ظ„ ظ‚ط¨ظ„ طھط§ط±ظٹط® ط§ظ„ط¨ط¯ط§ظٹط©
 				// -------------------------------------
 
 				decimal openingBalance = 0;
@@ -1874,7 +1874,7 @@ namespace AccountingSystem.Controllers
 				}
 
 				// -------------------------------------
-				// حركات الفترة + الرصيد التراكمي
+				// ط­ط±ظƒط§طھ ط§ظ„ظپطھط±ط© + ط§ظ„ط±طµظٹط¯ ط§ظ„طھط±ط§ظƒظ…ظٹ
 				// -------------------------------------
 
 				var visible = events
@@ -1962,7 +1962,7 @@ namespace AccountingSystem.Controllers
 						.ThenInclude(x => x.Product)
 					.AsQueryable();
 
-			// ✅ فلترة المخازن المسموحة
+			// âœ… ظپظ„طھط±ط© ط§ظ„ظ…ط®ط§ط²ظ† ط§ظ„ظ…ط³ظ…ظˆط­ط©
 			if (scope.IsRestricted)
 			{
 				var allowedStores = scope.StoreIds.ToList();
@@ -2035,7 +2035,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// استهلاك دفعات (FIFO)
+		// ط§ط³طھظ‡ظ„ط§ظƒ ط¯ظپط¹ط§طھ (FIFO)
 		// =========================================
 
 		private async Task<(decimal Consumed, decimal Cost)>
@@ -2082,7 +2082,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// تكلفة للدفعة الجديدة (زيادة رصيد)
+		// طھظƒظ„ظپط© ظ„ظ„ط¯ظپط¹ط© ط§ظ„ط¬ط¯ظٹط¯ط© (ط²ظٹط§ط¯ط© ط±طµظٹط¯)
 		// =========================================
 
 		private async Task<decimal> AwaitLotCostForAddAsync(
@@ -2128,7 +2128,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// رقم مستند تلقائي
+		// ط±ظ‚ظ… ظ…ط³طھظ†ط¯ طھظ„ظ‚ط§ط¦ظٹ
 		// =========================================
 
 		private async Task<string> GenerateTransactionNumberAsync(
@@ -2179,7 +2179,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// المستخدم الحالي
+		// ط§ظ„ظ…ط³طھط®ط¯ظ… ط§ظ„ط­ط§ظ„ظٹ
 		// =========================================
 
 		private int? CurrentUserId()
@@ -2197,7 +2197,7 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
-		// تحميل قوائم الشاشات (مفلترة بالـScope)
+		// طھط­ظ…ظٹظ„ ظ‚ظˆط§ط¦ظ… ط§ظ„ط´ط§ط´ط§طھ (ظ…ظپظ„طھط±ط© ط¨ط§ظ„ظ€Scope)
 		// =========================================
 
 		private async Task<List<KeyValuePair<int, string>>>

@@ -1001,6 +1001,12 @@ namespace AccountingSystem.Data
 			modelBuilder.Entity<JournalEntry>()
 				.HasIndex(x => x.EntryNumber)
 				.IsUnique();
+				
+			// ✅ Idempotency: قيد واحد لكل (مصدر + غرض)
+			modelBuilder.Entity<JournalEntry>()
+				.HasIndex(x => new { x.SourceType, x.SourceId, x.Purpose })
+				.IsUnique()
+				.HasFilter("[SourceId] IS NOT NULL");
 
 			modelBuilder.Entity<JournalEntry>()
 				.HasIndex(x => x.EntryDate);
@@ -1133,6 +1139,12 @@ namespace AccountingSystem.Data
 				.HasForeignKey(x => x.PurchaseReturnInvoiceId)
 				.OnDelete(DeleteBehavior.Cascade);
 
+		modelBuilder.Entity<PurchaseReturnInvoice>()
+			.HasOne(x => x.OriginalPurchaseInvoice)
+			.WithMany()
+			.HasForeignKey(x => x.OriginalPurchaseInvoiceId)
+			.OnDelete(DeleteBehavior.Restrict);
+
 			// =========================================
 			// PurchaseReturnInvoiceItem
 			// =========================================
@@ -1154,6 +1166,12 @@ namespace AccountingSystem.Data
 				.WithMany()
 				.HasForeignKey(x => x.ProductId)
 				.OnDelete(DeleteBehavior.Restrict);
+
+		modelBuilder.Entity<PurchaseReturnInvoiceItem>()
+			.HasOne(x => x.PurchaseInvoiceItem)
+			.WithMany()
+			.HasForeignKey(x => x.PurchaseInvoiceItemId)
+			.OnDelete(DeleteBehavior.Restrict);
 
 			// =========================================
 			// SalesReturnItemLot

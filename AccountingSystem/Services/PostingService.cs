@@ -70,7 +70,8 @@ namespace AccountingSystem.Services
 			string description,
 			IReadOnlyList<JournalLineRequest> lines,
 			bool isPosted,
-			int? userId);
+			int? userId,
+			string purpose = "");
 
 		Task<JournalPostingResult> PostSalesInvoiceAsync(
 			SalesInvoice invoice,
@@ -140,8 +141,25 @@ namespace AccountingSystem.Services
 			string description,
 			IReadOnlyList<JournalLineRequest> lines,
 			bool isPosted,
-			int? userId)
+			int? userId,
+			string purpose = "")
 		{
+			// ✅ Idempotency: لو القيد موجود بنفس المصدر + الغرض → رجّعه بدون إنشاء جديد
+			if (sourceId > 0)
+			{
+				var existing = await context.JournalEntries
+					.AsNoTracking()
+					.FirstOrDefaultAsync(x =>
+						x.SourceType == sourceType &&
+						x.SourceId == sourceId &&
+						x.Purpose == purpose);
+
+				if (existing != null)
+				{
+					return JournalPostingResult.Ok(existing.Id, existing.EntryNumber);
+				}
+			}
+
 			if (lines == null || lines.Count < 2)
 			{
 				return JournalPostingResult.Fail(
@@ -224,6 +242,7 @@ namespace AccountingSystem.Services
 			{
 				EntryNumber = string.Empty,
 				EntryDate = entryDate.Date,
+				Purpose = purpose,
 				Description = description,
 				SourceType = sourceType,
 				SourceId = sourceId,
@@ -993,7 +1012,8 @@ namespace AccountingSystem.Services
 						}
 					},
 					isPosted: true,
-					userId);
+					userId,
+					"COGS");
 
 				if (!cogsResult.Success)
 				{
@@ -1480,7 +1500,8 @@ namespace AccountingSystem.Services
 			decimal costOfGoodsSold,
 			int? userId,
 			string description,
-			string inventoryDescription)
+			string inventoryDescription,
+			string purpose = "COGS")
 		{
 			var cogsAccount = await context.ChartAccounts
 				.FirstOrDefaultAsync(x =>
@@ -1534,7 +1555,8 @@ namespace AccountingSystem.Services
 					}
 				},
 				isPosted: true,
-				userId);
+				userId,
+				purpose);
 		}
 
 		private async Task<ChartAccount> GetOrCreateSalesAccountAsync()

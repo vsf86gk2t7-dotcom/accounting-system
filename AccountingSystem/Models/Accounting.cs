@@ -87,6 +87,9 @@ PayrollPayment = 10
 			= JournalSourceType.Manual;
 
 		public int? SourceId { get; set; }
+			// ✅ Idempotency: يميّز القيود على نفس المصدر
+		[MaxLength(50)]
+		public string Purpose { get; set; } = string.Empty;
 
 		public bool IsPosted { get; set; }
 

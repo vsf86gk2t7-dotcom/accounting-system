@@ -1,11 +1,11 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace AccountingSystem.Models
 {
 	// =========================================
-	// فاتورة مرتجع شراء
-	// المورد يستلم الأصناف مرة أخرى ويُخصم
-	// الكميات تُخصم من المخزون
+	// ظپط§طھظˆط±ط© ظ…ط±طھط¬ط¹ ط´ط±ط§ط،
+	// ط§ظ„ظ…ظˆط±ط¯ ظٹط³طھظ„ظ… ط§ظ„ط£طµظ†ط§ظپ ظ…ط±ط© ط£ط®ط±ظ‰ ظˆظٹظڈط®طµظ…
+	// ط§ظ„ظƒظ…ظٹط§طھ طھظڈط®طµظ… ظ…ظ† ط§ظ„ظ…ط®ط²ظˆظ†
 	// =========================================
 
 	public class PurchaseReturnInvoice
@@ -29,6 +29,10 @@ namespace AccountingSystem.Models
 		public int? BranchId { get; set; }
 
 		public Branch? Branch { get; set; }
+
+		public int? OriginalPurchaseInvoiceId { get; set; }
+
+		public PurchaseInvoice? OriginalPurchaseInvoice { get; set; }
 
 		public DateTime ReturnDate { get; set; } = DateTime.Today;
 
@@ -63,8 +67,12 @@ namespace AccountingSystem.Models
 
 		public Product? Product { get; set; }
 
+		public int? PurchaseInvoiceItemId { get; set; }
+
+		public PurchaseInvoiceItem? PurchaseInvoiceItem { get; set; }
+
 		[Range(0.000001, double.MaxValue,
-			ErrorMessage = "الكمية يجب أن تكون أكبر من صفر.")]
+			ErrorMessage = "ط§ظ„ظƒظ…ظٹط© ظٹط¬ط¨ ط£ظ† طھظƒظˆظ† ط£ظƒط¨ط± ظ…ظ† طµظپط±.")]
 		public decimal Quantity { get; set; }
 
 		public decimal UnitCost { get; set; }

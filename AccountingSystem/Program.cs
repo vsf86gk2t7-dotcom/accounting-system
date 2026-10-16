@@ -151,17 +151,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(
 					errorNumbersToAdd: null);
 			})
 			.AddInterceptors(
-				sp.GetRequiredService<AuditLogInterceptor>())
-			.ConfigureWarnings(w =>
-			{
-				// Development: نسيب التحذير يظهر فوراً لو حصل drift
-				// Production: نتجاهله عشان التطبيق مايتوقفش
-				if (!builder.Environment.IsDevelopment())
-				{
-					w.Ignore(
-						Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning);
-				}
-			}));
+				sp.GetRequiredService<AuditLogInterceptor>()));
 
 builder.Services.AddScoped<AuditLogInterceptor>();
 

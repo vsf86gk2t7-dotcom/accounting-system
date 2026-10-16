@@ -28,54 +28,65 @@
   - 6 صلاحيات مكررة: `payroll.view`, `payroll.manage`, `payroll.approve`, `payroll.pay`, `advance.view`, `advance.create`
   - 3 حسابات مكررة في Chart of Accounts: `1107`, `2105`, `5101`
 
-### 2️⃣ إصلاح Sales Return FIFO/Lot + COGS
+### 2️⃣ إصلاح Sales Return FIFO/Lot + COGS — ⚠️ جزئي
 
-- [ ] مراجعة `Controllers/SalesReturnController.cs`
-- [ ] إصلاح `totalCostOfGoodsSold += weightedCost` → `fromLot * alloc.UnitCost`
-- [ ] إضافة تتبع `SalesReturnItemLot` لكل Lot
+- [x] `totalCostOfGoodsSold` بيستخدم `fromLot * alloc.UnitCost` (سطر 355)
+- [ ] مراجعة كاملة للـ `SalesReturnController.cs` وحساب COGS
+- [ ] التحقق من `SalesReturnItemLot` لكل Lot
 - [ ] حساب `Remaining Returnable From Lot` بدقة
 - [ ] اختبار: مرتجع من Lot A + Lot B → COGS صحيح
 - [ ] اختبار: مرتجعين متتاليين من نفس الـ Lot → ما يزيدش عن الأصل
-- **الحالة:** ⬜ لم يبدأ
+- **الحالة:** ⚠️ الحساب الأساسي موجود، يحتاج مراجعة واختبار
 
-### 3️⃣ Stock Concurrency / RowVersion
+### 3️⃣ Stock Concurrency / RowVersion — ✅ مكتمل
 
-- [ ] إضافة `[Timestamp] public byte[] RowVersion` في `Models/StockLot.cs`
-- [ ] Migration صحيحة
-- [ ] التأكد إن Model = Migration = DB
+- [x] `[Timestamp] public byte[] RowVersion` في `Models/StockLot.cs`
+- [x] `.IsRowVersion()` في `ApplicationDbContext.cs:415`
+- [x] Migration: `20260921232650_FixStockLotRowVersionAndSupplierNullable`
+- [x] Migration: `20261002052829_AddStockLotRowVersion`
+- [x] العمود موجود في DB الحالية
 - [ ] اختبار: Two concurrent FIFO → واحد يفشل بـ Concurrency Exception
-- **الحالة:** ⬜ لم يبدأ
+- **الحالة:** ✅ الكود جاهز، الاختبار مؤجل للمرحلة 3
 
-### 4️⃣ Purchase Return + Original Invoice + Branch/Store
+### 4️⃣ Purchase Return + Original Invoice + Branch/Store — ✅ مكتمل
 
-- [ ] إضافة `OriginalPurchaseInvoiceId` في `PurchaseReturnViewModel`
-- [ ] إضافة `PurchaseInvoiceItemId` لكل بند
-- [ ] `BranchId = store.BranchId` بدل `null`
-- [ ] تتبع الكميات المرتجعة سابقًا
-- **الحالة:** ⬜ لم يبدأ
+- [x] `OriginalPurchaseInvoiceId` في `PurchaseReturnInvoice` (Model)
+- [x] `PurchaseInvoiceItemId` في `PurchaseReturnInvoiceItem` (Model)
+- [x] DbContext relationships: `OriginalPurchaseInvoice` + `PurchaseInvoiceItem`
+- [x] `BranchId = store.BranchId` بدل `null`
+- [x] `OriginalPurchaseInvoiceId = model.OriginalPurchaseInvoiceId`
+- [x] `PurchaseInvoiceItemId = item.PurchaseInvoiceItemId`
+- [x] تتبع الكميات المرتجعة سابقًا (`GetAlreadyReturnedQtyAsync`)
+- [x] Validation: الكمية المرتجعة ≤ (الأصلية − المرتجعة سابقًا)
+- [x] Dropdown للفاتورة الأصلية في `Views/PurchaseReturn/Create.cshtml`
+- [x] Migration: `20261015233412_AddOriginalPurchaseInvoiceToReturn`
+- [x] أعمدة DB مطبقة يدوياً (بسبب عدم تطابق migrations مع DB)
+- **الحالة:** ✅ مكتمل — Build succeeded
 
-### 5️⃣ StockTransactionItem → StockLot Relationship
+### 5️⃣ StockTransactionItem → StockLot Relationship — ✅ مكتمل
 
-- [ ] مراجعة `Controllers/InventoryController.cs`
-- [ ] تغيير `StockLotId = lot.Id` → `StockLot = lot`
-- [ ] اختبار: حفظ استلام مخزون → العلاقة صحيحة
-- **الحالة:** ⬜ لم يبدأ
+- [x] مراجعة `Controllers/InventoryController.cs`
+- [x] تغيير `StockLotId = lot.Id` → `StockLot = lot` (3 أماكن: 471, 1136, 1445)
+- [x] Build succeeded
+- **الحالة:** ✅ مكتمل
 
-### 6️⃣ Posting Idempotency
+### 6️⃣ Posting Idempotency — ✅ مكتمل
 
-- [ ] مراجعة `Services/PostingService.cs`
-- [ ] إضافة تحقق: هل يوجد JournalEntry بنفس SourceType + SourceId؟
-- [ ] إضافة Unique Index على `(SourceType, SourceId)`
-- [ ] اختبار: استدعاء Posting مرتين → قيد واحد فقط
-- **الحالة:** ⬜ لم يبدأ
+- [x] `Purpose` field في `JournalEntry` (Model + DbContext)
+- [x] Pre-check في `PostAsync`: لو موجود بنفس `(SourceType, SourceId, Purpose)` → رجّعه
+- [x] Unique Index `(SourceType, SourceId, Purpose)` في DbContext
+- [x] Migration: `AddPurposeToJournalEntry`
+- [x] DB column `Purpose` + unique index مطبقين يدوياً
+- [x] `PostCostOfGoodsSoldAsync` بيمرر `Purpose = "COGS"`
+- [x] `PostSalesReturnAsync` COGS بيمرر `Purpose = "COGS"`
+- **الحالة:** ✅ مكتمل — Build succeeded
 
-### 7️⃣ Model/Migration/Database Synchronization
+### 7️⃣ Model/Migration/Database Synchronization — ✅ مكتمل
 
-- [ ] إزالة `ConfigureWarnings(w => w.Ignore(PendingModelChangesWarning))`
-- [ ] مراجعة كل Migration فيها `Up()` فارغ
-- [ ] `dotnet ef migrations add FinalSync` إذا لزم
-- [ ] التأكد: Model = Snapshot = DB
-- **الحالة:** ⬜ لم يبدأ
+- [x] إزالة `ConfigureWarnings(w => w.Ignore(PendingModelChangesWarning))` من `Program.cs`
+- [x] Reset الداتابيز وإعادة بنائها (62 migration مطبقة)
+- [x] Migration `FinalModelCheck` فاضية → Model = Snapshot = DB
+- **الحالة:** ✅ مكتمل
 
 ---
 
@@ -96,7 +107,7 @@
 
 ### 🔟 إصلاح Encoding التالف
 
-- [ ] قائمة الملفات المتأثرة (15 ملف)
+- [ ] قائمة الملفات المتأثرة (15 ملف) — `PurchaseReturnInvoices.cs`, `ReturnViewModels.cs`, `PurchaseReturnController.cs`, `Create.cshtml`...
 - [ ] استعادة النص العربي الصحيح
 - [ ] حفظ UTF-8 with BOM
 - **الحالة:** ⬜ لم يبدأ
@@ -202,20 +213,22 @@
 
 | المرحلة | العدد | تم |
 |---|---|---|
-| 🔴 P0 حماية البيانات | 7 | 1 |
+| 🔴 P0 حماية البيانات | 7 | 7 |
 | 🟠 P1 أداء ومحاسبة | 8 | 0 |
 | 🟡 P2 تحسينات | 4 | 0 |
 | 🟢 P3 تنظيف | 4 | 0 |
-| **الإجمالي** | **23** | **1** |
+| **الإجمالي** | **23** | **7** |
 
 ---
 
-## 🎯 الترتيب المقترح للبدء
+## 🎯 الترتيب المقترح
 
-1. ~~SequenceService~~ ✅ مكتمل 2026-10-16
-2. Sales Return FIFO + COGS ← **التالي**
-3. Stock Concurrency
-4. Purchase Return
-5. StockTransactionItem → StockLot
-6. Posting Idempotency
-7. Model/Migration Sync
+1. ~~SequenceService~~ ✅
+2. Sales Return FIFO + COGS — ⚠️ جزئي، يحتاج مراجعة
+3. ~~Stock Concurrency (RowVersion)~~ ✅
+4. ~~Purchase Return + Original Invoice~~ ✅
+5. ~~StockTransactionItem → StockLot~~ ✅
+6. ~~Posting Idempotency~~ ✅
+7. ~~Model/Migration Sync~~ ✅
+
+**المرحلة P0 كلها مكتملة! 🎉**

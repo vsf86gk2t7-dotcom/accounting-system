@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using AccountingSystem.Data;
 using AccountingSystem.Filters;
 using AccountingSystem.Models;
@@ -57,10 +57,8 @@ namespace AccountingSystem.Controllers
 					{
 						Id = invoice.Id,
 						InvoiceNumber = invoice.InvoiceNumber,
-						PartyName =
-							invoice.Supplier?.Name ?? "-",
-						StoreName =
-							invoice.Store?.Name ?? "-",
+						PartyName = invoice.Supplier?.Name ?? "-",
+						StoreName = invoice.Store?.Name ?? "-",
 						ReturnDate = invoice.ReturnDate,
 						TotalAmount = invoice.TotalAmount,
 						ItemCount = invoice.Items.Count,
@@ -79,11 +77,8 @@ namespace AccountingSystem.Controllers
 		[RequirePermission("purchase.return.create")]
 		public async Task<IActionResult> Create()
 		{
-			var model =
-				new PurchaseReturnViewModel();
-
-			model.Items.Add(
-				new PurchaseReturnItemViewModel());
+			var model = new PurchaseReturnViewModel();
+			model.Items.Add(new PurchaseReturnItemViewModel());
 
 			await LoadDataAsync(model);
 
@@ -97,8 +92,7 @@ namespace AccountingSystem.Controllers
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		[RequirePermission("purchase.return.create")]
-		public async Task<IActionResult> Create(
-			PurchaseReturnViewModel model)
+		public async Task<IActionResult> Create(PurchaseReturnViewModel model)
 		{
 			model.Reason =
 				string.IsNullOrWhiteSpace(model.Reason)
@@ -111,32 +105,30 @@ namespace AccountingSystem.Controllers
 						.ToList()
 					?? new List<PurchaseReturnItemViewModel>();
 
-			if (!ModelState.IsValid ||
-				model.Items.Count == 0)
+			if (!ModelState.IsValid || model.Items.Count == 0)
 			{
 				ModelState.AddModelError(
 					string.Empty,
 					"يجب إدخال بند واحد على الأقل.");
 
 				await LoadDataAsync(model);
-
 				return View(model);
 			}
 
-			var storeExists =
+			var store =
 				await _context.Stores
-					.AnyAsync(x =>
+					.AsNoTracking()
+					.FirstOrDefaultAsync(x =>
 						x.Id == model.StoreId &&
 						x.IsActive);
 
-			if (!storeExists)
+			if (store == null)
 			{
 				ModelState.AddModelError(
 					nameof(model.StoreId),
 					"المخزن غير موجود أو غير نشط.");
 
 				await LoadDataAsync(model);
-
 				return View(model);
 			}
 
@@ -153,7 +145,6 @@ namespace AccountingSystem.Controllers
 					"المورد غير موجود أو غير نشط.");
 
 				await LoadDataAsync(model);
-
 				return View(model);
 			}
 
@@ -178,18 +169,64 @@ namespace AccountingSystem.Controllers
 					"يوجد منتج غير موجود أو غير نشط.");
 
 				await LoadDataAsync(model);
-
 				return View(model);
 			}
+
+			// =====================================
+			// ✅ التحقق من الكميات المرتجعة سابقًا
+			// =====================================
+			var itemIds = model.Items
+				.Where(x => x.PurchaseInvoiceItemId.HasValue)
+				.Select(x => x.PurchaseInvoiceItemId!.Value)
+				.Distinct()
+				.ToList();
+
+			var alreadyReturned =
+				await GetAlreadyReturnedQtyAsync(itemIds);
+
+			var originalQtys = itemIds.Count > 0
+				? await _context.PurchaseInvoiceItems
+					.Where(x => itemIds.Contains(x.Id))
+					.Select(x => new { x.Id, x.QuantityInBaseUnit })
+					.ToDictionaryAsync(x => x.Id, x => x.QuantityInBaseUnit)
+				: new Dictionary<int, decimal>();
+
+			foreach (var item in model.Items)
+			{
+				if (!item.PurchaseInvoiceItemId.HasValue)
+					continue;
+
+				var origQty = originalQtys.GetValueOrDefault(item.PurchaseInvoiceItemId.Value, 0m);
+				var prevReturned = alreadyReturned.GetValueOrDefault(item.PurchaseInvoiceItemId.Value, 0m);
+				var remaining = origQty - prevReturned;
+
+				if (item.Quantity > remaining)
+				{
+					ModelState.AddModelError(
+						string.Empty,
+						$"الكمية المرتجعة للبند تتجاوز المتبقي من الفاتورة الأصلية. المتاح: {remaining:0.###}");
+
+					await LoadDataAsync(model);
+					return View(model);
+				}
+			}
+
+			// =====================================
+			// إنشاء الفاتورة
+			// =====================================
 
 			var invoice =
 				new PurchaseReturnInvoice
 				{
-				InvoiceNumber =
-					await _documentNumberService.GenerateNumberAsync("PRT", "PurchaseReturnInvoices", DateTime.Today.ToString("yyyyMMdd")),
+					InvoiceNumber =
+						await _documentNumberService.GenerateNumberAsync(
+							"PRT",
+							"PurchaseReturnInvoices",
+							DateTime.Today.ToString("yyyyMMdd")),
 					SupplierId = model.SupplierId,
 					StoreId = model.StoreId,
-					BranchId = null,
+					BranchId = store.BranchId,
+					OriginalPurchaseInvoiceId = model.OriginalPurchaseInvoiceId,
 					ReturnDate = model.ReturnDate,
 					Reason = model.Reason,
 					IsPosted = true,
@@ -208,7 +245,6 @@ namespace AccountingSystem.Controllers
 						"الكمية يجب أن تكون أكبر من صفر.");
 
 					await LoadDataAsync(model);
-
 					return View(model);
 				}
 
@@ -227,8 +263,7 @@ namespace AccountingSystem.Controllers
 						.ThenBy(x => x.Id)
 						.ToListAsync();
 
-				var available =
-					lots.Sum(x => x.QuantityRemaining);
+				var available = lots.Sum(x => x.QuantityRemaining);
 
 				if (item.Quantity > available)
 				{
@@ -237,7 +272,6 @@ namespace AccountingSystem.Controllers
 						"الكمية المطلوب إرجاعها أكبر من المتاح بالمخزن.");
 
 					await LoadDataAsync(model);
-
 					return View(model);
 				}
 
@@ -246,30 +280,22 @@ namespace AccountingSystem.Controllers
 
 				foreach (var lot in lots)
 				{
-					if (toReturn <= 0)
-					{
-						break;
-					}
+					if (toReturn <= 0) break;
 
-					var consume =
-						Math.Min(toReturn, lot.QuantityRemaining);
+					var consume = Math.Min(toReturn, lot.QuantityRemaining);
 
 					lot.QuantityRemaining -= consume;
 					toReturn -= consume;
 					totalCost += consume * lot.UnitCost;
 				}
 
-				// =================================
-				// تجميع التكلفة الفعلية في المحاور
-				// =================================
-
-				var unitCost =
-					totalCost / item.Quantity;
+				var unitCost = totalCost / item.Quantity;
 
 				invoice.Items.Add(
 					new PurchaseReturnInvoiceItem
 					{
 						ProductId = item.ProductId,
+						PurchaseInvoiceItemId = item.PurchaseInvoiceItemId,
 						Quantity = item.Quantity,
 						UnitCost = unitCost,
 						Total = totalCost
@@ -282,50 +308,47 @@ namespace AccountingSystem.Controllers
 			// الحفظ + الترحيل + معالجة التزامن
 			// =====================================
 
-			var strategy =
-				_context.Database.CreateExecutionStrategy();
-
+			var strategy = _context.Database.CreateExecutionStrategy();
 			string? transactionError = null;
 
-			await strategy.ExecuteAsync(
-				async () =>
+			await strategy.ExecuteAsync(async () =>
+			{
+				await using var transaction =
+					await _context.Database.BeginTransactionAsync();
+
+				try
 				{
-					await using var transaction =
-						await _context.Database.BeginTransactionAsync();
+					await _context.SaveChangesAsync();
 
-					try
-					{
-						await _context.SaveChangesAsync();
+					var postingResult =
+						await _postingService.PostPurchaseReturnAsync(
+							invoice,
+							CurrentUserId());
 
-						var postingResult =
-							await _postingService.PostPurchaseReturnAsync(
-								invoice,
-								CurrentUserId());
-
-						if (!postingResult.Success)
-						{
-							await transaction.RollbackAsync();
-							transactionError =
-								"فشل ترحيل قيد مرتجع الشراء: " +
-								(postingResult.Error ?? "unknown");
-							return;
-						}
-
-						await transaction.CommitAsync();
-					}
-					catch (DbUpdateConcurrencyException)
+					if (!postingResult.Success)
 					{
 						await transaction.RollbackAsync();
 						transactionError =
-							"تم تعديل المخزون من مستخدم آخر أثناء الحفظ. أعد المحاولة.";
+							"فشل ترحيل قيد مرتجع الشراء: " +
+							(postingResult.Error ?? "unknown");
+						return;
 					}
-					catch (Exception ex)
-					{
-						await transaction.RollbackAsync();
-						transactionError =
-							"فشل في تسجيل مرتجع الشراء: " + ex.Message;
-					}
-				});
+
+					await transaction.CommitAsync();
+				}
+				catch (DbUpdateConcurrencyException)
+				{
+					await transaction.RollbackAsync();
+					transactionError =
+						"تم تعديل المخزون من مستخدم آخر أثناء الحفظ. أعد المحاولة.";
+				}
+				catch (Exception ex)
+				{
+					await transaction.RollbackAsync();
+					transactionError =
+						"فشل في تسجيل مرتجع الشراء: " + ex.Message;
+				}
+			});
 
 			if (transactionError != null)
 			{
@@ -343,18 +366,14 @@ namespace AccountingSystem.Controllers
 		// أدوات مساعدة
 		// =========================================
 
-		private async Task LoadDataAsync(
-			PurchaseReturnViewModel model)
+		private async Task LoadDataAsync(PurchaseReturnViewModel model)
 		{
 			model.Suppliers =
 				await _context.Suppliers
 					.AsNoTracking()
 					.Where(x => x.IsActive)
 					.OrderBy(x => x.Name)
-					.Select(x =>
-						new KeyValuePair<int, string>(
-							x.Id,
-							x.Name))
+					.Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
 					.ToListAsync();
 
 			model.Stores =
@@ -362,10 +381,7 @@ namespace AccountingSystem.Controllers
 					.AsNoTracking()
 					.Where(x => x.IsActive)
 					.OrderBy(x => x.Name)
-					.Select(x =>
-						new KeyValuePair<int, string>(
-							x.Id,
-							x.Name))
+					.Select(x => new KeyValuePair<int, string>(x.Id, x.Name))
 					.ToListAsync();
 
 			model.Products =
@@ -373,21 +389,50 @@ namespace AccountingSystem.Controllers
 					.AsNoTracking()
 					.Where(x => x.IsActive)
 					.OrderBy(x => x.Name)
-					.Select(x =>
-						new ReturnProductOptionViewModel
-						{
-							Id = x.Id,
-							Name = x.Name,
-							Code = x.Code
-						})
+					.Select(x => new ReturnProductOptionViewModel
+					{
+						Id = x.Id,
+						Name = x.Name,
+						Code = x.Code
+					})
 					.ToListAsync();
+
+			// فواتير الشراء للمورد المختار
+			if (model.SupplierId > 0)
+			{
+				model.OriginalInvoices =
+					await _context.PurchaseInvoices
+						.AsNoTracking()
+						.Where(x => x.SupplierId == model.SupplierId)
+						.OrderByDescending(x => x.InvoiceDate)
+						.Take(100)
+						.Select(x => new KeyValuePair<int, string>(
+							x.Id,
+							$"{x.InvoiceNumber} - {x.InvoiceDate:yyyy-MM-dd}"))
+						.ToListAsync();
+			}
+		}
+
+		// =========================================
+		// ✅ حساب الكميات المرتجعة سابقًا لكل بند
+		// =========================================
+		private async Task<Dictionary<int, decimal>> GetAlreadyReturnedQtyAsync(
+			IEnumerable<int> purchaseInvoiceItemIds)
+		{
+			var ids = purchaseInvoiceItemIds.ToList();
+			if (ids.Count == 0) return new Dictionary<int, decimal>();
+
+			return await _context.PurchaseReturnInvoiceItems
+				.Where(x => x.PurchaseInvoiceItemId != null &&
+							ids.Contains(x.PurchaseInvoiceItemId.Value))
+				.GroupBy(x => x.PurchaseInvoiceItemId!.Value)
+				.Select(g => new { Id = g.Key, Total = g.Sum(x => x.Quantity) })
+				.ToDictionaryAsync(x => x.Id, x => x.Total);
 		}
 
 		private int? CurrentUserId()
 		{
-			var value =
-				User.FindFirstValue(
-					ClaimTypes.NameIdentifier);
+			var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
 			if (int.TryParse(value, out var id))
 			{
