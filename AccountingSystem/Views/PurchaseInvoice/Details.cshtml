@@ -405,6 +405,40 @@
             <i class="bi bi-printer"></i> طباعة
         </button>
 
+                <div class="btn-group">
+                    <button type="button"
+                            class="btn btn-info dropdown-toggle"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="bi bi-file-pdf"></i> تحميل PDF
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("DownloadPdf", new { id = Model.Id, size = "A4" })">
+                                <i class="bi bi-file-earmark"></i> A4 — عادي
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("DownloadPdf", new { id = Model.Id, size = "A5" })">
+                                <i class="bi bi-file-earmark"></i> A5 — نصف الصفحة
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("DownloadPdf", new { id = Model.Id, size = "Receipt80" })">
+                                <i class="bi bi-receipt"></i> حراري 80mm
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("DownloadPdf", new { id = Model.Id, size = "Receipt58" })">
+                                <i class="bi bi-receipt"></i> حراري 58mm
+                            </a>
+                        </li>
+                    </ul>
+                </div>
         @if (Model.Status == AccountingSystem.Models.PurchaseInvoiceStatus.Posted)
         {
             <form asp-action="SendWhatsApp" asp-route-id="@Model.Id" method="post" style="display:inline;">

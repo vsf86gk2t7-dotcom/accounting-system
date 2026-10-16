@@ -155,13 +155,20 @@
 - [x] Build succeeded
 - **الحالة:** ✅ مكتمل
 
-### 1️⃣5️⃣ PDF A5 / Receipt
 
-- [ ] A4 (موجود)
-- [ ] A5
-- [ ] 80mm Receipt
-- [ ] 58mm Receipt
-- **الحالة:** ⬜ لم يبدأ
+
+### 1️⃣5️⃣ PDF A5 / Receipt — ✅ مكتمل
+
+- [x] `InvoicePageSize` enum (A4/A5/Receipt80/Receipt58)
+- [x] `IPdfInvoiceService` — parameters اختيارية (backward compatible)
+- [x] `PdfInvoiceService` — layout ديناميكي (margins + fonts + columns)
+- [x] `SalesInvoiceController.DownloadPdf(id, size)` endpoint
+- [x] `PurchaseInvoiceController.DownloadPdf(id, size)` endpoint
+- [x] Dropdown في `SalesInvoice/Details.cshtml`
+- [x] Dropdown في `PurchaseInvoice/Details.cshtml`
+- [x] A4 (عادي)، A5 (نص)، 80mm و58mm حراري (4 أعمدة)
+- [x] Build succeeded
+- **الحالة:** ✅ مكتمل
 
 ---
 

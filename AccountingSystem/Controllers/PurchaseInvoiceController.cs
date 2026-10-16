@@ -1665,5 +1665,61 @@ namespace AccountingSystem.Controllers
 
 			return null;
 		}
+
+		// =========================================
+		// تحميل PDF بأحجام مختلفة (A4/A5/80mm/58mm)
+		// =========================================
+
+		[HttpGet]
+		[RequirePermission("purchase.view")]
+		public async Task<IActionResult> DownloadPdf(int id, string size = "A4")
+		{
+			var invoice = await _context.PurchaseInvoices
+				.AsNoTracking()
+				.FirstOrDefaultAsync(x => x.Id == id);
+
+			if (invoice == null)
+			{
+				return NotFound();
+			}
+
+			var scope = await _employeeScopeService.GetScopeAsync();
+
+			if (!scope.CanAccessStore(invoice.StoreId))
+			{
+				return Forbid();
+			}
+
+			var pageSize = size switch
+			{
+				"A5" => AccountingSystem.Services.Pdf.InvoicePageSize.A5,
+				"Receipt80" => AccountingSystem.Services.Pdf.InvoicePageSize.Receipt80,
+				"Receipt58" => AccountingSystem.Services.Pdf.InvoicePageSize.Receipt58,
+				_ => AccountingSystem.Services.Pdf.InvoicePageSize.A4
+			};
+
+			var path = await _pdfInvoiceService
+				.GeneratePurchaseInvoicePdfAsync(id, pageSize);
+
+			if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+			{
+				return NotFound();
+			}
+
+			var bytes = await System.IO.File.ReadAllBytesAsync(path);
+
+			try
+			{
+				System.IO.File.Delete(path);
+			}
+			catch
+			{
+				// حذف مؤقت — نتجاهل الفشل
+			}
+
+			var fileName = $"فاتورة-شراء-{invoice.InvoiceNumber}.pdf";
+
+			return File(bytes, "application/pdf", fileName);
+		}
 	}
 }

@@ -8,13 +8,15 @@ namespace AccountingSystem.Services.Pdf
 		// =====================================
 
 		Task<string?> GenerateSalesInvoicePdfAsync(
-			int invoiceId);
+			int invoiceId,
+			InvoicePageSize pageSize = InvoicePageSize.A4);
 
 		// =====================================
 		// إنشاء ملف PDF لفاتورة شراء
 		// =====================================
 
 		Task<string?> GeneratePurchaseInvoicePdfAsync(
-			int invoiceId);
+			int invoiceId,
+			InvoicePageSize pageSize = InvoicePageSize.A4);
 	}
 }

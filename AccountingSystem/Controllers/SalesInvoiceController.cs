@@ -176,10 +176,6 @@ namespace AccountingSystem.Controllers
 				return View(failView, model);
 			}
 
-			// =========================================
-			// رقم الفاتورة غير مكرر
-			// =========================================
-
 			var invoiceNumberExists =
 				await _context.SalesInvoices
 					.AnyAsync(x =>
@@ -195,15 +191,7 @@ namespace AccountingSystem.Controllers
 				return View(failView, model);
 			}
 
-			// =========================================
-			// الـScope
-			// =========================================
-
 			var scope = await _employeeScopeService.GetScopeAsync();
-
-			// =========================================
-			// الفرع
-			// =========================================
 
 			var branch = await _context.Branches
 				.FirstOrDefaultAsync(x =>
@@ -219,10 +207,6 @@ namespace AccountingSystem.Controllers
 				await LoadCreateDataAsync(model);
 				return View(failView, model);
 			}
-
-			// =========================================
-			// المخزن
-			// =========================================
 
 			var store = await _context.Stores
 				.FirstOrDefaultAsync(x =>
@@ -240,13 +224,8 @@ namespace AccountingSystem.Controllers
 				return View(failView, model);
 			}
 
-			// =========================================
-			// المندوب: من المستخدم أو من مخزن العهدة
-			// =========================================
-
 			var repId = await _salesRepService.GetCurrentRepIdAsync();
 
-			// ✅ لو المستخدم مش مندوب، نجيب المندوب من مخزن العهدة
 			if (repId == null)
 			{
 				repId = await _context.SalesRepProfiles
@@ -255,10 +234,6 @@ namespace AccountingSystem.Controllers
 					.Select(p => (int?)p.Id)
 					.FirstOrDefaultAsync();
 			}
-
-			// =========================================
-			// العميل (اختياري)
-			// =========================================
 
 			if (model.CustomerId.HasValue)
 			{
@@ -280,10 +255,6 @@ namespace AccountingSystem.Controllers
 				}
 			}
 
-			// =========================================
-			// طريقة الدفع (إجباري باختيار صريح)
-			// =========================================
-
 			if (string.IsNullOrWhiteSpace(Request.Form["PaymentMethod"]))
 			{
 				ModelState.AddModelError(
@@ -293,10 +264,6 @@ namespace AccountingSystem.Controllers
 				await LoadCreateDataAsync(model);
 				return View(failView, model);
 			}
-
-			// =========================================
-			// البنود
-			// =========================================
 
 			model.Items = model.Items
 				.Where(x => x.ProductId > 0 && x.UnitId > 0)
@@ -311,10 +278,6 @@ namespace AccountingSystem.Controllers
 				await LoadCreateDataAsync(model);
 				return View(failView, model);
 			}
-
-			// =========================================
-			// تجميع المنتجات
-			// =========================================
 
 			var productIds = model.Items
 				.Select(x => x.ProductId)
@@ -339,10 +302,6 @@ namespace AccountingSystem.Controllers
 			}
 
 			var canOverridePrice = CanOverridePrice();
-
-			// =========================================
-			// إنشاء الفاتورة والبنود
-			// =========================================
 
 			var invoice = new SalesInvoice
 			{
@@ -405,21 +364,18 @@ namespace AccountingSystem.Controllers
 					return View(failView, model);
 				}
 
-				// SalePrice is per selected unit (e.g., per dozen). Convert to per piece (base unit).
 				var salePricePerPiece = productUnit.SalePrice / conversionFactor;
 
 				var serverUnitPrice = salePricePerPiece;
 
 				if (canOverridePrice && itemModel.UnitPrice > 0)
 				{
-					// Frontend sends UnitPrice as per piece
 					serverUnitPrice = itemModel.UnitPrice;
 				}
 
 				var quantityInBaseUnit =
 					itemModel.Quantity * conversionFactor;
 
-				// Revenue = Quantity (base unit) × Price (per piece)
 				var lineTotal =
 					quantityInBaseUnit * serverUnitPrice;
 
@@ -432,7 +388,7 @@ namespace AccountingSystem.Controllers
 					ConversionFactor = conversionFactor,
 					Quantity = itemModel.Quantity,
 					QuantityInBaseUnit = quantityInBaseUnit,
-					UnitPrice = serverUnitPrice, // per piece
+					UnitPrice = serverUnitPrice,
 					TotalPrice = lineTotal,
 					IssueMethod = itemModel.IssueMethod,
 					SelectedStockLotId = itemModel.SelectedStockLotId
@@ -770,13 +726,12 @@ namespace AccountingSystem.Controllers
 					return View("Create", model);
 				}
 
-				// SalePrice is per selected unit (e.g., per dozen). Convert to per piece (base unit).
 				var salePricePerPiece = productUnit.SalePrice / conversionFactor;
 
 				var serverUnitPrice = salePricePerPiece;
 
 				if (canOverridePrice && itemModel.UnitPrice > 0)
-					serverUnitPrice = itemModel.UnitPrice; // frontend sends per piece
+					serverUnitPrice = itemModel.UnitPrice;
 
 				var quantityInBaseUnit = itemModel.Quantity * conversionFactor;
 				var lineTotal = quantityInBaseUnit * serverUnitPrice;
@@ -789,7 +744,7 @@ namespace AccountingSystem.Controllers
 					ConversionFactor = conversionFactor,
 					Quantity = itemModel.Quantity,
 					QuantityInBaseUnit = quantityInBaseUnit,
-					UnitPrice = serverUnitPrice, // per piece
+					UnitPrice = serverUnitPrice,
 					TotalPrice = lineTotal,
 					IssueMethod = itemModel.IssueMethod,
 					SelectedStockLotId = itemModel.SelectedStockLotId
@@ -1002,10 +957,6 @@ namespace AccountingSystem.Controllers
 				}
 			}
 
-			// =========================================
-			// المندوب: تثبيت خزنة العهدة تلقائياً
-			// =========================================
-
 			var currentRepId = await _salesRepService.GetCurrentRepIdAsync();
 
 			if (currentRepId.HasValue)
@@ -1028,10 +979,6 @@ namespace AccountingSystem.Controllers
 					return RedirectToAction(nameof(Index));
 				}
 			}
-
-			// =========================================
-			// fallback لمستخدم غير مندوب
-			// =========================================
 
 			if (!cashAccountId.HasValue)
 			{
@@ -1721,6 +1668,62 @@ namespace AccountingSystem.Controllers
 		}
 
 		// =========================================
+		// تحميل PDF بأحجام مختلفة (A4/A5/80mm/58mm)
+		// =========================================
+
+		[HttpGet]
+		[RequirePermission("sales.view")]
+		public async Task<IActionResult> DownloadPdf(int id, string size = "A4")
+		{
+			var invoice = await _context.SalesInvoices
+				.AsNoTracking()
+				.FirstOrDefaultAsync(x => x.Id == id);
+
+			if (invoice == null)
+			{
+				return NotFound();
+			}
+
+			var scope = await _employeeScopeService.GetScopeAsync();
+
+			if (!scope.CanAccessStore(invoice.StoreId))
+			{
+				return Forbid();
+			}
+
+			var pageSize = size switch
+			{
+				"A5" => AccountingSystem.Services.Pdf.InvoicePageSize.A5,
+				"Receipt80" => AccountingSystem.Services.Pdf.InvoicePageSize.Receipt80,
+				"Receipt58" => AccountingSystem.Services.Pdf.InvoicePageSize.Receipt58,
+				_ => AccountingSystem.Services.Pdf.InvoicePageSize.A4
+			};
+
+			var path = await _pdfInvoiceService
+				.GenerateSalesInvoicePdfAsync(id, pageSize);
+
+			if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+			{
+				return NotFound();
+			}
+
+			var bytes = await System.IO.File.ReadAllBytesAsync(path);
+
+			try
+			{
+				System.IO.File.Delete(path);
+			}
+			catch
+			{
+				// حذف مؤقت — نتجاهل الفشل
+			}
+
+			var fileName = $"فاتورة-{invoice.InvoiceNumber}.pdf";
+
+			return File(bytes, "application/pdf", fileName);
+		}
+
+		// =========================================
 		// جلب الدفعات المتاحة (AJAX)
 		// =========================================
 
@@ -1943,7 +1946,6 @@ namespace AccountingSystem.Controllers
 
 		// =========================================
 		// إضافة عميل سريع (AJAX) من شاشة الفاتورة
-		// اسم + هاتف فقط — دون مغادرة الصفحة
 		// =========================================
 
 		[HttpPost]
@@ -1974,7 +1976,6 @@ namespace AccountingSystem.Controllers
 				return Json(new { ok = false, message = "رقم الهاتف مستخدم بالفعل لعميل آخر." });
 			}
 
-			// ✅ تثبيت العميل الجديد على المندوب (لو المستخدم مندوب)
 			var repId = await _salesRepService.GetCurrentRepIdAsync();
 
 			var customer = new Customer
@@ -2026,11 +2027,6 @@ namespace AccountingSystem.Controllers
 			if (customer == null)
 				return Json(new { ok = false });
 
-			// ═══════════════════════════════════════
-			// الرصيد: من حساب العملاء (1103) فقط
-			// (تجاهل السطور الأخرى التي تحمل نفس CustomerId)
-			// ═══════════════════════════════════════
-
 			var customerAccountId = await _context.ChartAccounts
 				.AsNoTracking()
 				.Where(x => x.Code == "1103" && x.IsActive)
@@ -2056,8 +2052,6 @@ namespace AccountingSystem.Controllers
 
 				if (sums != null)
 				{
-					// حساب العملاء = أصل
-					// الرصيد المدين = كم لنا عنده
 					balance = sums.TotalDebit - sums.TotalCredit;
 				}
 			}
@@ -2077,7 +2071,6 @@ namespace AccountingSystem.Controllers
 
 		// =========================================
 		// إضافة مخزن سريع (AJAX) من شاشة الفاتورة
-		// اسم + فرع — دون مغادرة الصفحة
 		// =========================================
 
 		[HttpPost]
@@ -2136,7 +2129,6 @@ namespace AccountingSystem.Controllers
 
 		// =========================================
 		// إضافة مركز نقدي سريع (AJAX) من شاشة الفاتورة
-		// اسم فقط — بيربط تلقائي بحساب الصندوق (1101)
 		// =========================================
 
 		[HttpPost]

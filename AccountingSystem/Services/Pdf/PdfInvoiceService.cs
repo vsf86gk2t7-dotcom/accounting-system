@@ -22,20 +22,17 @@ namespace AccountingSystem.Services.Pdf
 		}
 
 		// =========================================
-		// إعدادات QuestPDF (تُستدعى مرة واحدة)
+		// إعداد QuestPDF (ترخيص + خط عربي)
 		// =========================================
 
-		public static void Configure(
-			string? webRootPath)
+		public static void Configure(string? webRootPath)
 		{
-			QuestPDF.Settings.License =
-				LicenseType.Community;
+			QuestPDF.Settings.License = LicenseType.Community;
 
-			var fontPath =
-				Path.Combine(
-					webRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot"),
-					"fonts",
-					"Cairo.ttf");
+			var fontPath = Path.Combine(
+				webRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+				"fonts",
+				"Cairo.ttf");
 
 			if (File.Exists(fontPath))
 			{
@@ -44,11 +41,58 @@ namespace AccountingSystem.Services.Pdf
 		}
 
 		// =========================================
+		// Helpers: page size / margin / font
+		// =========================================
+
+		private const float MmToPt = 2.8346f;
+
+		private static PageSize GetPageSize(InvoicePageSize size) =>
+			size switch
+			{
+				InvoicePageSize.A5 => PageSizes.A5,
+				InvoicePageSize.Receipt80 => new PageSize(80 * MmToPt, 1400),
+				InvoicePageSize.Receipt58 => new PageSize(58 * MmToPt, 1400),
+				_ => PageSizes.A4
+			};
+
+		private static float GetMargin(InvoicePageSize size) =>
+			size switch
+			{
+				InvoicePageSize.A5 => 20,
+				InvoicePageSize.Receipt80 => 6,
+				InvoicePageSize.Receipt58 => 4,
+				_ => 30
+			};
+
+		private static float GetFontSize(InvoicePageSize size) =>
+			size switch
+			{
+				InvoicePageSize.A5 => 10,
+				InvoicePageSize.Receipt80 => 8,
+				InvoicePageSize.Receipt58 => 6.5f,
+				_ => 11
+			};
+
+		private static float GetTitleFontSize(InvoicePageSize size) =>
+			size switch
+			{
+				InvoicePageSize.A5 => 16,
+				InvoicePageSize.Receipt80 => 12,
+				InvoicePageSize.Receipt58 => 10,
+				_ => 20
+			};
+
+		private static bool IsReceipt(InvoicePageSize size) =>
+			size == InvoicePageSize.Receipt80 ||
+			size == InvoicePageSize.Receipt58;
+
+		// =========================================
 		// توليد PDF فاتورة البيع
 		// =========================================
 
 		public async Task<string?> GenerateSalesInvoicePdfAsync(
-			int invoiceId)
+			int invoiceId,
+			InvoicePageSize pageSize = InvoicePageSize.A4)
 		{
 			var invoice =
 				await _context.SalesInvoices
@@ -60,8 +104,7 @@ namespace AccountingSystem.Services.Pdf
 						.ThenInclude(x => x.Product)
 					.Include(x => x.Items)
 						.ThenInclude(x => x.Unit)
-					.FirstOrDefaultAsync(x =>
-						x.Id == invoiceId);
+					.FirstOrDefaultAsync(x => x.Id == invoiceId);
 
 			if (invoice == null)
 			{
@@ -74,9 +117,8 @@ namespace AccountingSystem.Services.Pdf
 			var filePath =
 				Path.Combine(Path.GetTempPath(), fileName);
 
-			string PaymentLabel(SalesPaymentMethod m)
-			{
-				return m switch
+			string PaymentLabel(SalesPaymentMethod m) =>
+				m switch
 				{
 					SalesPaymentMethod.Cash => "نقدي",
 					SalesPaymentMethod.BankTransfer => "تحويل بنكي",
@@ -85,7 +127,6 @@ namespace AccountingSystem.Services.Pdf
 					SalesPaymentMethod.Wallet => "محفظة",
 					_ => "-"
 				};
-			}
 
 			await Task.Run(() =>
 			{
@@ -93,84 +134,107 @@ namespace AccountingSystem.Services.Pdf
 				{
 					container.Page(page =>
 					{
-						page.Size(PageSizes.A4);
-						page.Margin(30);
+						page.Size(GetPageSize(pageSize));
+						page.Margin(GetMargin(pageSize));
 						page.DefaultTextStyle(x =>
 							x.FontFamily("Cairo")
-								.FontSize(11)
+								.FontSize(GetFontSize(pageSize))
 								.FontColor(Colors.Black));
 
-						page.Header()
-							.Column(column =>
-							{
-								column.Item()
-									.Text("فاتورة بيع")
-									.FontSize(20)
-									.Bold()
-									.AlignCenter();
+						// ===== Header =====
+						page.Header().Column(column =>
+						{
+							column.Item()
+								.Text("فاتورة بيع")
+								.FontSize(GetTitleFontSize(pageSize))
+								.Bold()
+								.AlignCenter();
 
-								column.Item()
-									.Text(
-										$"رقم: {invoice.InvoiceNumber} • التاريخ: {invoice.InvoiceDate:yyyy-MM-dd}")
-									.AlignCenter()
-									.FontColor(Colors.Grey.Darken1);
-							});
+							column.Item()
+								.Text($"رقم: {invoice.InvoiceNumber} • التاريخ: {invoice.InvoiceDate:yyyy-MM-dd}")
+								.FontSize(GetFontSize(pageSize) * 0.9f)
+								.AlignCenter()
+								.FontColor(Colors.Grey.Darken1);
+						});
 
+						// ===== Content =====
 						page.Content()
-							.PaddingVertical(16)
+							.PaddingVertical(IsReceipt(pageSize) ? 4 : 16)
 							.Column(column =>
 							{
-								column.Spacing(12);
+								column.Spacing(IsReceipt(pageSize) ? 4 : 12);
 
-								column.Item().Row(row =>
+								// Info block
+								if (IsReceipt(pageSize))
 								{
-									row.RelativeItem().Column(left =>
+									column.Item().Text($"الفرع: {invoice.Branch?.Name ?? "-"}");
+									column.Item().Text($"المخزن: {invoice.Store?.Name ?? "-"}");
+									column.Item().Text($"العميل: {invoice.Customer?.Name ?? "نقدي"}");
+									if (!string.IsNullOrWhiteSpace(invoice.Customer?.Phone))
+										column.Item().Text($"هاتف: {invoice.Customer.Phone}");
+									column.Item().Text($"الدفع: {PaymentLabel(invoice.PaymentMethod)}");
+								}
+								else
+								{
+									column.Item().Row(row =>
 									{
-										left.Item().Text(
-											$"الفرع: {invoice.Branch?.Name ?? "-"}");
-										left.Item().Text(
-											$"المخزن: {invoice.Store?.Name ?? "-"}");
-									});
+										row.RelativeItem().Column(left =>
+										{
+											left.Item().Text(
+												$"الفرع: {invoice.Branch?.Name ?? "-"}");
+											left.Item().Text(
+												$"المخزن: {invoice.Store?.Name ?? "-"}");
+										});
 
-									row.RelativeItem().Column(right =>
-									{
-										right.Item().AlignRight().Text(
-											$"العميل: {invoice.Customer?.Name ?? "— نقدي —"}");
-										right.Item().AlignRight().Text(
-											$"هاتف: {invoice.Customer?.Phone ?? "-"}");
-										right.Item().AlignRight().Text(
-											$"الدفع: {PaymentLabel(invoice.PaymentMethod)}");
+										row.RelativeItem().Column(right =>
+										{
+											right.Item().AlignRight().Text(
+												$"العميل: {invoice.Customer?.Name ?? "— نقدي —"}");
+											right.Item().AlignRight().Text(
+												$"هاتف: {invoice.Customer?.Phone ?? "-"}");
+											right.Item().AlignRight().Text(
+												$"الدفع: {PaymentLabel(invoice.PaymentMethod)}");
+										});
 									});
-								});
+								}
 
-								// الجدول
+								// Table
 								column.Item()
 									.Table(table =>
 									{
-										table.ColumnsDefinition(columns =>
+										if (IsReceipt(pageSize))
 										{
-											columns.RelativeColumn(0.6f);
-											columns.RelativeColumn(2.5f);
-											columns.RelativeColumn(0.8f);
-											columns.RelativeColumn(0.9f);
-											columns.RelativeColumn(1.1f);
-											columns.RelativeColumn(1.1f);
-										});
+											table.ColumnsDefinition(columns =>
+											{
+												columns.RelativeColumn(0.3f);
+												columns.RelativeColumn(2.0f);
+												columns.RelativeColumn(0.6f);
+												columns.RelativeColumn(0.9f);
+											});
+										}
+										else
+										{
+											table.ColumnsDefinition(columns =>
+											{
+												columns.RelativeColumn(0.6f);
+												columns.RelativeColumn(2.5f);
+												columns.RelativeColumn(0.8f);
+												columns.RelativeColumn(0.9f);
+												columns.RelativeColumn(1.1f);
+												columns.RelativeColumn(1.1f);
+											});
+										}
 
 										table.Header(header =>
 										{
-											header.Cell().Element(HeaderCell)
-												.Text("#");
-											header.Cell().Element(HeaderCell)
-												.Text("الصنف");
-											header.Cell().Element(HeaderCell)
-												.Text("الوحدة");
-											header.Cell().Element(HeaderCell)
-												.AlignRight().Text("الكمية");
-											header.Cell().Element(HeaderCell)
-												.AlignRight().Text("سعر الوحدة");
-											header.Cell().Element(HeaderCell)
-												.AlignRight().Text("الإجمالي");
+											header.Cell().Element(HeaderCell).Text("#");
+											header.Cell().Element(HeaderCell).Text("الصنف");
+											if (!IsReceipt(pageSize))
+												header.Cell().Element(HeaderCell).Text("الوحدة");
+											header.Cell().Element(HeaderCell).AlignRight().Text("الكمية");
+											if (!IsReceipt(pageSize))
+												header.Cell().Element(HeaderCell).AlignRight().Text("سعر الوحدة");
+											header.Cell().Element(HeaderCell).AlignRight().Text("الإجمالي");
 										});
 
 										var index = 1;
@@ -181,75 +245,91 @@ namespace AccountingSystem.Services.Pdf
 												.Text(index.ToString());
 											table.Cell().Element(BodyCell)
 												.Text(item.Product?.Name ?? "-");
-											table.Cell().Element(BodyCell)
-												.Text(text =>
-												{
-													text.Span(item.Unit?.Name ?? "-");
 
-													if (item.ConversionFactor > 0 &&
-														item.ConversionFactor != 1)
+											if (!IsReceipt(pageSize))
+											{
+												table.Cell().Element(BodyCell)
+													.Text(text =>
 													{
-														text.Span(
-															$" (× {item.ConversionFactor:0.###} قطعة)");
-													}
-												});
+														text.Span(item.Unit?.Name ?? "-");
+
+														if (item.ConversionFactor > 0 &&
+															item.ConversionFactor != 1)
+														{
+															text.Span(
+																$" (× {item.ConversionFactor:0.###} قطعة)");
+														}
+													});
+											}
+
 											table.Cell().Element(BodyCell)
 												.AlignRight().Text(item.Quantity.ToString("N2"));
-											table.Cell().Element(BodyCell)
-												.AlignRight().Text(text =>
-												{
-													text.Span(item.UnitPrice.ToString("N2"));
 
-													if (item.ConversionFactor > 0 &&
-														item.ConversionFactor != 1)
+											if (!IsReceipt(pageSize))
+											{
+												table.Cell().Element(BodyCell)
+													.AlignRight().Text(text =>
 													{
-														text.Span(
-															$" ({item.UnitPrice / item.ConversionFactor:0.##})");
-													}
-												});
+														text.Span(item.UnitPrice.ToString("N2"));
+
+														if (item.ConversionFactor > 0 &&
+															item.ConversionFactor != 1)
+														{
+															text.Span(
+																$" ({item.UnitPrice / item.ConversionFactor:0.##})");
+														}
+													});
+											}
+
 											table.Cell().Element(BodyCell)
 												.AlignRight().Text(item.TotalPrice.ToString("N2"));
+
 											index++;
 										}
 									});
 
-								// الإجماليات
-								column.Item().AlignLeft().Width(260).Column(totals =>
-								{
-									totals.Spacing(4);
-
-									totals.Item().Row(r =>
+								// Totals
+								column.Item().AlignLeft()
+									.Width(IsReceipt(pageSize) ? 180 : 260)
+									.Column(totals =>
 									{
-										r.ConstantItem(110).Text("الإجمالي الفرعي");
-										r.RelativeItem().AlignRight().Text(
-											invoice.SubTotal.ToString("N2"));
+										totals.Spacing(4);
+
+										totals.Item().Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الإجمالي الفرعي");
+											r.RelativeItem().AlignRight().Text(
+												invoice.SubTotal.ToString("N2"));
+										});
+
+										totals.Item().Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الخصم");
+											r.RelativeItem().AlignRight().Text(
+												invoice.DiscountAmount.ToString("N2"));
+										});
+
+										totals.Item().Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الضريبة");
+											r.RelativeItem().AlignRight().Text(
+												invoice.TaxAmount.ToString("N2"));
+										});
+
+										totals.Item().PaddingTop(4).Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الإجمالي").Bold();
+											r.RelativeItem().AlignRight().Text(
+												invoice.TotalAmount.ToString("N2")).Bold();
+										});
 									});
 
-									totals.Item().Row(r =>
-									{
-										r.ConstantItem(110).Text("الخصم");
-										r.RelativeItem().AlignRight().Text(
-											invoice.DiscountAmount.ToString("N2"));
-									});
-
-									totals.Item().Row(r =>
-									{
-										r.ConstantItem(110).Text("الضريبة");
-										r.RelativeItem().AlignRight().Text(
-											invoice.TaxAmount.ToString("N2"));
-									});
-
-									totals.Item().PaddingTop(4).Row(r =>
-									{
-										r.ConstantItem(110).Text("الإجمالي")
-											.Bold();
-										r.RelativeItem().AlignRight().Text(
-											invoice.TotalAmount.ToString("N2"))
-											.Bold();
-									});
-								});
-
-								if (!string.IsNullOrWhiteSpace(invoice.Notes))
+								if (!IsReceipt(pageSize) &&
+									!string.IsNullOrWhiteSpace(invoice.Notes))
 								{
 									column.Item().Text($"ملاحظات: {invoice.Notes}")
 										.FontColor(Colors.Grey.Darken2);
@@ -267,7 +347,8 @@ namespace AccountingSystem.Services.Pdf
 		// =========================================
 
 		public async Task<string?> GeneratePurchaseInvoicePdfAsync(
-			int invoiceId)
+			int invoiceId,
+			InvoicePageSize pageSize = InvoicePageSize.A4)
 		{
 			var invoice =
 				await _context.PurchaseInvoices
@@ -278,8 +359,7 @@ namespace AccountingSystem.Services.Pdf
 						.ThenInclude(x => x.Product)
 					.Include(x => x.Items)
 						.ThenInclude(x => x.Unit)
-					.FirstOrDefaultAsync(x =>
-						x.Id == invoiceId);
+					.FirstOrDefaultAsync(x => x.Id == invoiceId);
 
 			if (invoice == null)
 			{
@@ -298,76 +378,94 @@ namespace AccountingSystem.Services.Pdf
 				{
 					container.Page(page =>
 					{
-						page.Size(PageSizes.A4);
-						page.Margin(30);
+						page.Size(GetPageSize(pageSize));
+						page.Margin(GetMargin(pageSize));
 						page.DefaultTextStyle(x =>
 							x.FontFamily("Cairo")
-								.FontSize(11)
+								.FontSize(GetFontSize(pageSize))
 								.FontColor(Colors.Black));
 
-						page.Header()
-							.Column(column =>
-							{
-								column.Item()
-									.Text("فاتورة شراء")
-									.FontSize(20)
-									.Bold()
-									.AlignCenter();
+						page.Header().Column(column =>
+						{
+							column.Item()
+								.Text("فاتورة شراء")
+								.FontSize(GetTitleFontSize(pageSize))
+								.Bold()
+								.AlignCenter();
 
-								column.Item()
-									.Text(
-										$"رقم: {invoice.InvoiceNumber} • التاريخ: {invoice.InvoiceDate:yyyy-MM-dd}")
-									.AlignCenter()
-									.FontColor(Colors.Grey.Darken1);
-							});
+							column.Item()
+								.Text($"رقم: {invoice.InvoiceNumber} • التاريخ: {invoice.InvoiceDate:yyyy-MM-dd}")
+								.FontSize(GetFontSize(pageSize) * 0.9f)
+								.AlignCenter()
+								.FontColor(Colors.Grey.Darken1);
+						});
 
 						page.Content()
-							.PaddingVertical(16)
+							.PaddingVertical(IsReceipt(pageSize) ? 4 : 16)
 							.Column(column =>
 							{
-								column.Spacing(12);
+								column.Spacing(IsReceipt(pageSize) ? 4 : 12);
 
-								column.Item().Row(row =>
+								if (IsReceipt(pageSize))
 								{
-									row.RelativeItem().Column(left =>
+									column.Item().Text($"المورد: {invoice.Supplier?.Name ?? "-"}");
+									if (!string.IsNullOrWhiteSpace(invoice.Supplier?.Phone))
+										column.Item().Text($"هاتف: {invoice.Supplier.Phone}");
+									column.Item().Text($"المخزن: {invoice.Store?.Name ?? "-"}");
+								}
+								else
+								{
+									column.Item().Row(row =>
 									{
-										left.Item().Text(
-											$"المورد: {invoice.Supplier?.Name ?? "-"}");
-										left.Item().Text(
-											$"هاتف: {invoice.Supplier?.Phone ?? "-"}");
-									});
+										row.RelativeItem().Column(left =>
+										{
+											left.Item().Text(
+												$"المورد: {invoice.Supplier?.Name ?? "-"}");
+											left.Item().Text(
+												$"هاتف: {invoice.Supplier?.Phone ?? "-"}");
+										});
 
-									row.RelativeItem().AlignRight().Text(
-										$"المخزن: {invoice.Store?.Name ?? "-"}");
-								});
+										row.RelativeItem().AlignRight().Text(
+											$"المخزن: {invoice.Store?.Name ?? "-"}");
+									});
+								}
 
 								column.Item()
 									.Table(table =>
 									{
-										table.ColumnsDefinition(columns =>
+										if (IsReceipt(pageSize))
 										{
-											columns.RelativeColumn(0.6f);
-											columns.RelativeColumn(2.5f);
-											columns.RelativeColumn(0.8f);
-											columns.RelativeColumn(0.9f);
-											columns.RelativeColumn(1.1f);
-											columns.RelativeColumn(1.1f);
-										});
+											table.ColumnsDefinition(columns =>
+											{
+												columns.RelativeColumn(0.3f);
+												columns.RelativeColumn(2.0f);
+												columns.RelativeColumn(0.6f);
+												columns.RelativeColumn(0.9f);
+											});
+										}
+										else
+										{
+											table.ColumnsDefinition(columns =>
+											{
+												columns.RelativeColumn(0.6f);
+												columns.RelativeColumn(2.5f);
+												columns.RelativeColumn(0.8f);
+												columns.RelativeColumn(0.9f);
+												columns.RelativeColumn(1.1f);
+												columns.RelativeColumn(1.1f);
+											});
+										}
 
 										table.Header(header =>
 										{
-											header.Cell().Element(HeaderCell)
-												.Text("#");
-											header.Cell().Element(HeaderCell)
-												.Text("الصنف");
-											header.Cell().Element(HeaderCell)
-												.Text("الوحدة");
-											header.Cell().Element(HeaderCell)
-												.AlignRight().Text("الكمية");
-											header.Cell().Element(HeaderCell)
-												.AlignRight().Text("سعر الوحدة");
-											header.Cell().Element(HeaderCell)
-												.AlignRight().Text("الإجمالي");
+											header.Cell().Element(HeaderCell).Text("#");
+											header.Cell().Element(HeaderCell).Text("الصنف");
+											if (!IsReceipt(pageSize))
+												header.Cell().Element(HeaderCell).Text("الوحدة");
+											header.Cell().Element(HeaderCell).AlignRight().Text("الكمية");
+											if (!IsReceipt(pageSize))
+												header.Cell().Element(HeaderCell).AlignRight().Text("سعر الوحدة");
+											header.Cell().Element(HeaderCell).AlignRight().Text("الإجمالي");
 										});
 
 										var index = 1;
@@ -378,78 +476,94 @@ namespace AccountingSystem.Services.Pdf
 												.Text(index.ToString());
 											table.Cell().Element(BodyCell)
 												.Text(item.Product?.Name ?? "-");
-											table.Cell().Element(BodyCell)
-												.Text(text =>
-												{
-													text.Span(item.Unit?.Name ?? "-");
 
-													if (item.ConversionFactor > 0 &&
-														item.ConversionFactor != 1)
+											if (!IsReceipt(pageSize))
+											{
+												table.Cell().Element(BodyCell)
+													.Text(text =>
 													{
-														text.Span(
-															$" (× {item.ConversionFactor:0.###} قطعة)");
-													}
-												});
+														text.Span(item.Unit?.Name ?? "-");
+
+														if (item.ConversionFactor > 0 &&
+															item.ConversionFactor != 1)
+														{
+															text.Span(
+																$" (× {item.ConversionFactor:0.###} قطعة)");
+														}
+													});
+											}
+
 											table.Cell().Element(BodyCell)
 												.AlignRight().Text(item.Quantity.ToString("N2"));
-											table.Cell().Element(BodyCell)
-												.AlignRight().Text(text =>
-												{
-													if (item.ConversionFactor > 0 &&
-														item.ConversionFactor != 1)
+
+											if (!IsReceipt(pageSize))
+											{
+												table.Cell().Element(BodyCell)
+													.AlignRight().Text(text =>
 													{
-														var setPrice =
-															item.UnitPrice * item.ConversionFactor;
-														text.Span(setPrice.ToString("N2"));
-														text.Span($" ({item.UnitPrice:0.##})");
-													}
-													else
-													{
-														text.Span(item.UnitPrice.ToString("N2"));
-													}
-												});
+														if (item.ConversionFactor > 0 &&
+															item.ConversionFactor != 1)
+														{
+															var setPrice =
+																item.UnitPrice * item.ConversionFactor;
+															text.Span(setPrice.ToString("N2"));
+															text.Span($" ({item.UnitPrice:0.##})");
+														}
+														else
+														{
+															text.Span(item.UnitPrice.ToString("N2"));
+														}
+													});
+											}
+
 											table.Cell().Element(BodyCell)
 												.AlignRight().Text(item.LineTotal.ToString("N2"));
+
 											index++;
 										}
 									});
 
-								column.Item().AlignLeft().Width(260).Column(totals =>
-								{
-									totals.Spacing(4);
-
-									totals.Item().Row(r =>
+								column.Item().AlignLeft()
+									.Width(IsReceipt(pageSize) ? 180 : 260)
+									.Column(totals =>
 									{
-										r.ConstantItem(110).Text("الإجمالي الفرعي");
-										r.RelativeItem().AlignRight().Text(
-											invoice.SubTotal.ToString("N2"));
+										totals.Spacing(4);
+
+										totals.Item().Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الإجمالي الفرعي");
+											r.RelativeItem().AlignRight().Text(
+												invoice.SubTotal.ToString("N2"));
+										});
+
+										totals.Item().Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الخصم");
+											r.RelativeItem().AlignRight().Text(
+												invoice.DiscountAmount.ToString("N2"));
+										});
+
+										totals.Item().Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الضريبة");
+											r.RelativeItem().AlignRight().Text(
+												invoice.TaxAmount.ToString("N2"));
+										});
+
+										totals.Item().PaddingTop(4).Row(r =>
+										{
+											r.ConstantItem(IsReceipt(pageSize) ? 80 : 110)
+												.Text("الإجمالي").Bold();
+											r.RelativeItem().AlignRight().Text(
+												invoice.TotalAmount.ToString("N2")).Bold();
+										});
 									});
 
-									totals.Item().Row(r =>
-									{
-										r.ConstantItem(110).Text("الخصم");
-										r.RelativeItem().AlignRight().Text(
-											invoice.DiscountAmount.ToString("N2"));
-									});
-
-									totals.Item().Row(r =>
-									{
-										r.ConstantItem(110).Text("الضريبة");
-										r.RelativeItem().AlignRight().Text(
-											invoice.TaxAmount.ToString("N2"));
-									});
-
-									totals.Item().PaddingTop(4).Row(r =>
-									{
-										r.ConstantItem(110).Text("الإجمالي")
-											.Bold();
-										r.RelativeItem().AlignRight().Text(
-											invoice.TotalAmount.ToString("N2"))
-											.Bold();
-									});
-								});
-
-								if (!string.IsNullOrWhiteSpace(invoice.Notes))
+								if (!IsReceipt(pageSize) &&
+									!string.IsNullOrWhiteSpace(invoice.Notes))
 								{
 									column.Item().Text($"ملاحظات: {invoice.Notes}")
 										.FontColor(Colors.Grey.Darken2);
