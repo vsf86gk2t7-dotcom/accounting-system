@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-
+using AccountingSystem.Models.ViewModels.Shared;
 namespace AccountingSystem.Controllers
 {
 	public class UserController : BaseController

@@ -140,13 +140,14 @@
 - [x] `SeedSequenceCountersAsync` في `DbSeeder` لزراعة العدادات من الفواتير الحالية
 - **الحالة:** ✅ مكتمل — Build succeeded
 
-### 1️⃣3️⃣ توحيد Entities/ViewModels — ⚠️ جزئي
+### 1️⃣3️⃣ توحيد Entities/ViewModels — ✅ مكتمل
 
-- [x] فحص شامل للموقع الحالي
-- [x] `PurchaseReturnInvoice` في `Models` namespace الصحيح (مكان الملف فقط شكلي)
-- [ ] نقل `PurchaseReturnInvoice` — متروك (المخاطرة > القيمة)
-- [ ] توحيد `BranchOptionViewModel` / `StoreOptionViewModel` — متروك (تكرار غير ضار)
-- **الحالة:** ⚠️ جزئي — الكود شغّال، التحسينات الجمالية مؤجلة
+- [x] نقل `PurchaseReturnInvoices.cs` من `Models/ViewModels/Returns/` إلى `Models/`
+- [x] توحيد `BranchOptionViewModel` + `StoreOptionViewModel` في `Models/ViewModels/Shared/LookupViewModels.cs`
+- [x] حذف التعريفات المكررة من: Purchases, Sales, Users ViewModels
+- [x] إضافة `using Shared` للمستهلكين (TaxReport, 3 Controllers)
+- [x] Build succeeded
+- **الحالة:** ✅ مكتمل
 
 ### 1️⃣4️⃣ WhatsApp Result حقيقي — ✅ مكتمل
 

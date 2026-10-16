@@ -1,5 +1,5 @@
 using AccountingSystem.Models.ViewModels.Purchases;  // ← مهم: يجيب الـ Store/Supplier options
-
+using AccountingSystem.Models.ViewModels.Shared;
 namespace AccountingSystem.Models.ViewModels.Reports
 {
 	public class TaxReportViewModel

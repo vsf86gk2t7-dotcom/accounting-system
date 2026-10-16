@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-
+using AccountingSystem.Models.ViewModels.Shared;
 namespace AccountingSystem.Models.ViewModels.Users
 {
 	public class EmployeeCreateViewModel
@@ -76,25 +76,6 @@ namespace AccountingSystem.Models.ViewModels.Users
 		public string Code { get; set; } = string.Empty;
 	}
 
-	public class BranchOptionViewModel
-	{
-		public int Id { get; set; }
-
-		public string Name { get; set; } = string.Empty;
-
-		public bool IsSelected { get; set; }
-	}
-
-	public class StoreOptionViewModel
-	{
-		public int Id { get; set; }
-
-		public int BranchId { get; set; }
-
-		public string Name { get; set; } = string.Empty;
-
-		public string? Code { get; set; }
-
-		public bool IsSelected { get; set; }
-	}
+		// ✅ BranchOptionViewModel و StoreOptionViewModel
+	//    انتقلوا إلى AccountingSystem.Models.ViewModels.Shared
 }

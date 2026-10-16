@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AccountingSystem.Models.ViewModels.Shared;
 
 namespace AccountingSystem.Models.ViewModels.Purchases
 {
@@ -139,19 +140,8 @@ namespace AccountingSystem.Models.ViewModels.Purchases
 		public string? Phone { get; set; }
 	}
 
-	public class BranchOptionViewModel
-	{
-		public int Id { get; set; }
-		public string Name { get; set; } = string.Empty;
-	}
-
-	public class StoreOptionViewModel
-	{
-		public int Id { get; set; }
-		public int BranchId { get; set; }
-		public string Name { get; set; } = string.Empty;
-		public string? BranchName { get; set; }
-	}
+	// ✅ BranchOptionViewModel و StoreOptionViewModel
+	//    انتقلوا إلى AccountingSystem.Models.ViewModels.Shared
 
 	public class ProductOptionViewModel
 	{

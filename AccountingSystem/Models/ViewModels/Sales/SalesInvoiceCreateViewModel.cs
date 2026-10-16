@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using static AccountingSystem.Models.SalesInvoice;
-
+using AccountingSystem.Models.ViewModels.Shared;
 namespace AccountingSystem.Models.ViewModels.Sales
 {
 	public class SalesInvoiceCreateViewModel
@@ -139,18 +139,8 @@ namespace AccountingSystem.Models.ViewModels.Sales
 	// قوائم الاختيار
 	// =============================================
 
-	public class BranchOptionViewModel
-	{
-		public int Id { get; set; }
-		public string Name { get; set; } = string.Empty;
-	}
-
-	public class StoreOptionViewModel
-	{
-		public int Id { get; set; }
-		public int BranchId { get; set; }
-		public string Name { get; set; } = string.Empty;
-	}
+		// ✅ BranchOptionViewModel و StoreOptionViewModel
+	//    انتقلوا إلى AccountingSystem.Models.ViewModels.Shared
 
 	public class CustomerOptionViewModel
 	{

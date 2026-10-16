@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using static AccountingSystem.Models.SalesInvoice;
-
+using AccountingSystem.Models.ViewModels.Shared;
 namespace AccountingSystem.Controllers
 {
 	public class SalesInvoiceController : Controller
