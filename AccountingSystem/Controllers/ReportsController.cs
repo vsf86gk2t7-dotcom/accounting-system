@@ -158,7 +158,7 @@ namespace AccountingSystem.Controllers
 
 		[HttpGet]
 		[RequirePermission("report.inventory")]
-		public async Task<IActionResult> InventoryReport(
+				public async Task<IActionResult> InventoryReport(
 			int? storeId)
 		{
 			var model =
@@ -178,80 +178,62 @@ namespace AccountingSystem.Controllers
 							x.Name))
 					.ToListAsync();
 
-			var lotsQuery =
-				_context.StockLots
-					.AsNoTracking()
-					.Include(x => x.Product)
-					.Include(x => x.Store)
-					.Where(x => x.IsActive);
+			// ✅ SQL Aggregation: التجميع والجمع على SQL Server
+			var query = _context.StockLots
+				.AsNoTracking()
+				.Where(x =>
+					x.IsActive &&
+					x.Product != null &&
+					x.Store != null);
 
 			if (storeId.HasValue)
 			{
-				lotsQuery =
-					lotsQuery.Where(x =>
-						x.StoreId == storeId.Value);
+				query = query.Where(x => x.StoreId == storeId.Value);
 			}
 
-			var lots =
-				await lotsQuery.ToListAsync();
-
-			var groups =
-				lots
-					.Where(x =>
-						x.Product != null &&
-						x.Store != null)
-					.GroupBy(x =>
-						new
-						{
-							x.ProductId,
-							x.StoreId
-						});
-
-			foreach (var group in groups)
-			{
-				var product =
-					group.First().Product!;
-
-				var store =
-					group.First().Store!;
-
-				var quantity =
-					group.Sum(x =>
-						x.QuantityRemaining);
-
-				if (quantity <= 0)
+			var rows = await query
+				.GroupBy(x => new
 				{
-					continue;
-				}
+					x.ProductId,
+					x.StoreId,
+					ProductName = x.Product!.Name,
+					ProductCode = x.Product.Code,
+					StoreName = x.Store!.Name
+				})
+				.Select(g => new
+				{
+					g.Key.ProductId,
+					g.Key.ProductName,
+					g.Key.ProductCode,
+					g.Key.StoreName,
+					Quantity = g.Sum(x => x.QuantityRemaining),
+					Value = g.Sum(x => x.QuantityRemaining * x.UnitCost)
+				})
+				.Where(x => x.Quantity > 0)
+				.OrderBy(x => x.ProductName)
+				.ToListAsync();
 
-				var value =
-					group.Sum(x =>
-						x.QuantityRemaining * x.UnitCost);
-
+			foreach (var row in rows)
+			{
 				model.Rows.Add(
 					new InventoryReportRowViewModel
 					{
-						ProductId = product.Id,
-						ProductName = product.Name,
-						ProductCode = product.Code,
-						StoreName = store.Name,
-						Quantity = quantity,
-						AverageCost =
-							value / quantity,
-						Value = value
+						ProductId = row.ProductId,
+						ProductName = row.ProductName ?? "",
+						ProductCode = row.ProductCode,
+						StoreName = row.StoreName ?? "",
+						Quantity = row.Quantity,
+						AverageCost = row.Quantity > 0
+							? row.Value / row.Quantity
+							: 0,
+						Value = row.Value
 					});
 
-				model.GrandValue += value;
+				model.GrandValue += row.Value;
 			}
-
-			model.Rows =
-				model.Rows
-					.OrderBy(x => x.ProductName)
-					.ToList();
 
 			return View(model);
 		}
-
 		// =========================================
 		// تقرير الخزينة
 		// =========================================
@@ -923,99 +905,70 @@ namespace AccountingSystem.Controllers
 				await RecalculateProductProfitCostsAsync(from, to);
 			}
 
-			var items =
-				await _context.SalesInvoiceItemLots
-					.AsNoTracking()
-					.Include(x => x.SalesInvoiceItem)
-					.ThenInclude(x => x!.Product)
-					.Where(x =>
-						x.SalesInvoiceItem!.SalesInvoice!.Status ==
-							SalesInvoiceStatus.Confirmed &&
-						x.SalesInvoiceItem.SalesInvoice.InvoiceDate >= from &&
-						x.SalesInvoiceItem.SalesInvoice.InvoiceDate < to)
-					.Select(x => new
-					{
-						ProductId = x.SalesInvoiceItem!.ProductId,
-						ProductName = x.SalesInvoiceItem.Product!.Name,
-						ProductCode = x.SalesInvoiceItem.Product.Code,
-						QuantityBaseUnit = x.QuantityBaseUnit,
-						UnitCost = x.UnitCost,
-						TotalCost = x.TotalCost
-					})
-					.ToListAsync();
+			// ✅ SQL Aggregation: تجميع التكاليف على SQL Server
+			var costRows = await _context.SalesInvoiceItemLots
+				.AsNoTracking()
+				.Where(x =>
+					x.SalesInvoiceItem!.SalesInvoice!.Status ==
+						SalesInvoiceStatus.Confirmed &&
+					x.SalesInvoiceItem.SalesInvoice.InvoiceDate >= from &&
+					x.SalesInvoiceItem.SalesInvoice.InvoiceDate < to)
+				.GroupBy(x => new
+				{
+					ProductId = x.SalesInvoiceItem!.ProductId,
+					ProductName = x.SalesInvoiceItem.Product!.Name,
+					ProductCode = x.SalesInvoiceItem.Product.Code
+				})
+				.Select(g => new
+				{
+					g.Key.ProductId,
+					g.Key.ProductName,
+					g.Key.ProductCode,
+					QuantityBaseUnit = g.Sum(x => x.QuantityBaseUnit),
+					TotalCost = g.Sum(x => x.TotalCost)
+				})
+				.ToListAsync();
 
-			var revenueItems =
-				await _context.SalesInvoiceItems
-					.AsNoTracking()
-					.Include(x => x.Product)
-					.Where(x =>
-						x.SalesInvoice!.Status ==
-							SalesInvoiceStatus.Confirmed &&
-						x.SalesInvoice.InvoiceDate >= from &&
-						x.SalesInvoice.InvoiceDate < to)
-					.Select(x => new
-					{
-						ProductId = x.ProductId,
-						Revenue = x.TotalPrice
-					})
-					.ToListAsync();
+			// ✅ SQL Aggregation: تجميع الإيرادات على SQL Server
+			var revenueRows = await _context.SalesInvoiceItems
+				.AsNoTracking()
+				.Where(x =>
+					x.SalesInvoice!.Status ==
+						SalesInvoiceStatus.Confirmed &&
+					x.SalesInvoice.InvoiceDate >= from &&
+					x.SalesInvoice.InvoiceDate < to)
+				.GroupBy(x => x.ProductId)
+				.Select(g => new
+				{
+					ProductId = g.Key,
+					Revenue = g.Sum(x => x.TotalPrice)
+				})
+				.ToListAsync();
 
-			var costById =
-				items
-					.GroupBy(x => x.ProductId)
-					.ToDictionary(
-						x => x.Key,
-						x => x.Sum(y => y.TotalCost));
+			var costById = costRows.ToDictionary(x => x.ProductId);
+			var revenueById = revenueRows.ToDictionary(x => x.ProductId);
 
-			var quantityById =
-				items
-					.GroupBy(x => x.ProductId)
-					.ToDictionary(
-						x => x.Key,
-						x => x.Sum(y => y.QuantityBaseUnit));
-
-			var revenueById =
-				revenueItems
-					.GroupBy(x => x.ProductId)
-					.ToDictionary(
-						x => x.Key,
-						x => x.Sum(y => y.Revenue));
-
-			var productIds =
-				costById.Keys
-					.Union(revenueById.Keys)
-					.Distinct()
-					.ToList();
+			var productIds = costById.Keys
+				.Union(revenueById.Keys)
+				.Distinct()
+				.ToList();
 
 			foreach (var productId in productIds)
 			{
-				var product =
-					items.FirstOrDefault(x =>
-						x.ProductId == productId);
+				costById.TryGetValue(productId, out var costRow);
+				revenueById.TryGetValue(productId, out var revenueRow);
 
-				var revenue =
-					revenueById.TryGetValue(productId, out var r)
-						? r
-						: 0m;
-
-				var cost =
-					costById.TryGetValue(productId, out var c)
-						? c
-						: 0m;
-
-				var quantity =
-					quantityById.TryGetValue(productId, out var q)
-						? q
-						: 0m;
-
+				var revenue = revenueRow?.Revenue ?? 0m;
+				var cost = costRow?.TotalCost ?? 0m;
+				var quantity = costRow?.QuantityBaseUnit ?? 0m;
 				var profit = revenue - cost;
 
 				model.Rows.Add(
 					new ProductProfitRowViewModel
 					{
 						ProductId = productId,
-						ProductName = product?.ProductName ?? "-",
-						ProductCode = product?.ProductCode ?? "-",
+						ProductName = costRow?.ProductName ?? "-",
+						ProductCode = costRow?.ProductCode ?? "-",
 						QuantityInBaseUnit = quantity,
 						Revenue = revenue,
 						Cost = cost,
@@ -1192,9 +1145,6 @@ namespace AccountingSystem.Controllers
 				1);
 		}
 
-		// صافي المبلغ الدائن لحساب الطرف في كشف الحساب:
-		// عند خصم 1% من محفظة التليفون، يُسجل المبلغ كاملًا في
-		// المحفظة ويُخصم من العميل بنفس قيمة العمولة.
 		private static decimal EffectiveCreditAmount(
 			TreasuryTransaction payment)
 		{

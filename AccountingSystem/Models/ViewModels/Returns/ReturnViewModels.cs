@@ -1,19 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace AccountingSystem.Models.ViewModels.Returns
 {
 	// =============================================
-	// ط¨ظ†ظˆط¯ ط§ظ„ظ…ط±طھط¬ط¹ ط§ظ„ظ…ط´طھط±ظƒط©
+	// بنود المرتجع المشتركة
 	// =============================================
 
 	public abstract class ReturnItemViewModel
 	{
 		[Range(1, int.MaxValue,
-			ErrorMessage = "ظٹط¬ط¨ ط§ط®طھظٹط§ط± ط§ظ„ظ…ظ†طھط¬.")]
+			ErrorMessage = "يجب اختيار المنتج.")]
 		public int ProductId { get; set; }
 
 		[Range(0.000001, double.MaxValue,
-			ErrorMessage = "ط§ظ„ظƒظ…ظٹط© ظٹط¬ط¨ ط£ظ† طھظƒظˆظ† ط£ظƒط¨ط± ظ…ظ† طµظپط±.")]
+			ErrorMessage = "الكمية يجب أن تكون أكبر من صفر.")]
 		public decimal Quantity { get; set; }
 	}
 
@@ -23,33 +23,33 @@ namespace AccountingSystem.Models.ViewModels.Returns
 		}
 
 	// =============================================
-	// ظ…ط±طھط¬ط¹ ط´ط±ط§ط،
+	// مرتجع شراء
 	// =============================================
 
 	public class PurchaseReturnViewModel
 	{
 		[Range(1, int.MaxValue,
-			ErrorMessage = "ظٹط¬ط¨ ط§ط®طھظٹط§ط± ط§ظ„ظ…ظˆط±ط¯.")]
+			ErrorMessage = "يجب اختيار المورد.")]
 		public int SupplierId { get; set; }
 
 		[Range(1, int.MaxValue,
-			ErrorMessage = "ظٹط¬ط¨ ط§ط®طھظٹط§ط± ط§ظ„ظ…ط®ط²ظ†.")]
+			ErrorMessage = "يجب اختيار المخزن.")]
 		public int StoreId { get; set; }
 
 		[DataType(DataType.Date)]
-		[Display(Name = "طھط§ط±ظٹط® ط§ظ„ظ…ط±طھط¬ط¹")]
+		[Display(Name = "تاريخ المرتجع")]
 		public DateTime ReturnDate { get; set; } = DateTime.Today;
 
 		[MaxLength(
 			1000,
-			ErrorMessage = "ط§ظ„ط³ط¨ط¨ ظ„ط§ ظٹظ…ظƒظ† ط£ظ† ظٹطھط¬ط§ظˆط² 1000 ط­ط±ظپ.")]
-		[Display(Name = "ط³ط¨ط¨ ط§ظ„ظ…ط±طھط¬ط¹")]
+			ErrorMessage = "السبب لا يمكن أن يتجاوز 1000 حرف.")]
+		[Display(Name = "سبب المرتجع")]
 		public string? Reason { get; set; }
 
 		public List<PurchaseReturnItemViewModel> Items { get; set; }
 			= new List<PurchaseReturnItemViewModel>();
 
-		[Display(Name = "فاتورة الشراء الأصلية")]
+		[Display(Name = "������ ������ �������")]
 		public int? OriginalPurchaseInvoiceId { get; set; }
 
 		public List<KeyValuePair<int, string>> OriginalInvoices { get; set; }
@@ -66,7 +66,7 @@ namespace AccountingSystem.Models.ViewModels.Returns
 	}
 
 	// =============================================
-	// ط®ظٹط§ط± ظ…ظ†طھط¬ ظ„ظ„ط´ط§ط´ط§طھ
+	// خيار منتج للشاشات
 	// =============================================
 
 	public class ReturnProductOptionViewModel

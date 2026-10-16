@@ -9,6 +9,15 @@ namespace AccountingSystem.Models
 		Cancelled = 2
 	}
 
+	public enum PurchasePaymentMethod
+	{
+		Cash = 1,
+		BankTransfer = 2,
+		Cheque = 3,
+		Credit = 4,
+		Wallet = 5
+	}
+
 	public class PurchaseInvoice
 	{
 		public int Id { get; set; }
@@ -24,8 +33,10 @@ namespace AccountingSystem.Models
 		// =========================================
 		// المورد
 		// =========================================
+
 		public decimal SalesTaxRate { get; set; }
 		public decimal SalesTaxAmount { get; set; }
+
 		[Required]
 		public int SupplierId { get; set; }
 
@@ -73,6 +84,21 @@ namespace AccountingSystem.Models
 
 		// الإجمالي النهائي (SubTotal - Discount + TaxAmount)
 		public decimal TotalAmount { get; set; }
+
+		// =========================================
+		// طريقة الدفع
+		// =========================================
+
+		public PurchasePaymentMethod PaymentMethod { get; set; }
+			= PurchasePaymentMethod.Credit;
+
+		// الخزنة/البنك المستخدم في حالة الدفع النقدي (اختياري)
+		public int? CashAccountId { get; set; }
+
+		public CashAccount? CashAccount { get; set; }
+
+		[MaxLength(500)]
+		public string? PaymentDetails { get; set; }
 
 		// =========================================
 		// تاريخ الاستحقاق (للفواتير الآجلة)

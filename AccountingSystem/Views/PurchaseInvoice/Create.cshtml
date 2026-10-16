@@ -963,6 +963,36 @@
                         </div>
 
                         <div class="pi-field">
+                            <label asp-for="PaymentMethod">طريقة الدفع</label>
+                            <select asp-for="PaymentMethod" class="form-select" id="paymentMethodSelect">
+                                <option value="1">نقدي</option>
+                                <option value="2">تحويل بنكي</option>
+                                <option value="3">شيك</option>
+                                <option value="4">آجل</option>
+                                <option value="5">محفظة إلكترونية</option>
+                            </select>
+                            <span asp-validation-for="PaymentMethod" class="text-danger small"></span>
+                        </div>
+
+                        <div class="pi-field" id="cashAccountField" style="display:none;">
+                            <label asp-for="CashAccountId">الخزنة / البنك</label>
+                            <select asp-for="CashAccountId" class="form-select">
+                                <option value="">-- اختر الخزنة --</option>
+                                @foreach (var ca in Model.AvailableCashAccounts)
+                                {
+                                    <option value="@ca.Id">@ca.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="CashAccountId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="pi-field" id="paymentDetailsField" style="display:none;">
+                            <label asp-for="PaymentDetails">تفاصيل الدفع</label>
+                            <input asp-for="PaymentDetails" class="form-control"
+                                   placeholder="رقم التحويل / رقم الشيك" />
+                            <span asp-validation-for="PaymentDetails" class="text-danger small"></span>
+                        </div>
+                        <div class="pi-field">
                             <label asp-for="BranchId">الفرع</label>
                             <div class="pi-inputgroup">
                                 <select asp-for="BranchId" class="form-select" id="branchSelect">
@@ -2030,6 +2060,26 @@
                     alert('أضف بندًا واحدًا على الأقل'); return false;
                 }
             });
+
+            // ═══════════ Payment Method: show/hide ═══════════
+            (function () {
+                const methodSel = document.getElementById('paymentMethodSelect');
+                const cashField = document.getElementById('cashAccountField');
+                const detailsField = document.getElementById('paymentDetailsField');
+
+                if (!methodSel || !cashField || !detailsField) return;
+
+                function update() {
+                    const val = methodSel.value;
+                    const isCredit = val === '4';
+                    const isCash = val === '1';
+                    cashField.style.display = isCredit ? 'none' : '';
+                    detailsField.style.display = (isCredit || isCash) ? 'none' : '';
+                }
+
+                methodSel.addEventListener('change', update);
+                update();
+            })();
         })();
     </script>
 }

@@ -39,15 +39,8 @@ namespace AccountingSystem.Controllers
 					.OrderBy(x => x.Name)
 					.ToListAsync();
 
-			// =========================================
-			// بناء الشجرة ترتيبًا هرميًا
-			// (الجذور أولًا ثم الفروع تحت آبائها)
-			// =========================================
-
 			var rows = new List<ChartAccountRowViewModel>();
 
-			// الأبناء مرتبة بأبهم — بلا مفاتيح null
-			// (Dictionary لا يجيز مفتاحًا فارغًا)
 			var byParent = accounts
 				.Where(x => x.ParentId.HasValue)
 				.GroupBy(x => x.ParentId!.Value)
@@ -93,7 +86,6 @@ namespace AccountingSystem.Controllers
 				Walk(root, 0);
 			}
 
-			// إضافة أي حسابات يتيمة (بلا أب) لم تُعرض بعد
 			foreach (var orphan in accounts
 				.Where(x => !resolved.Contains(x.Id))
 				.OrderBy(x => x.Code ?? x.Name))
@@ -102,10 +94,6 @@ namespace AccountingSystem.Controllers
 			}
 
 			model.Rows = rows;
-
-			// =========================================
-			// خيارات الأب (هيراركي) لصفحة الإضافة
-			// =========================================
 
 			model.ParentOptions = rows
 				.Select(x => new ChartAccountParentOptionViewModel
@@ -171,10 +159,6 @@ namespace AccountingSystem.Controllers
 				}
 			}
 
-			// =========================================
-			// التحقق من الحساب الأب إن وُجد
-			// =========================================
-
 			if (model.ParentId.HasValue)
 			{
 				var parent = await _context.ChartAccounts
@@ -190,11 +174,6 @@ namespace AccountingSystem.Controllers
 
 					return RedirectToAction(nameof(Accounts));
 				}
-
-				// =========================================
-				// منع إضافة حساب فرعي مباشرة تحت حساب
-				// ذي طبيعة مخالفة (الأب يأخذ نفس الطبيعة)
-				// =========================================
 
 				if (parent.Type != model.Type)
 				{
@@ -243,10 +222,6 @@ namespace AccountingSystem.Controllers
 			{
 				return NotFound();
 			}
-
-			// =========================================
-			// الحسابات النظامية لا يجوز إيقافها
-			// =========================================
 
 			if (account.IsSystem)
 			{
@@ -780,56 +755,36 @@ namespace AccountingSystem.Controllers
 		[RequirePermission("report.accounting")]
 		public async Task<IActionResult> TrialBalance()
 		{
-			var model =
-				new TrialBalanceViewModel();
+			var model = new TrialBalanceViewModel();
 
-			var lines =
-				await _context.JournalEntryLines
-					.AsNoTracking()
-					.Include(x => x.ChartAccount)
-					.Where(x => x.JournalEntry!.IsPosted)
-					.ToListAsync();
-
-			var groups =
-				lines
-					.Where(x => x.ChartAccount != null)
-					.GroupBy(x => x.ChartAccountId);
-
-			foreach (var group in groups)
-			{
-				var account =
-					group.First().ChartAccount!;
-
-				if (account == null)
+			// ✅ SQL Aggregation: كل التجميع والجمع على SQL Server
+			var rows = await _context.JournalEntryLines
+				.AsNoTracking()
+				.Where(x =>
+					x.JournalEntry!.IsPosted &&
+					x.ChartAccount != null)
+				.GroupBy(x => new
 				{
-					continue;
-				}
+					x.ChartAccountId,
+					x.ChartAccount!.Code,
+					x.ChartAccount.Name,
+					x.ChartAccount.Type
+				})
+				.Select(g => new TrialBalanceRowViewModel
+				{
+					Code = g.Key.Code,
+					Name = g.Key.Name,
+					Type = g.Key.Type,
+					Debit = g.Sum(x => x.Debit),
+					Credit = g.Sum(x => x.Credit),
+					Balance = g.Sum(x => x.Debit) - g.Sum(x => x.Credit)
+				})
+				.OrderBy(x => x.Name)
+				.ToListAsync();
 
-				var debit =
-					group.Sum(x => x.Debit);
-
-				var credit =
-					group.Sum(x => x.Credit);
-
-				model.Rows.Add(
-					new TrialBalanceRowViewModel
-					{
-						Code = account.Code,
-						Name = account.Name,
-						Type = account.Type,
-						Debit = debit,
-						Credit = credit,
-						Balance = debit - credit
-					});
-
-				model.TotalDebit += debit;
-				model.TotalCredit += credit;
-			}
-
-			model.Rows =
-				model.Rows
-					.OrderBy(x => x.Name)
-					.ToList();
+			model.Rows = rows;
+			model.TotalDebit = rows.Sum(x => x.Debit);
+			model.TotalCredit = rows.Sum(x => x.Credit);
 
 			return View(model);
 		}
@@ -969,71 +924,72 @@ namespace AccountingSystem.Controllers
 						toDate ?? DateTime.Today
 				};
 
-			var from =
-				model.FromDate.Date;
+			var from = model.FromDate.Date;
+			var to = model.ToDate.Date.AddDays(1);
 
-			var to =
-				model.ToDate.Date.AddDays(1);
-
-			var lines =
-				await _context.JournalEntryLines
-					.AsNoTracking()
-					.Include(x => x.ChartAccount)
-					.Where(x =>
-						x.JournalEntry!.IsPosted &&
-						x.JournalEntry.EntryDate >= from &&
-						x.JournalEntry.EntryDate < to)
-					.ToListAsync();
-
-			var groups =
-				lines
-					.Where(x => x.ChartAccount != null)
-					.GroupBy(x => x.ChartAccountId);
-
-			foreach (var group in groups)
-			{
-				var account =
-					group.First().ChartAccount!;
-
-				if (account.Type == AccountType.Revenue)
+			// ✅ SQL Aggregation: التجميع والجمع على SQL Server
+			var aggregated = await _context.JournalEntryLines
+				.AsNoTracking()
+				.Where(x =>
+					x.JournalEntry!.IsPosted &&
+					x.JournalEntry.EntryDate >= from &&
+					x.JournalEntry.EntryDate < to &&
+					x.ChartAccount != null &&
+					(x.ChartAccount.Type == AccountType.Revenue ||
+					 x.ChartAccount.Type == AccountType.Expense))
+				.GroupBy(x => new
 				{
-					var amount =
-						group.Sum(x => x.Credit - x.Debit);
+					x.ChartAccountId,
+					x.ChartAccount!.Code,
+					x.ChartAccount.Name,
+					x.ChartAccount.Type
+				})
+				.Select(g => new
+				{
+					g.Key.Code,
+					g.Key.Name,
+					g.Key.Type,
+					Debit = g.Sum(x => x.Debit),
+					Credit = g.Sum(x => x.Credit)
+				})
+				.ToListAsync();
+
+			foreach (var row in aggregated)
+			{
+				if (row.Type == AccountType.Revenue)
+				{
+					var amount = row.Credit - row.Debit;
 
 					model.RevenueLines.Add(
 						new IncomeStatementLineViewModel
 						{
-							Code = account.Code,
-							Name = account.Name,
+							Code = row.Code,
+							Name = row.Name,
 							Amount = amount
 						});
 
 					model.TotalRevenue += amount;
 				}
-				else if (account.Type == AccountType.Expense)
+				else if (row.Type == AccountType.Expense)
 				{
-					var amount =
-						group.Sum(x => x.Debit - x.Credit);
+					var amount = row.Debit - row.Credit;
 
 					var line =
 						new IncomeStatementLineViewModel
 						{
-							Code = account.Code,
-							Name = account.Name,
+							Code = row.Code,
+							Name = row.Name,
 							Amount = amount
 						};
 
 					model.ExpenseLines.Add(line);
 
 					var category =
-						CategorizeExpense(
-							account.Code,
-							account.Name);
+						CategorizeExpense(row.Code, row.Name);
 
 					var current =
 						model.ExpenseCategories
-							.FirstOrDefault(x =>
-								x.Name == category);
+							.FirstOrDefault(x => x.Name == category);
 
 					if (current == null)
 					{
@@ -1065,8 +1021,7 @@ namespace AccountingSystem.Controllers
 
 			model.ExpenseCategories =
 				model.ExpenseCategories
-					.OrderBy(x =>
-						ExpenseCategoryOrder(x.Name))
+					.OrderBy(x => ExpenseCategoryOrder(x.Name))
 					.ToList();
 
 			model.NetIncome =
@@ -1079,7 +1034,7 @@ namespace AccountingSystem.Controllers
 		// الميزانية العمومية
 		// =========================================
 
-		[HttpGet]
+				[HttpGet]
 		[RequirePermission("report.accounting")]
 		public async Task<IActionResult> BalanceSheet(
 			DateTime? asOfDate)
@@ -1091,81 +1046,81 @@ namespace AccountingSystem.Controllers
 						(asOfDate ?? DateTime.Today).Date
 				};
 
-			var to =
-				model.AsOfDate.AddDays(1);
+			var to = model.AsOfDate.AddDays(1);
 
-			var lines =
-				await _context.JournalEntryLines
-					.AsNoTracking()
-					.Include(x => x.ChartAccount)
-					.Where(x =>
-						x.JournalEntry!.IsPosted &&
-						x.JournalEntry.EntryDate < to)
-					.ToListAsync();
-
-			var groups =
-				lines
-					.Where(x => x.ChartAccount != null)
-					.GroupBy(x => x.ChartAccountId);
+			// ✅ SQL Aggregation: التجميع والجمع على SQL Server
+			var aggregated = await _context.JournalEntryLines
+				.AsNoTracking()
+				.Where(x =>
+					x.JournalEntry!.IsPosted &&
+					x.JournalEntry.EntryDate < to &&
+					x.ChartAccount != null)
+				.GroupBy(x => new
+				{
+					x.ChartAccountId,
+					x.ChartAccount!.Code,
+					x.ChartAccount.Name,
+					x.ChartAccount.Type
+				})
+				.Select(g => new
+				{
+					g.Key.Code,
+					g.Key.Name,
+					g.Key.Type,
+					Debit = g.Sum(x => x.Debit),
+					Credit = g.Sum(x => x.Credit)
+				})
+				.ToListAsync();
 
 			decimal revenue = 0;
 			decimal expense = 0;
 
-			foreach (var group in groups)
+			foreach (var row in aggregated)
 			{
-				var account =
-					group.First().ChartAccount!;
-
-				var debit =
-					group.Sum(x => x.Debit);
-
-				var credit =
-					group.Sum(x => x.Credit);
-
-				switch (account.Type)
+				switch (row.Type)
 				{
 					case AccountType.Asset:
-						var asset = debit - credit;
+						var asset = row.Debit - row.Credit;
 						model.Assets.Add(
 							new BalanceSheetLineViewModel
 							{
-								Code = account.Code,
-								Name = account.Name,
+								Code = row.Code,
+								Name = row.Name,
 								Amount = asset
 							});
 						model.TotalAssets += asset;
 						break;
 
 					case AccountType.Liability:
-						var liability = credit - debit;
+						var liability = row.Credit - row.Debit;
 						model.Liabilities.Add(
 							new BalanceSheetLineViewModel
 							{
-								Code = account.Code,
-								Name = account.Name,
+								Code = row.Code,
+								Name = row.Name,
 								Amount = liability
 							});
 						model.TotalLiabilities += liability;
 						break;
 
 					case AccountType.Equity:
-						var equity = credit - debit;
+						var equity = row.Credit - row.Debit;
 						model.Equity.Add(
 							new BalanceSheetLineViewModel
 							{
-								Code = account.Code,
-								Name = account.Name,
+								Code = row.Code,
+								Name = row.Name,
 								Amount = equity
 							});
 						model.TotalEquity += equity;
 						break;
 
 					case AccountType.Revenue:
-						revenue += credit - debit;
+						revenue += row.Credit - row.Debit;
 						break;
 
 					case AccountType.Expense:
-						expense += debit - credit;
+						expense += row.Debit - row.Credit;
 						break;
 				}
 			}

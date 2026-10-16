@@ -43,6 +43,21 @@ namespace AccountingSystem.Models.ViewModels.Purchases
 		public string? Notes { get; set; }
 
 		// =========================================
+		// طريقة الدفع
+		// =========================================
+
+		[Display(Name = "طريقة الدفع")]
+		public PurchasePaymentMethod PaymentMethod { get; set; }
+			= PurchasePaymentMethod.Credit;
+
+		[Display(Name = "الخزنة/البنك")]
+		public int? CashAccountId { get; set; }
+
+		[MaxLength(500)]
+		[Display(Name = "تفاصيل الدفع")]
+		public string? PaymentDetails { get; set; }
+
+		// =========================================
 		// الإجماليات
 		// =========================================
 
@@ -74,6 +89,10 @@ namespace AccountingSystem.Models.ViewModels.Purchases
 
 		public List<ProductOptionViewModel> AvailableProducts { get; set; }
 			= new List<ProductOptionViewModel>();
+
+		// قائمة الخزائن المتاحة (للـ dropdown)
+		public List<CashAccountOptionViewModel> AvailableCashAccounts { get; set; }
+			= new List<CashAccountOptionViewModel>();
 
 		public string? CompanyLogoPath { get; set; }
 	}
@@ -150,5 +169,18 @@ namespace AccountingSystem.Models.ViewModels.Purchases
 		public int UnitId { get; set; }
 		public string UnitName { get; set; } = string.Empty;
 		public decimal ConversionFactor { get; set; }
+	}
+
+	// =============================================
+	// خيار الخزنة/البنك
+	// =============================================
+
+	public class CashAccountOptionViewModel
+	{
+		public int Id { get; set; }
+
+		public string Name { get; set; } = string.Empty;
+
+		public string? AccountNumber { get; set; }
 	}
 }

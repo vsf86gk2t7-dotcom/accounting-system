@@ -718,9 +718,13 @@ namespace AccountingSystem.Data
 			// PurchaseInvoice
 			// =========================================
 
+			
+			// ✅ علاقة الخزنة (للدفع النقدي)
 			modelBuilder.Entity<PurchaseInvoice>()
-				.HasIndex(x => x.InvoiceNumber)
-				.IsUnique();
+				.HasOne(x => x.CashAccount)
+				.WithMany()
+				.HasForeignKey(x => x.CashAccountId)
+				.OnDelete(DeleteBehavior.Restrict);
 
 			modelBuilder.Entity<PurchaseInvoice>()
 				.Property(x => x.SubTotal)

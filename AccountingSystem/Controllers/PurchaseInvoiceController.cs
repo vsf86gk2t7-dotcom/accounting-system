@@ -645,6 +645,35 @@ namespace AccountingSystem.Controllers
 				return View(model);
 			}
 
+			// ✅ التحقق من الدفع النقدي
+			if (model.PaymentMethod != PurchasePaymentMethod.Credit)
+			{
+				if (!model.CashAccountId.HasValue)
+				{
+					ModelState.AddModelError(
+						nameof(model.CashAccountId),
+						"يجب اختيار الخزنة/البنك عند الدفع النقدي.");
+
+					await LoadCreateDataAsync(model);
+					return View(model);
+				}
+
+				var cashExists = await _context.CashAccounts
+					.AnyAsync(x =>
+						x.Id == model.CashAccountId.Value &&
+						x.IsActive);
+
+				if (!cashExists)
+				{
+					ModelState.AddModelError(
+						nameof(model.CashAccountId),
+						"الخزنة المختارة غير موجودة أو غير نشطة.");
+
+					await LoadCreateDataAsync(model);
+					return View(model);
+				}
+			}
+
 			model.Items = model.Items
 				.Where(x => x.ProductId > 0 && x.UnitId > 0)
 				.ToList();
@@ -696,6 +725,9 @@ namespace AccountingSystem.Controllers
 				TaxAmount = model.TaxAmount,
 				SalesTaxRate = model.SalesTaxRate,
 				SalesTaxAmount = model.SalesTaxAmount,
+				PaymentMethod = model.PaymentMethod,
+				CashAccountId = model.CashAccountId,
+				PaymentDetails = model.PaymentDetails,
 				Status = PurchaseInvoiceStatus.Draft,
 				CreatedAt = DateTime.UtcNow
 			};
@@ -744,10 +776,10 @@ namespace AccountingSystem.Controllers
 					itemModel.Quantity * conversionFactor;
 
 				var lineTotal =
-					quantityInBaseUnit * itemModel.UnitPrice; // = Quantity × ConversionFactor × UnitPrice (UnitPrice per piece)
+					quantityInBaseUnit * itemModel.UnitPrice;
 
 				var unitCostInBaseUnit =
-					itemModel.UnitPrice; // UnitPrice is already per base unit (piece)
+					itemModel.UnitPrice;
 
 				subTotal += lineTotal;
 
@@ -1277,6 +1309,20 @@ namespace AccountingSystem.Controllers
 						.ToList()
 				})
 				.ToList();
+
+			// ✅ قائمة الخزائن/البنوك (للدفع النقدي)
+			model.AvailableCashAccounts =
+				await _context.CashAccounts
+					.AsNoTracking()
+					.Where(x => x.IsActive)
+					.OrderBy(x => x.Name)
+					.Select(x => new CashAccountOptionViewModel
+					{
+						Id = x.Id,
+						Name = x.Name,
+						AccountNumber = x.AccountNumber
+					})
+					.ToListAsync();
 		}
 
 		// =========================================
@@ -1527,11 +1573,6 @@ namespace AccountingSystem.Controllers
 				return Json(new { ok = false });
 			}
 
-			// ═══════════════════════════════════════
-			// الرصيد: من حساب الموردين (2102) فقط
-			// (تجاهل السطور الأخرى التي تحمل نفس SupplierId)
-			// ═══════════════════════════════════════
-
 			var supplierAccountId = await _context.ChartAccounts
 				.AsNoTracking()
 				.Where(x => x.Code == "2102" && x.IsActive)
@@ -1557,8 +1598,6 @@ namespace AccountingSystem.Controllers
 
 				if (sums != null)
 				{
-					// حساب الموردين = التزام
-					// الرصيد الدائن = كم لسه علينا للمورد
 					balance = sums.TotalCredit - sums.TotalDebit;
 				}
 			}

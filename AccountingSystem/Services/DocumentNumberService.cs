@@ -1,5 +1,4 @@
 using AccountingSystem.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace AccountingSystem.Services
 {
@@ -8,62 +7,43 @@ namespace AccountingSystem.Services
 		Task<string> GenerateNumberAsync(string prefix, string tableName, string datePart);
 	}
 
+	/// <summary>
+	/// ✅ Wrapper حول SequenceService — يضمن أرقاماً تسلسلية
+	/// آمنة ضد التزامن (UPDLOCK + HOLDLOCK + ROWLOCK)
+	/// بدل القراءة من جدول الفواتير مباشرة (MAX + 1).
+	/// </summary>
 	public class DocumentNumberService : IDocumentNumberService
 	{
-		private readonly ApplicationDbContext _context;
+		private readonly ISequenceService _sequence;
 
-		public DocumentNumberService(ApplicationDbContext context)
+		public DocumentNumberService(ISequenceService sequence)
 		{
-			_context = context;
+			_sequence = sequence;
 		}
 
-		public async Task<string> GenerateNumberAsync(string prefix, string tableName, string datePart)
+		public async Task<string> GenerateNumberAsync(
+			string prefix,
+			string tableName,
+			string datePart)
 		{
-			var searchPrefix = $"{prefix}-{datePart}-";
-
-			var lastNumber = tableName switch
+			if (!DateTime.TryParseExact(
+				datePart,
+				"yyyyMMdd",
+				null,
+				System.Globalization.DateTimeStyles.None,
+				out var date))
 			{
-				"SalesInvoices" => await _context.SalesInvoices
-					.AsNoTracking()
-					.Where(x => x.InvoiceNumber.StartsWith(searchPrefix))
-					.OrderByDescending(x => x.InvoiceNumber)
-					.Select(x => x.InvoiceNumber)
-					.FirstOrDefaultAsync(),
-				"PurchaseInvoices" => await _context.PurchaseInvoices
-					.AsNoTracking()
-					.Where(x => x.InvoiceNumber.StartsWith(searchPrefix))
-					.OrderByDescending(x => x.InvoiceNumber)
-					.Select(x => x.InvoiceNumber)
-					.FirstOrDefaultAsync(),
-				"SalesReturnInvoices" => await _context.SalesReturnInvoices
-					.AsNoTracking()
-					.Where(x => x.InvoiceNumber.StartsWith(searchPrefix))
-					.OrderByDescending(x => x.InvoiceNumber)
-					.Select(x => x.InvoiceNumber)
-					.FirstOrDefaultAsync(),
-				"PurchaseReturnInvoices" => await _context.PurchaseReturnInvoices
-					.AsNoTracking()
-					.Where(x => x.InvoiceNumber.StartsWith(searchPrefix))
-					.OrderByDescending(x => x.InvoiceNumber)
-					.Select(x => x.InvoiceNumber)
-					.FirstOrDefaultAsync(),
-				_ => null
-			};
-
-			var nextSeq = 1;
-
-			if (!string.IsNullOrEmpty(lastNumber))
-			{
-				var parts = lastNumber.Split('-');
-
-				if (parts.Length == 3 &&
-					int.TryParse(parts[2], out var last))
-				{
-					nextSeq = last + 1;
-				}
+				throw new ArgumentException(
+					$"Invalid datePart: '{datePart}'. Expected yyyyMMdd.",
+					nameof(datePart));
 			}
 
-			return $"{searchPrefix}{nextSeq:0000}";
+			// نستخدم اسم الجدول كمفتاح عدّاد مستقل
+			return await _sequence.NextFormattedAsync(
+				prefix,
+				tableName,
+				date,
+				digits: 4);
 		}
 	}
 }

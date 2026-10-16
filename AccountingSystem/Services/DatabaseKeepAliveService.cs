@@ -82,18 +82,9 @@ public sealed class DatabaseKeepAliveService : BackgroundService
 		var db = scope.ServiceProvider
 			.GetRequiredService<Data.ApplicationDbContext>();
 
-		// الاستعلامات لا تُسجَّل في AuditLog (قراءة فقط)
-		var sql = @"
-			SELECT 'Users' AS TableName, COUNT_BIG(*) AS [RowCount] FROM [Users];
-			SELECT 'Companies' AS TableName, COUNT_BIG(*) AS [RowCount] FROM [Companies];
-			SELECT 'SalesInvoices' AS TableName, COUNT_BIG(*) AS [RowCount] FROM [SalesInvoices];
-			SELECT 'PurchaseInvoices' AS TableName, COUNT_BIG(*) AS [RowCount] FROM [PurchaseInvoices];
-			SELECT 'StockLots' AS TableName, COUNT_BIG(*) AS [RowCount] FROM [StockLots];
-			SELECT 'Products' AS TableName, COUNT_BIG(*) AS [RowCount] FROM [Products];
-		";
-
+		// ✅ استعلام خفيف جداً: يبقي الاتصال دافئاً بدون مسح جداول كبيرة
 		await db.Database
-			.ExecuteSqlRawAsync(sql, ct);
+			.ExecuteSqlRawAsync("SELECT 1", ct);
 
 		_lastSuccessTicks = Environment.TickCount64;
 	}

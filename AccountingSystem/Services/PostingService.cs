@@ -596,7 +596,7 @@ namespace AccountingSystem.Services
 		// - مدين: المخزون (1104) بقيمة البضاعة
 		// - مدين: ض.ق.م مشتريات (1105) إن وُجدت
 		// - مدين: ضريبة المبيعات (1106) إن وُجدت
-		// - دائن: الموردون (2102) بإجمالي مستحق
+		// - دائن: الموردون (2102) أو الخزنة (نقدي)
 		// =========================================
 
 		public async Task<JournalPostingResult> PostPurchaseInvoiceAsync(
@@ -624,17 +624,6 @@ namespace AccountingSystem.Services
 			{
 				return JournalPostingResult.Fail(
 					$"حساب المخزون ({ACC_INVENTORY}) غير موجود في شجرة الحسابات.");
-			}
-
-			var suppliersAccount = await GetAccountAsync(
-				ACC_SUPPLIERS,
-				AccountType.Liability,
-				"حساب الموردون (2102)");
-
-			if (suppliersAccount == null)
-			{
-				return JournalPostingResult.Fail(
-					$"حساب الموردون ({ACC_SUPPLIERS}) غير موجود في شجرة الحسابات.");
 			}
 
 			decimal goodsCost =
@@ -715,24 +704,129 @@ namespace AccountingSystem.Services
 					});
 			}
 
-			lines.Add(
-				new JournalLineRequest
-				{
-					ChartAccountId = suppliersAccount.Id,
-					Credit = payable,
-					SupplierId = invoice.SupplierId,
-					StoreId = invoice.StoreId,
-					Description = "ذمم موردين — فاتورة شراء"
-				});
+			// =========================================
+			// ✅ تحديد جهة الدفع: موردون (آجل) أم خزنة (نقدي)
+			// =========================================
 
-			return await PostAsync(
+			var isCredit =
+				invoice.PaymentMethod == PurchasePaymentMethod.Credit;
+
+			CashAccount? cashAccount = null;
+
+			if (!isCredit)
+			{
+				if (invoice.CashAccountId.HasValue)
+				{
+					cashAccount =
+						await context.CashAccounts
+							.FirstOrDefaultAsync(x =>
+								x.Id == invoice.CashAccountId.Value &&
+								x.IsActive);
+				}
+
+				if (cashAccount == null)
+				{
+					cashAccount = await GetOrCreateActiveCashAccountAsync();
+				}
+
+				if (cashAccount == null)
+				{
+					return JournalPostingResult.Fail(
+						"لا يوجد مركز نقدي (خزنة/بنك) مرتبط بفاتورة الشراء.");
+				}
+
+				int? cashChartId = cashAccount.ChartAccountId;
+
+				if (cashChartId == null)
+				{
+					var cashDefault = await GetAccountAsync(
+						ChartAccountCodes.Cash,
+						AccountType.Asset,
+						"الصندوق");
+
+					cashChartId = cashDefault?.Id;
+				}
+
+				if (cashChartId == null)
+				{
+					return JournalPostingResult.Fail(
+						"لا يوجد حساب صندوق مرتبط بالمركز النقدي.");
+				}
+
+				// ✅ دائن: الخزنة/البنك (بدل المورد)
+				lines.Add(
+					new JournalLineRequest
+					{
+						ChartAccountId = cashChartId.Value,
+						Credit = payable,
+						SupplierId = invoice.SupplierId,
+						StoreId = invoice.StoreId,
+						Description = "دفع نقدي — فاتورة شراء"
+					});
+			}
+			else
+			{
+				var suppliersAccount = await GetAccountAsync(
+					ACC_SUPPLIERS,
+					AccountType.Liability,
+					"حساب الموردون (2102)");
+
+				if (suppliersAccount == null)
+				{
+					return JournalPostingResult.Fail(
+						$"حساب الموردون ({ACC_SUPPLIERS}) غير موجود في شجرة الحسابات.");
+				}
+
+				// ✅ دائن: الموردون (آجل)
+				lines.Add(
+					new JournalLineRequest
+					{
+						ChartAccountId = suppliersAccount.Id,
+						Credit = payable,
+						SupplierId = invoice.SupplierId,
+						StoreId = invoice.StoreId,
+						Description = "ذمم موردين — فاتورة شراء"
+					});
+			}
+
+			var purpose = isCredit ? "CREDIT" : "CASH";
+
+			var result = await PostAsync(
 				JournalSourceType.PurchaseInvoice,
 				invoice.Id,
 				invoice.InvoiceDate.Date,
 				"قيد فاتورة شراء " + invoice.InvoiceNumber,
 				lines,
 				isPosted: true,
-				userId);
+				userId,
+				purpose);
+
+			// =========================================
+			// ✅ لو الدفع نقدي، نسجل حركة خزنة (صرف)
+			// =========================================
+
+			if (result.Success && !isCredit && cashAccount != null)
+			{
+				var payment = new TreasuryTransaction
+				{
+					TransactionNumber =
+						await GenerateTreasuryNumberAsync(
+							TreasuryTransactionType.Pay),
+					Type = TreasuryTransactionType.Pay,
+					CashAccountId = cashAccount.Id,
+					Amount = payable,
+					SupplierId = invoice.SupplierId,
+					Reason = "دفع فاتورة شراء " + invoice.InvoiceNumber,
+					ReferenceDocument = invoice.InvoiceNumber,
+					CreatedByUserId = userId,
+					CreatedAt = DateTime.UtcNow
+				};
+
+				context.TreasuryTransactions.Add(payment);
+				await context.SaveChangesAsync();
+			}
+
+			return result;
 		}
 
 		// =========================================
@@ -1103,12 +1197,7 @@ namespace AccountingSystem.Services
 		}
 
 		// =========================================
-		// Helpers
-		// =========================================
-		// =========================================
 		// قيد صرف سلفة موظف
-		// مدين: سلف موظفين (1107)
-		// دائن: الصندوق / الخزنة
 		// =========================================
 
 		public async Task<JournalPostingResult> PostEmployeeAdvanceAsync(
@@ -1176,8 +1265,6 @@ namespace AccountingSystem.Services
 
 		// =========================================
 		// قيد استحقاق الرواتب
-		// مدين: مصروف رواتب (5101)
-		// دائن: رواتب مستحقة (2105)
 		// =========================================
 
 		public async Task<JournalPostingResult> PostPayrollAccrualAsync(
@@ -1246,8 +1333,6 @@ namespace AccountingSystem.Services
 
 		// =========================================
 		// قيد صرف الرواتب
-		// مدين: رواتب مستحقة (2105)
-		// دائن: الصندوق / البنك
 		// =========================================
 
 		public async Task<JournalPostingResult> PostPayrollPaymentAsync(

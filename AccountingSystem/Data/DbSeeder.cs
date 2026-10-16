@@ -10,20 +10,6 @@ namespace AccountingSystem.Data
 			IServiceProvider services,
 			IConfiguration configuration)
 		{
-			// =========================================
-			// تطبيق الـ Migrations المعلقة فقط
-			//
-			// عند بدء التشغيل قد يفشل الاتصال مؤقتًا مع
-			// SQL Server (ضغط ذاكرة/إعادة تشغيل)، لذا نحوّل
-			// خطوة الترحيل والفحص إلى محاولات متكررة بسياق
-			// جديد في كل مرة.
-			//
-			// ملاحظة: نعيد المحاولة فقط في الأخطاء العابرة.
-			// الأخطاء المنطقية (مثل: القاعدة موجودة، أو
-			// بيانات ناقصة) تُرمى فورًا حتى لا تضيع في
-			// إعادة المحاولات بلا فائدة.
-			// =========================================
-
 			const int maxAttempts = 8;
 
 			string? lastFailure = null;
@@ -46,8 +32,6 @@ namespace AccountingSystem.Data
 						await context.Database.MigrateAsync();
 					}
 
-					// نجح الاتصال والترحيل — نكمل البذر
-					// في نفس السياق ثم نخرج من الحلقة.
 					await SeedCoreAsync(
 						context,
 						configuration);
@@ -58,7 +42,6 @@ namespace AccountingSystem.Data
 				{
 					lastFailure = ex.Message;
 
-					// خطأ غير عابر → لا فائدة من إعادة المحاولة.
 					if (!IsTransient(ex))
 					{
 						throw new InvalidOperationException(
@@ -72,8 +55,6 @@ namespace AccountingSystem.Data
 						break;
 					}
 
-					// مهلة قصيرة قبل المحاولة التالية ليتسنى
-					// لـ SQL Server استيعاب الاتصال.
 					await Task.Delay(
 						TimeSpan.FromSeconds(5));
 				}
@@ -86,28 +67,15 @@ namespace AccountingSystem.Data
 				lastFailure);
 		}
 
-		// =========================================
-		// تصنيف الأخطاء: هل هي عابرة (تستحق إعادة
-		// المحاولة) أم منطقية (لا فائدة من التكرار)؟
-		// =========================================
-
 		private static bool IsTransient(Exception ex)
 		{
-			// =========================================
-			// 1) افحص الـ Inner Exception أولاً
-			//    (الأخطاء المتداخلة 3 طبقات)
-			// =========================================
 			if (ex.InnerException != null)
 			{
 				return IsTransient(ex.InnerException);
 			}
 
-			// =========================================
-			// 2) أخطاء SqlException
-			// =========================================
 			if (ex is Microsoft.Data.SqlClient.SqlException sqlEx)
 			{
-				// رقم 0 أو -1 → خطأ Client Side → عابر
 				if (sqlEx.Number == 0 || sqlEx.Number == -1)
 					return true;
 
@@ -124,7 +92,6 @@ namespace AccountingSystem.Data
 				if (transientNumbers.Contains(sqlEx.Number))
 					return true;
 
-				// نص الرسالة يدل على خطأ عابر
 				var msg = sqlEx.Message ?? "";
 				if (msg.Contains("transport-level", StringComparison.OrdinalIgnoreCase) ||
 					msg.Contains("Physical connection", StringComparison.OrdinalIgnoreCase) ||
@@ -138,30 +105,18 @@ namespace AccountingSystem.Data
 				}
 			}
 
-			// =========================================
-			// 3) فشل شبكي
-			// =========================================
 			if (ex is System.Net.Sockets.SocketException)
 				return true;
 
-			// =========================================
-			// 4) Win32Exception (زي "No process is on the other end of the pipe")
-			// =========================================
 			if (ex is System.ComponentModel.Win32Exception)
 				return true;
 
-			// =========================================
-			// 5) EF Core DbUpdateException مع SqlException داخلي
-			// =========================================
 			if (ex is Microsoft.EntityFrameworkCore.DbUpdateException &&
 				ex.InnerException is Microsoft.Data.SqlClient.SqlException innerSql)
 			{
 				return IsTransient(innerSql);
 			}
 
-			// =========================================
-			// 6) InvalidOperationException عن transient failure
-			// =========================================
 			if (ex is InvalidOperationException inv)
 			{
 				var m = inv.Message ?? "";
@@ -185,7 +140,6 @@ namespace AccountingSystem.Data
 
 			// =========================================
 			// إنشاء الأدوار الأساسية للنظام
-			// (دفعة واحدة: نقرأ الموجودة ثم نضيف الناقص)
 			// =========================================
 
 			var existingRoleCodes =
@@ -300,11 +254,6 @@ namespace AccountingSystem.Data
 
 			// =========================================
 			// الفترات المالية الافتراضية
-			//
-			// ننشئ فترة السنة الحالية والسنة القادمة
-			// إذا لم تكونا موجودتين. هذا يمنع خطأ
-			// "لا توجد فترة محاسبية مفتوحة" عند ترحيل
-			// أول فاتورة بعد تنصيب النظام.
 			// =========================================
 
 			var currentYear = DateTime.UtcNow.Year;
@@ -351,10 +300,7 @@ namespace AccountingSystem.Data
 
 			var permissions = new[]
 			{
-				// =====================================
 				// Company
-				// =====================================
-
 				new Permission
 				{
 					Code = "company.view",
@@ -395,10 +341,7 @@ namespace AccountingSystem.Data
 					Description = "تغيير حالة نشاط الشركة."
 				},
 
-				// =====================================
 				// Branch
-				// =====================================
-
 				new Permission
 				{
 					Code = "branch.view",
@@ -439,10 +382,7 @@ namespace AccountingSystem.Data
 					Description = "تغيير حالة نشاط الفرع."
 				},
 
-				// =====================================
 				// Store
-				// =====================================
-
 				new Permission
 				{
 					Code = "store.view",
@@ -483,10 +423,7 @@ namespace AccountingSystem.Data
 					Description = "تغيير حالة نشاط المخزن."
 				},
 
-				// =====================================
 				// Users
-				// =====================================
-
 				new Permission
 				{
 					Code = "user.view",
@@ -519,10 +456,7 @@ namespace AccountingSystem.Data
 					Description = "تغيير حالة المستخدم."
 				},
 
-				// =====================================
 				// Roles
-				// =====================================
-
 				new Permission
 				{
 					Code = "role.view",
@@ -555,10 +489,7 @@ namespace AccountingSystem.Data
 					Description = "حذف دور وفق قواعد النظام."
 				},
 
-				// =====================================
 				// Permissions
-				// =====================================
-
 				new Permission
 				{
 					Code = "permission.view",
@@ -575,10 +506,7 @@ namespace AccountingSystem.Data
 					Description = "منح أو سحب الصلاحيات من الأدوار والمستخدمين وفق السياسة."
 				},
 
-				// =====================================
 				// Customers
-				// =====================================
-
 				new Permission
 				{
 					Code = "customer.view",
@@ -627,10 +555,7 @@ namespace AccountingSystem.Data
 					Description = "الوصول إلى بيانات العميل من البوابة."
 				},
 
-				// =====================================
 				// Suppliers
-				// =====================================
-
 				new Permission
 				{
 					Code = "supplier.view",
@@ -679,10 +604,7 @@ namespace AccountingSystem.Data
 					Description = "الوصول إلى بيانات المورد من البوابة."
 				},
 
-				// =====================================
 				// Employees
-				// =====================================
-
 				new Permission
 				{
 					Code = "employee.view",
@@ -730,10 +652,8 @@ namespace AccountingSystem.Data
 					Group = "EmployeePortal",
 					Description = "الوصول إلى بيانات الموظف من البوابة."
 				},
-								// =====================================
-				// HR Setup (الأقسام والمسميات)
-				// =====================================
 
+				// HR Setup
 				new Permission
 				{
 					Code = "hr.setup.view",
@@ -749,11 +669,8 @@ namespace AccountingSystem.Data
 					Group = "HR",
 					Description = "إضافة وتعطيل الأقسام والمسميات الوظيفية."
 				},
-				
-				// =====================================
-				// Payroll (الرواتب)
-				// =====================================
 
+				// Payroll
 				new Permission
 				{
 					Code = "payroll.view",
@@ -786,10 +703,7 @@ namespace AccountingSystem.Data
 					Description = "صرف الرواتب من الخزينة."
 				},
 
-				// =====================================
-				// Employee Advances (السلف)
-				// =====================================
-
+				// Employee Advances
 				new Permission
 				{
 					Code = "advance.view",
@@ -805,11 +719,8 @@ namespace AccountingSystem.Data
 					Group = "Advance",
 					Description = "صرف سلفة لموظف."
 				},
-				
-							// =====================================
-				// Sales Rep (المناديب)
-				// =====================================
 
+				// Sales Rep
 				new Permission
 				{
 					Code = "salesrep.view",
@@ -825,10 +736,8 @@ namespace AccountingSystem.Data
 					Group = "SalesRep",
 					Description = "إضافة وتعديل المناديب والعمولات."
 				},
-				// =====================================
-				// Sales
-				// =====================================
 
+				// Sales
 				new Permission
 				{
 					Code = "sales.view",
@@ -869,10 +778,7 @@ namespace AccountingSystem.Data
 					Description = "إلغاء فاتورة المبيعات."
 				},
 
-				// =====================================
 				// Sales Returns
-				// =====================================
-
 				new Permission
 				{
 					Code = "sales.return.view",
@@ -905,10 +811,7 @@ namespace AccountingSystem.Data
 					Description = "إتمام مرتجع المبيعات."
 				},
 
-				// =====================================
 				// Purchases
-				// =====================================
-
 				new Permission
 				{
 					Code = "purchase.view",
@@ -949,10 +852,7 @@ namespace AccountingSystem.Data
 					Description = "إلغاء فاتورة المشتريات."
 				},
 
-				// =====================================
 				// Purchase Returns
-				// =====================================
-
 				new Permission
 				{
 					Code = "purchase.return.view",
@@ -985,10 +885,7 @@ namespace AccountingSystem.Data
 					Description = "إتمام مرتجع المشتريات."
 				},
 
-				// =====================================
 				// Inventory
-				// =====================================
-
 				new Permission
 				{
 					Code = "inventory.view",
@@ -1045,10 +942,7 @@ namespace AccountingSystem.Data
 					Description = "عرض سجل حركات المخزون."
 				},
 
-				// =====================================
 				// Treasury
-				// =====================================
-
 				new Permission
 				{
 					Code = "treasury.view",
@@ -1105,10 +999,7 @@ namespace AccountingSystem.Data
 					Description = "إضافة وتعديل مراكز الخزينة النقدية."
 				},
 
-				// =====================================
 				// Accounting
-				// =====================================
-
 				new Permission
 				{
 					Code = "accounting.view",
@@ -1157,10 +1048,7 @@ namespace AccountingSystem.Data
 					Description = "اعتماد القيود المحاسبية."
 				},
 
-				// =====================================
 				// Products
-				// =====================================
-
 				new Permission
 				{
 					Code = "product.view",
@@ -1193,10 +1081,7 @@ namespace AccountingSystem.Data
 					Description = "تغيير حالة الصنف."
 				},
 
-				// =====================================
 				// Reports
-				// =====================================
-
 				new Permission
 				{
 					Code = "report.sales",
@@ -1270,10 +1155,6 @@ namespace AccountingSystem.Data
 				}
 			};
 
-			// =========================================
-			// إضافة الصلاحيات غير الموجودة
-			// =========================================
-
 			var existingPermissionCodes =
 				await context.Permissions
 					.AsNoTracking()
@@ -1301,16 +1182,8 @@ namespace AccountingSystem.Data
 				await context.SaveChangesAsync();
 			}
 
-			// =========================================
-			// الحصول على Admin
-			// =========================================
-
 			var adminRole = await context.Roles
 				.FirstAsync(x => x.Code == "Admin");
-
-			// =========================================
-			// Admin يحصل على كل الصلاحيات
-			// =========================================
 
 			var allPermissions = await context.Permissions
 				.Where(x => x.IsActive)
@@ -1352,10 +1225,6 @@ namespace AccountingSystem.Data
 			{
 				await context.SaveChangesAsync();
 			}
-
-			// =========================================
-			// ضمان وجود Admin
-			// =========================================
 
 			var adminUser = await context.Users
 				.FirstOrDefaultAsync(
@@ -1406,10 +1275,6 @@ namespace AccountingSystem.Data
 					await context.SaveChangesAsync();
 				}
 			}
-
-			// =========================================
-			// ضمان وجود المدير العام الأول
-			// =========================================
 
 			var generalManagerRole =
 				await context.Roles
@@ -1467,23 +1332,14 @@ namespace AccountingSystem.Data
 				{
 					generalManagerEmployee = new Employee
 					{
-						Name =
-							generalManagerName.Trim(),
-
-						JobTitle =
-							"مدير عام",
-
-						Phone =
-							generalManagerPhone.Trim(),
-
+						Name = generalManagerName.Trim(),
+						JobTitle = "مدير عام",
+						Phone = generalManagerPhone.Trim(),
 						IsActive = true,
-
 						CreatedAt = DateTime.Now
 					};
 
-					context.Employees.Add(
-						generalManagerEmployee);
-
+					context.Employees.Add(generalManagerEmployee);
 					await context.SaveChangesAsync();
 				}
 				else
@@ -1497,8 +1353,7 @@ namespace AccountingSystem.Data
 					generalManagerEmployee.Phone =
 						generalManagerPhone.Trim();
 
-					generalManagerEmployee.IsActive =
-						true;
+					generalManagerEmployee.IsActive = true;
 
 					await context.SaveChangesAsync();
 				}
@@ -1507,27 +1362,14 @@ namespace AccountingSystem.Data
 				{
 					generalManagerUser = new User
 					{
-						Phone =
-							generalManagerPhone.Trim(),
-
-						UserType =
-							UserType.Employee,
-
-						RoleId =
-							generalManagerRole.Id,
-
-						EmployeeId =
-							generalManagerEmployee.Id,
-
-						Status =
-							UserStatus.Approved,
-
+						Phone = generalManagerPhone.Trim(),
+						UserType = UserType.Employee,
+						RoleId = generalManagerRole.Id,
+						EmployeeId = generalManagerEmployee.Id,
+						Status = UserStatus.Approved,
 						IsActive = true,
-
 						IsPasswordSet = true,
-
-						CreatedAt =
-							DateTime.Now
+						CreatedAt = DateTime.Now
 					};
 
 					generalManagerUser.PasswordHash =
@@ -1535,9 +1377,7 @@ namespace AccountingSystem.Data
 							generalManagerUser,
 							generalManagerPassword);
 
-					context.Users.Add(
-						generalManagerUser);
-
+					context.Users.Add(generalManagerUser);
 					await context.SaveChangesAsync();
 				}
 				else
@@ -1560,137 +1400,75 @@ namespace AccountingSystem.Data
 				}
 			}
 
-			// =========================================
-			// الصلاحيات الافتراضية للأدوار التشغيلية
-			// =========================================
-
 			var rolePermissionsMap =
 				new Dictionary<string, string[]>
 				{
 					["BranchManager"] = new[]
 					{
-						"branch.view",
-						"branch.edit",
-
-						"store.view",
-
-						"user.view",
-
-						"customer.view",
-
-						"supplier.view",
-
+						"branch.view", "branch.edit",
+						"store.view", "user.view",
+						"customer.view", "supplier.view",
 						"product.view",
-
-						"report.sales",
-						"report.purchase",
-						"report.inventory",
-						"report.treasury"
+						"report.sales", "report.purchase",
+						"report.inventory", "report.treasury"
 					},
 
 					["Cashier"] = new[]
 					{
-						"sales.view",
-						"sales.create",
-
-						"sales.return.view",
-						"sales.return.create",
-
+						"sales.view", "sales.create",
+						"sales.return.view", "sales.return.create",
 						"customer.view",
-
-						"treasury.view",
-						"treasury.receive"
+						"treasury.view", "treasury.receive"
 					},
 
 					["Storekeeper"] = new[]
 					{
-						"inventory.view",
-						"inventory.receive",
-						"inventory.issue",
-						"inventory.transfer",
-						"inventory.count",
-						"inventory.transaction.view",
-
-						"store.view",
-
-						"product.view"
+						"inventory.view", "inventory.receive",
+						"inventory.issue", "inventory.transfer",
+						"inventory.count", "inventory.transaction.view",
+						"store.view", "product.view"
 					},
 
 					["Accountant"] = new[]
 					{
-						"accounting.view",
-						"accounting.manage",
-						"accounting.journal.view",
-						"accounting.journal.create",
-
-						"report.accounting",
-						"report.customer.statement",
+						"accounting.view", "accounting.manage",
+						"accounting.journal.view", "accounting.journal.create",
+						"report.accounting", "report.customer.statement",
 						"report.supplier.statement",
-
-						"customer.view",
-						"supplier.view",
-
+						"customer.view", "supplier.view",
 						"treasury.view"
 					},
 
 					["Sales"] = new[]
 					{
-						"sales.view",
-						"sales.create",
-						"sales.edit",
-
-						"sales.return.view",
-						"sales.return.create",
-
-						"customer.view",
-						"customer.create",
-						"customer.edit",
-
+						"sales.view", "sales.create", "sales.edit",
+						"sales.return.view", "sales.return.create",
+						"customer.view", "customer.create", "customer.edit",
 						"report.sales"
 					},
 
 					["Purchasing"] = new[]
 					{
-						"purchase.view",
-						"purchase.create",
-						"purchase.edit",
-
-						"purchase.return.view",
-						"purchase.return.create",
-
-						"supplier.view",
-						"supplier.create",
-						"supplier.edit",
-
+						"purchase.view", "purchase.create", "purchase.edit",
+						"purchase.return.view", "purchase.return.create",
+						"supplier.view", "supplier.create", "supplier.edit",
 						"report.purchase"
 					},
 
 					["Treasury"] = new[]
 					{
-						"treasury.view",
-						"treasury.receive",
-						"treasury.pay",
-						"treasury.transfer",
-						"treasury.close",
-
+						"treasury.view", "treasury.receive",
+						"treasury.pay", "treasury.transfer", "treasury.close",
 						"report.treasury"
 					},
 
 					["InventoryController"] = new[]
 					{
-						"inventory.view",
-						"inventory.transaction.view",
-						"inventory.count",
-
-						"product.view",
-
+						"inventory.view", "inventory.transaction.view",
+						"inventory.count", "product.view",
 						"report.inventory"
 					}
 				};
-
-			// =========================================
-			// تطبيق الصلاحيات الافتراضية
-			// =========================================
 
 			foreach (var item in rolePermissionsMap)
 			{
@@ -1744,6 +1522,107 @@ namespace AccountingSystem.Data
 			{
 				await context.SaveChangesAsync();
 			}
+
+			// =========================================
+			// ✅ زراعة الـ SequenceCounters من البيانات الحالية
+			// لضمان عدم تكرار الأرقام بعد توحيد Document Number Service
+			// =========================================
+
+			await SeedSequenceCountersAsync(context);
+		}
+
+		// =========================================
+		// زراعة عدادات التسلسل من الفواتير الحالية
+		// =========================================
+		private static async Task SeedSequenceCountersAsync(
+			ApplicationDbContext context)
+		{
+			async Task SeedOneAsync(
+				string suffix,
+				IQueryable<string> numbers)
+			{
+				var numberList = await numbers
+					.AsNoTracking()
+					.ToListAsync();
+
+				if (numberList.Count == 0) return;
+
+				// البنية: XXX-YYYYMMDD-NNNN
+				var groups = numberList
+					.Select(n =>
+					{
+						var parts = n.Split('-');
+						if (parts.Length != 3) return null;
+						if (!int.TryParse(parts[2], out var seq)) return null;
+						return new { Date = parts[1], Seq = seq };
+					})
+					.Where(x => x != null)
+					.GroupBy(x => x!.Date);
+
+				foreach (var g in groups)
+				{
+					var maxSeq = g.Max(x => x!.Seq);
+					var dbKey = $"{suffix}:{g.Key}";
+
+					var exists = await context.SequenceCounters
+						.AsNoTracking()
+						.AnyAsync(x => x.Key == dbKey);
+
+					if (exists) continue;
+
+					context.SequenceCounters.Add(
+						new SequenceCounter
+						{
+							Key = dbKey,
+							NextValue = maxSeq + 1,
+							UpdatedAt = DateTime.UtcNow
+						});
+				}
+			}
+
+			await SeedOneAsync(
+				"SalesInvoices",
+				context.SalesInvoices
+					.AsNoTracking()
+					.Where(x => x.InvoiceNumber != null)
+					.Select(x => x.InvoiceNumber));
+
+			await SeedOneAsync(
+				"PurchaseInvoices",
+				context.PurchaseInvoices
+					.AsNoTracking()
+					.Where(x => x.InvoiceNumber != null)
+					.Select(x => x.InvoiceNumber));
+
+			await SeedOneAsync(
+				"SalesReturnInvoices",
+				context.SalesReturnInvoices
+					.AsNoTracking()
+					.Where(x => x.InvoiceNumber != null)
+					.Select(x => x.InvoiceNumber));
+
+			await SeedOneAsync(
+				"PurchaseReturnInvoices",
+				context.PurchaseReturnInvoices
+					.AsNoTracking()
+					.Where(x => x.InvoiceNumber != null)
+					.Select(x => x.InvoiceNumber));
+
+			await SeedOneAsync(
+				"JE",
+				context.JournalEntries
+					.AsNoTracking()
+					.Where(x => x.EntryNumber != null)
+					.Select(x => x.EntryNumber));
+
+			var added = context.ChangeTracker
+				.Entries<SequenceCounter>()
+				.Any(x => x.State == EntityState.Added);
+
+			if (added)
+			{
+				await context.SaveChangesAsync();
+			}
 		}
 
 		// =========================================
@@ -1755,70 +1634,37 @@ namespace AccountingSystem.Data
 		{
 			var rawAccounts = new[]
 			{
-				// ═════════════════════════════════════
 				// الأصول (1)
-				// ═════════════════════════════════════
-				new { Code = "1", Name = "الأصول", Type = AccountType.Asset, Parent = (string?)null,
-					System = false },
-				new { Code = "11", Name = "الأصول المتداولة", Type = AccountType.Asset, Parent = "1",
-					System = false },
-				new { Code = "1101", Name = "الصندوق", Type = AccountType.Asset, Parent = "11",
-					System = true },
-				new { Code = "1102", Name = "البنك", Type = AccountType.Asset, Parent = "11",
-					System = true },
-				new { Code = "1103", Name = "العملاء", Type = AccountType.Asset, Parent = "11",
-					System = true },
-				new { Code = "1104", Name = "المخزون", Type = AccountType.Asset, Parent = "11",
-					System = true },
-				new { Code = "1105", Name = "ضريبة القيمة المضافة (المشتريات)", Type = AccountType.Asset, Parent = "11",
-					System = true },
-				new { Code = "1106", Name = "ضريبة المبيعات (المشتريات)", Type = AccountType.Asset, Parent = "11",
-					System = true },
-									new { Code = "1107", Name = "سلف موظفين", Type = AccountType.Asset, Parent = "11",
-					System = true },
+				new { Code = "1", Name = "الأصول", Type = AccountType.Asset, Parent = (string?)null, System = false },
+				new { Code = "11", Name = "الأصول المتداولة", Type = AccountType.Asset, Parent = "1", System = false },
+				new { Code = "1101", Name = "الصندوق", Type = AccountType.Asset, Parent = "11", System = true },
+				new { Code = "1102", Name = "البنك", Type = AccountType.Asset, Parent = "11", System = true },
+				new { Code = "1103", Name = "العملاء", Type = AccountType.Asset, Parent = "11", System = true },
+				new { Code = "1104", Name = "المخزون", Type = AccountType.Asset, Parent = "11", System = true },
+				new { Code = "1105", Name = "ضريبة القيمة المضافة (المشتريات)", Type = AccountType.Asset, Parent = "11", System = true },
+				new { Code = "1106", Name = "ضريبة المبيعات (المشتريات)", Type = AccountType.Asset, Parent = "11", System = true },
+				new { Code = "1107", Name = "سلف موظفين", Type = AccountType.Asset, Parent = "11", System = true },
 
-				// ═════════════════════════════════════
 				// الالتزامات (2)
-				// ═════════════════════════════════════
-				new { Code = "2", Name = "الالتزامات", Type = AccountType.Liability, Parent = (string?)null,
-					System = false },
-				new { Code = "21", Name = "الالتزامات المتداولة", Type = AccountType.Liability, Parent = "2",
-					System = false },
-				new { Code = "2101", Name = "ضريبة القيمة المضافة", Type = AccountType.Liability, Parent = "21",
-					System = true },
-				new { Code = "2102", Name = "الموردون", Type = AccountType.Liability, Parent = "21",
-					System = true },
-				new { Code = "2103", Name = "ضريبة المبيعات (المبيعات)", Type = AccountType.Liability, Parent = "21",
-					System = true },
-									new { Code = "2105", Name = "رواتب مستحقة", Type = AccountType.Liability, Parent = "21",
-					System = true },
+				new { Code = "2", Name = "الالتزامات", Type = AccountType.Liability, Parent = (string?)null, System = false },
+				new { Code = "21", Name = "الالتزامات المتداولة", Type = AccountType.Liability, Parent = "2", System = false },
+				new { Code = "2101", Name = "ضريبة القيمة المضافة", Type = AccountType.Liability, Parent = "21", System = true },
+				new { Code = "2102", Name = "الموردون", Type = AccountType.Liability, Parent = "21", System = true },
+				new { Code = "2103", Name = "ضريبة المبيعات (المبيعات)", Type = AccountType.Liability, Parent = "21", System = true },
+				new { Code = "2105", Name = "رواتب مستحقة", Type = AccountType.Liability, Parent = "21", System = true },
 
-				// ═════════════════════════════════════
 				// حقوق الملكية (3)
-				// ═════════════════════════════════════
-				new { Code = "3", Name = "حقوق الملكية", Type = AccountType.Equity, Parent = (string?)null,
-					System = false },
-				new { Code = "3001", Name = "رأس المال", Type = AccountType.Equity, Parent = "3",
-					System = true },
+				new { Code = "3", Name = "حقوق الملكية", Type = AccountType.Equity, Parent = (string?)null, System = false },
+				new { Code = "3001", Name = "رأس المال", Type = AccountType.Equity, Parent = "3", System = true },
 
-				// ═════════════════════════════════════
 				// الإيرادات (4)
-				// ═════════════════════════════════════
-				new { Code = "4", Name = "الإيرادات", Type = AccountType.Revenue, Parent = (string?)null,
-					System = false },
-				new { Code = "4001", Name = "المبيعات", Type = AccountType.Revenue, Parent = "4",
-					System = true },
+				new { Code = "4", Name = "الإيرادات", Type = AccountType.Revenue, Parent = (string?)null, System = false },
+				new { Code = "4001", Name = "المبيعات", Type = AccountType.Revenue, Parent = "4", System = true },
 
-				// ═════════════════════════════════════
 				// المصروفات (5)
-				// ═════════════════════════════════════
-				new { Code = "5", Name = "المصروفات", Type = AccountType.Expense, Parent = (string?)null,
-					System = false },
-												new { Code = "5001", Name = "تكلفة البضاعة المباعة", Type = AccountType.Expense, Parent = "5",
-					System = true },
-				new { Code = "5101", Name = "مصروف رواتب", Type = AccountType.Expense, Parent = "5",
-					System = true },
-
+				new { Code = "5", Name = "المصروفات", Type = AccountType.Expense, Parent = (string?)null, System = false },
+				new { Code = "5001", Name = "تكلفة البضاعة المباعة", Type = AccountType.Expense, Parent = "5", System = true },
+				new { Code = "5101", Name = "مصروف رواتب", Type = AccountType.Expense, Parent = "5", System = true },
 			};
 
 			var existing =
@@ -1828,10 +1674,6 @@ namespace AccountingSystem.Data
 
 			var byCode =
 				existing.ToDictionary(x => x.Code!);
-
-			// =========================================
-			// المسح 1: إضافة الحسابات الناقصة فقط
-			// =========================================
 
 			var addedAny = false;
 
@@ -1853,9 +1695,7 @@ namespace AccountingSystem.Data
 				};
 
 				context.ChartAccounts.Add(added);
-
 				byCode[raw.Code] = added;
-
 				addedAny = true;
 			}
 
@@ -1863,10 +1703,6 @@ namespace AccountingSystem.Data
 			{
 				await context.SaveChangesAsync();
 			}
-
-			// =========================================
-			// المسح 2: إصلاح الروابط الأبوية
-			// =========================================
 
 			var linkChanged = false;
 
@@ -1885,7 +1721,6 @@ namespace AccountingSystem.Data
 				}
 
 				child.ParentId = parent.Id;
-
 				linkChanged = true;
 			}
 
@@ -1893,10 +1728,6 @@ namespace AccountingSystem.Data
 			{
 				await context.SaveChangesAsync();
 			}
-
-			// =========================================
-			// الربط التلقائي لأول مركز نقدي نشط غير مربوط
-			// =========================================
 
 			var cashBoxAccount =
 				byCode.TryGetValue("1101", out var cashBox)

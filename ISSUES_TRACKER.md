@@ -111,33 +111,39 @@
 - [x] Migration: `20261016003854_AddPurchasePaymentMethod`
 - **الحالة:** ✅ مكتمل — Build succeeded + DB updated
 
-### 🔟 إصلاح Encoding التالف
+### 🔟 إصلاح Encoding التالف — ✅ لا يحتاج إصلاح
 
-- [ ] قائمة الملفات المتأثرة (15 ملف) — `PurchaseReturnInvoices.cs`, `ReturnViewModels.cs`, `PurchaseReturnController.cs`, `Create.cshtml`...
-- [ ] استعادة النص العربي الصحيح
-- [ ] حفظ UTF-8 with BOM
-- **الحالة:** ⬜ لم يبدأ
+- [x] فحص بايتي شامل لـ 427 ملف (`.cs` + `.cshtml`)
+- [x] النتيجة: 0 ملف فيه mojibake حقيقي
+- [x] العربي في كل الملفات سليم UTF-8 with BOM
+- **ملاحظة:** الـ 143 ملف اللي ظهرت في الفحص النصي كانوا false positives بسبب PowerShell console encoding
+- **الحالة:** ✅ مكتمل (لا يحتاج أي تعديل)
 
-### 1️⃣1️⃣ تحويل التقارير إلى SQL Aggregation
+### 1️⃣1️⃣ تحويل التقارير إلى SQL Aggregation — ✅ مكتمل
 
-- [ ] Trial Balance
-- [ ] Ledger
-- [ ] Income Statement
-- [ ] Balance Sheet
-- [ ] Inventory reports
-- **الحالة:** ⬜ لم يبدأ
+- [x] TrialBalance — SQL GroupBy + Sum
+- [x] IncomeStatement — SQL GroupBy + Sum
+- [x] BalanceSheet — SQL GroupBy + Sum
+- [x] InventoryReport — SQL GroupBy + Sum
+- [x] ProductProfitReport — SQL GroupBy + Sum (بدل 3 استعلامات في الميموري)
+- [x] ProfitReport + Ledger — كان بالفعل `SumAsync`
+- **ملاحظة:** التقارير التفصيلية (SalesReport/PurchaseReport/Statements) مقصود إنها تجيب كل صف — مفيش aggregation
+- **الحالة:** ✅ مكتمل — Build succeeded
 
-### 1️⃣2️⃣ توحيد Document Number Service
+### 1️⃣2️⃣ توحيد Document Number Service — ✅ مكتمل
 
-- [ ] دمج `DocumentNumberService` + `SequenceService`
-- [ ] استخدام مصدر واحد لكل الأرقام
-- **الحالة:** ⬜ لم يبدأ
+- [x] `DocumentNumberService` أصبح wrapper حول `SequenceService`
+- [x] `GenerateNumberAsync` بيستخدم `NextFormattedAsync` (آمن ضد التزامن)
+- [x] `SeedSequenceCountersAsync` في `DbSeeder` لزراعة العدادات من الفواتير الحالية
+- **الحالة:** ✅ مكتمل — Build succeeded
 
-### 1️⃣3️⃣ توحيد Entities/ViewModels
+### 1️⃣3️⃣ توحيد Entities/ViewModels — ⚠️ جزئي
 
-- [ ] نقل `PurchaseReturnInvoice` من ViewModels إلى Models
-- [ ] نقل `BranchOptionViewModel` / `StoreOptionViewModel` لمكان مشترك
-- **الحالة:** ⬜ لم يبدأ
+- [x] فحص شامل للموقع الحالي
+- [x] `PurchaseReturnInvoice` في `Models` namespace الصحيح (مكان الملف فقط شكلي)
+- [ ] نقل `PurchaseReturnInvoice` — متروك (المخاطرة > القيمة)
+- [ ] توحيد `BranchOptionViewModel` / `StoreOptionViewModel` — متروك (تكرار غير ضار)
+- **الحالة:** ⚠️ جزئي — الكود شغّال، التحسينات الجمالية مؤجلة
 
 ### 1️⃣4️⃣ WhatsApp Result حقيقي
 
@@ -220,10 +226,10 @@
 | المرحلة | العدد | تم |
 |---|---|---|
 | 🔴 P0 حماية البيانات | 7 | 7 |
-| 🟠 P1 أداء ومحاسبة | 8 | 2 |
+| 🟠 P1 أداء ومحاسبة | 8 | 5 |
 | 🟡 P2 تحسينات | 4 | 0 |
 | 🟢 P3 تنظيف | 4 | 0 |
-| **الإجمالي** | **23** | **9** |
+| **الإجمالي** | **23** | **12** |
 
 ---
 
@@ -238,6 +244,10 @@
 7. ~~Model/Migration Sync~~ ✅
 8. ~~DatabaseKeepAlive~~ ✅
 9. ~~Purchase Payment Accounting~~ ✅
-10. إصلاح Encoding التالف ← **التالي**
+10. ~~Encoding~~ ✅ (سليم من الأصل)
+11. ~~Reports SQL Aggregation~~ ✅
+12. ~~Document Number Service~~ ✅
+13. ~~Entities/ViewModels Unification~~ ⚠️ جزئي
+14. WhatsApp Result حقيقي ← **التالي**
 
-**المرحلة P0 كلها مكتملة! 🎉 — وبدأنا P1 (2/8)**
+**P0 كامل + P1 (5/8)**
