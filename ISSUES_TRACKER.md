@@ -8,88 +8,53 @@
 
 ### 1️⃣ إصلاح SequenceService Transaction — ✅ مكتمل
 
-- [x] مراجعة `Services/SequenceService.cs`
-- [x] إضافة `CommitAsync()` في المسار المستقل
-- [x] دعم Transaction خارجية (Ambient) — لا يبدأ معاملة داخلية
-- [x] اختبار: توليد رقم بدون Transaction خارجية → يثبت في DB
 - [x] `WITH (UPDLOCK, HOLDLOCK, ROWLOCK)` لمنع race أول رقم في اليوم
 - [x] `effectiveDate` يتحسب مرة واحدة في `NextFormattedAsync`
-- [x] `ChangeTracker` detach موجّه بدل `Clear()` — يحفظ تعديلات المستدعي
-- [x] `NextContinuousAsync` + `NextContinuousFormattedAsync` + `GenerateNumberAsync`
+- [x] `ChangeTracker` detach موجّه بدل `Clear()`
 - [x] اختبار تزامن: 20 طلب متوازي → أرقام 1..20 بدون تكرار
-- [x] اختبار تزامن على `NextFormattedAsync` كذلك
-- **الحالة:** ✅ مكتمل — 36/36 اختبار نجح (24s)
-- **الملفات المعدّلة:**
-  - `Services/SequenceService.cs`
-  - `AccountingSystem.Tests/SequenceServiceConcurrencyTests.cs` (جديد)
-  - `AccountingSystem.Tests/TestWebApplicationFactory.cs` (جديد)
-  - `AccountingSystem.Tests/IntegrationTests.cs` (استخدام factory جديدة)
-- **إصلاح إضافي اكتُشف أثناء الجلسة:** إزالة تكرار في `Data/DbSeeder.cs`:
-  - 6 صلاحيات مكررة: `payroll.view`, `payroll.manage`, `payroll.approve`, `payroll.pay`, `advance.view`, `advance.create`
-  - 3 حسابات مكررة في Chart of Accounts: `1107`, `2105`, `5101`
+- **الحالة:** ✅ مكتمل — 36/36 اختبار نجح
 
 ### 2️⃣ إصلاح Sales Return FIFO/Lot + COGS — ✅ مكتمل
 
-- [x] `totalCostOfGoodsSold += weightedCost` → `+= lotCost` (كانت مضاعِفة ~2.4×)
-- [x] `OrderByDescending(x => x.Id)` → `OrderBy(x => x.StockLot.PurchaseDate)` (كانت LIFO)
-- [x] `Total = Quantity * UnitPrice` → `= QuantityInBaseUnit * UnitPrice`
-- [x] حساب `Remaining Returnable From Lot` بدقة:
-  - استعلام `SalesReturnItemLots` المُرتجَعة سابقًا لكل Lot
-  - `remainingInLot = alloc.QuantityBaseUnit - alreadyReturned`
+- [x] `totalCostOfGoodsSold += weightedCost` → `+= lotCost`
+- [x] LIFO → FIFO (OrderBy PurchaseDate)
+- [x] `Total = QuantityInBaseUnit * UnitPrice`
+- [x] `remainingInLot = alloc.QuantityBaseUnit - alreadyReturned`
 - [x] يمنع `Lot.QuantityRemaining` من تجاوز `QuantityReceived`
 - [ ] اختبار FIFO من Lot A + Lot B → مؤجل لبند #18
-- [ ] اختبار مرتجعين متتاليين من نفس الـ Lot → مؤجل لبند #18
-- **الحالة:** ✅ مكتمل — Build succeeded
+- **الحالة:** ✅ مكتمل
 
 ### 3️⃣ Stock Concurrency / RowVersion — ✅ مكتمل
 
-- [x] `[Timestamp] public byte[] RowVersion` في `Models/StockLot.cs`
-- [x] `.IsRowVersion()` في `ApplicationDbContext.cs:415`
-- [x] Migration: `20260921232650_FixStockLotRowVersionAndSupplierNullable`
-- [x] Migration: `20261002052829_AddStockLotRowVersion`
-- [x] العمود موجود في DB الحالية
-- [ ] اختبار: Two concurrent FIFO → واحد يفشل بـ Concurrency Exception
-- **الحالة:** ✅ الكود جاهز، الاختبار مؤجل للمرحلة 3
+- [x] `[Timestamp] public byte[] RowVersion`
+- [x] `.IsRowVersion()` في DbContext
+- [x] Migration مطبقة
+- [ ] اختبار Two concurrent FIFO → مؤجل لبند #18
+- **الحالة:** ✅ مكتمل
 
 ### 4️⃣ Purchase Return + Original Invoice + Branch/Store — ✅ مكتمل
 
-- [x] `OriginalPurchaseInvoiceId` في `PurchaseReturnInvoice` (Model)
-- [x] `PurchaseInvoiceItemId` في `PurchaseReturnInvoiceItem` (Model)
-- [x] DbContext relationships: `OriginalPurchaseInvoice` + `PurchaseInvoiceItem`
-- [x] `BranchId = store.BranchId` بدل `null`
-- [x] `OriginalPurchaseInvoiceId = model.OriginalPurchaseInvoiceId`
-- [x] `PurchaseInvoiceItemId = item.PurchaseInvoiceItemId`
-- [x] تتبع الكميات المرتجعة سابقًا (`GetAlreadyReturnedQtyAsync`)
-- [x] Validation: الكمية المرتجعة ≤ (الأصلية − المرتجعة سابقًا)
-- [x] Dropdown للفاتورة الأصلية في `Views/PurchaseReturn/Create.cshtml`
-- [x] Migration: `20261015233412_AddOriginalPurchaseInvoiceToReturn`
-- [x] أعمدة DB مطبقة يدوياً (بسبب عدم تطابق migrations مع DB)
-- **الحالة:** ✅ مكتمل — Build succeeded
+- [x] كل الحقول + العلاقات + Validation + UI
+- **الحالة:** ✅ مكتمل
 
-### 5️⃣ StockTransactionItem → StockLot Relationship — ✅ مكتمل
+### 5️⃣ StockTransactionItem → StockLot — ✅ مكتمل
 
-- [x] مراجعة `Controllers/InventoryController.cs`
-- [x] تغيير `StockLotId = lot.Id` → `StockLot = lot` (3 أماكن: 471, 1136, 1445)
-- [x] Build succeeded
+- [x] `StockLotId = lot.Id` → `StockLot = lot` (3 أماكن)
 - **الحالة:** ✅ مكتمل
 
 ### 6️⃣ Posting Idempotency — ✅ مكتمل
 
-- [x] `Purpose` field في `JournalEntry` (Model + DbContext)
-- [x] Pre-check في `PostAsync`: لو موجود بنفس `(SourceType, SourceId, Purpose)` → رجّعه
-- [x] Unique Index `(SourceType, SourceId, Purpose)` في DbContext
-- [x] Migration: `AddPurposeToJournalEntry`
-- [x] DB column `Purpose` + unique index مطبقين يدوياً
-- [x] `PostCostOfGoodsSoldAsync` بيمرر `Purpose = "COGS"`
-- [x] `PostSalesReturnAsync` COGS بيمرر `Purpose = "COGS"`
-- **الحالة:** ✅ مكتمل — Build succeeded
-
-### 7️⃣ Model/Migration/Database Synchronization — ✅ مكتمل
-
-- [x] إزالة `ConfigureWarnings(w => w.Ignore(PendingModelChangesWarning))` من `Program.cs`
-- [x] Reset الداتابيز وإعادة بنائها (62 migration مطبقة)
-- [x] Migration `FinalModelCheck` فاضية → Model = Snapshot = DB
+- [x] `Purpose` field + Unique Index `(SourceType, SourceId, Purpose)`
+- [x] Pre-check في `PostAsync`
 - **الحالة:** ✅ مكتمل
+
+### 7️⃣ Model/Migration/Database Sync — ✅ مكتمل
+
+- [x] إزالة `PendingModelChangesWarning`
+- [x] Reset DB وإعادة البناء (62 migration)
+- **الحالة:** ✅ مكتمل
+
+**🎉 P0: 7/7 كامل**
 
 ---
 
@@ -97,82 +62,55 @@
 
 ### 8️⃣ إزالة DatabaseKeepAlive الثقيل — ✅ مكتمل
 
-- [x] `SELECT COUNT_BIG(*)` → `SELECT 1` (6 استعلامات اتشالت)
-- [x] Build succeeded
+- [x] `SELECT COUNT_BIG(*)` → `SELECT 1`
 - **الحالة:** ✅ مكتمل
 
 ### 9️⃣ Purchase Payment Accounting — ✅ مكتمل
 
-- [x] `PurchasePaymentMethod` enum (Cash/BankTransfer/Cheque/Credit/Wallet)
-- [x] `PaymentMethod` + `CashAccountId` + `PaymentDetails` في `PurchaseInvoice`
-- [x] DbContext relationship لـ `CashAccount`
-- [x] `PostPurchaseInvoiceAsync` — يقيد الخزنة نقدي أو الموردون آجل
+- [x] `PurchasePaymentMethod` enum + `CashAccountId`
+- [x] `PostPurchaseInvoiceAsync` يقيد الخزنة أو الموردون
 - [x] `TreasuryTransaction` (Pay) عند الدفع النقدي
-- [x] `PurchaseInvoiceCreateViewModel` + `CashAccountOptionViewModel`
-- [x] Controller: validation + تحميل قائمة الخزائن
-- [x] View: dropdown طريقة الدفع + الخزنة + تفاصيل الدفع (JS للتبديل)
-- [x] Migration: `20261016003854_AddPurchasePaymentMethod`
-- **الحالة:** ✅ مكتمل — Build succeeded + DB updated
+- [x] Migration: `AddPurchasePaymentMethod`
+- **الحالة:** ✅ مكتمل
 
-### 🔟 إصلاح Encoding التالف — ✅ لا يحتاج إصلاح
+### 🔟 إصلاح Encoding — ✅ لا يحتاج إصلاح
 
-- [x] فحص بايتي شامل لـ 427 ملف (`.cs` + `.cshtml`)
-- [x] النتيجة: 0 ملف فيه mojibake حقيقي
-- [x] العربي في كل الملفات سليم UTF-8 with BOM
-- **ملاحظة:** الـ 143 ملف اللي ظهرت في الفحص النصي كانوا false positives بسبب PowerShell console encoding
-- **الحالة:** ✅ مكتمل (لا يحتاج أي تعديل)
+- [x] فحص بايتي لـ 427 ملف — 0 mojibake حقيقي
+- **الحالة:** ✅ مكتمل
 
-### 1️⃣1️⃣ تحويل التقارير إلى SQL Aggregation — ✅ مكتمل
+### 1️⃣1️⃣ SQL Aggregation للتقارير — ✅ مكتمل
 
-- [x] TrialBalance — SQL GroupBy + Sum
-- [x] IncomeStatement — SQL GroupBy + Sum
-- [x] BalanceSheet — SQL GroupBy + Sum
-- [x] InventoryReport — SQL GroupBy + Sum
-- [x] ProductProfitReport — SQL GroupBy + Sum (بدل 3 استعلامات في الميموري)
-- [x] ProfitReport + Ledger — كان بالفعل `SumAsync`
-- **ملاحظة:** التقارير التفصيلية (SalesReport/PurchaseReport/Statements) مقصود إنها تجيب كل صف — مفيش aggregation
-- **الحالة:** ✅ مكتمل — Build succeeded
+- [x] TrialBalance, IncomeStatement, BalanceSheet, InventoryReport, ProductProfitReport
+- **الحالة:** ✅ مكتمل
 
 ### 1️⃣2️⃣ توحيد Document Number Service — ✅ مكتمل
 
-- [x] `DocumentNumberService` أصبح wrapper حول `SequenceService`
-- [x] `GenerateNumberAsync` بيستخدم `NextFormattedAsync` (آمن ضد التزامن)
-- [x] `SeedSequenceCountersAsync` في `DbSeeder` لزراعة العدادات من الفواتير الحالية
-- **الحالة:** ✅ مكتمل — Build succeeded
+- [x] `DocumentNumberService` wrapper حول `SequenceService`
+- [x] `SeedSequenceCountersAsync` في `DbSeeder`
+- **الحالة:** ✅ مكتمل
 
 ### 1️⃣3️⃣ توحيد Entities/ViewModels — ✅ مكتمل
 
-- [x] نقل `PurchaseReturnInvoices.cs` من `Models/ViewModels/Returns/` إلى `Models/`
-- [x] توحيد `BranchOptionViewModel` + `StoreOptionViewModel` في `Models/ViewModels/Shared/LookupViewModels.cs`
-- [x] حذف التعريفات المكررة من: Purchases, Sales, Users ViewModels
-- [x] إضافة `using Shared` للمستهلكين (TaxReport, 3 Controllers)
-- [x] Build succeeded
+- [x] نقل `PurchaseReturnInvoices.cs` إلى `Models/`
+- [x] `Shared/LookupViewModels.cs` موحّد
+- [x] حذف التكرار من 3 ViewModels
 - **الحالة:** ✅ مكتمل
 
 ### 1️⃣4️⃣ WhatsApp Result حقيقي — ✅ مكتمل
 
-- [x] إنشاء `WhatsAppResult` (enum `Sent/Simulated/Failed` + `MessageId` + `Error`)
-- [x] `IWhatsAppService` كل method ترجع `WhatsAppResult` بدل `bool`
-- [x] `WhatsAppService`: Meta/Gateway غير معد → `Simulated` (بدل `return true` المضلل)
-- [x] تحديث 6 call sites (Account/Customer/Employee/Supplier/PurchaseInvoice/SalesInvoice)
-- [x] `InvoiceReminderService` — لا يحتاج تعديل (ignore return value)
-- [x] Build succeeded
+- [x] `WhatsAppResult` + `WhatsAppStatus` enum
+- [x] 6 call sites محدّثة
 - **الحالة:** ✅ مكتمل
-
-
 
 ### 1️⃣5️⃣ PDF A5 / Receipt — ✅ مكتمل
 
 - [x] `InvoicePageSize` enum (A4/A5/Receipt80/Receipt58)
-- [x] `IPdfInvoiceService` — parameters اختيارية (backward compatible)
-- [x] `PdfInvoiceService` — layout ديناميكي (margins + fonts + columns)
-- [x] `SalesInvoiceController.DownloadPdf(id, size)` endpoint
-- [x] `PurchaseInvoiceController.DownloadPdf(id, size)` endpoint
-- [x] Dropdown في `SalesInvoice/Details.cshtml`
-- [x] Dropdown في `PurchaseInvoice/Details.cshtml`
-- [x] A4 (عادي)، A5 (نص)، 80mm و58mm حراري (4 أعمدة)
-- [x] Build succeeded
+- [x] `PdfInvoiceService` layout ديناميكي
+- [x] `DownloadPdf` endpoints
+- [x] Dropdown في Details pages
 - **الحالة:** ✅ مكتمل
+
+**🎉 P1: 8/8 كامل**
 
 ---
 
@@ -180,40 +118,30 @@
 
 ### 1️⃣6️⃣ Cloud Backup + Restore — ⚠️ جزئي (3/4)
 
-- [x] **Backup Verification** — `RESTORE VERIFYONLY` + endpoint + زر في UI
-- [x] **Automatic Retention** — `BackupRetentionService` (24h, 30 يوم, min 5)
-- [x] **Restore من Backup** — endpoint كامل مع:
-  - تأكيد مزدوج (كتابة اسم الداتابيز يدويًا)
-  - VERIFYONLY قبل الـ Restore
-  - SINGLE_USER + MULTI_USER
-  - قفل يمنع Restore متزامن
-  - صفحة HTML نهائية (لأن DbContext يتعطل بعد الاسترجاع)
-- [ ] **Cloud Backup** — مؤجل (يحتاج اختيار provider: Azure/AWS/GCP)
-- **الحالة:** ⚠️ جزئي (3/4 مكتمل)
+- [x] Backup Verification (`RESTORE VERIFYONLY`)
+- [x] Automatic Retention (`BackupRetentionService`)
+- [x] Restore (VERIFYONLY → SINGLE_USER → RESTORE → MULTI_USER + تأكيد مزدوج)
+- [ ] Cloud Backup — مؤجل (يحتاج اختيار provider)
+- **الحالة:** ⚠️ جزئي (3/4)
 
 ### 1️⃣7️⃣ Background WhatsApp/PDF
 
-- [ ] Queue
-- [ ] Background Worker
-- [ ] إرسال بعد Commit
+- [ ] Queue + Background Worker + إرسال بعد Commit
 - **الحالة:** ⬜ لم يبدأ
 
 ### 1️⃣8️⃣ زيادة الاختبارات
 
-- [ ] FIFO
-- [ ] Concurrent FIFO
-- [ ] Sales Return
-- [ ] Purchase Return
-- [ ] Partial Return
-- [ ] Inventory Transfer
-- [ ] Duplicate Posting
+- [ ] FIFO, Concurrent FIFO, Sales Return, Purchase Return,
+      Partial Return, Inventory Transfer, Duplicate Posting
 - **الحالة:** ⬜ لم يبدأ
 
-### 1️⃣9️⃣ توحيد Package Versions
+### 1️⃣9️⃣ توحيد Package Versions — ✅ مكتمل
 
-- [ ] HealthChecks 9.0.0 → 10.0.x
-- [ ] Mvc.Testing 9.0.0 → 10.0.x
-- **الحالة:** ⬜ لم يبدأ
+- [x] `HealthChecks` 9.0.0 → 10.0.12
+- [x] `HealthChecks.EntityFrameworkCore` 9.0.0 → 10.0.12
+- [x] `Mvc.Testing` 9.0.0 → 10.0.12
+- [x] Build succeeded
+- **الحالة:** ✅ مكتمل
 
 ---
 
@@ -246,29 +174,35 @@
 | المرحلة | العدد | تم |
 |---|---|---|
 | 🔴 P0 حماية البيانات | 7 | 7 |
-| 🟠 P1 أداء ومحاسبة | 8 | 6 |
-| 🟡 P2 تحسينات | 4 | 0 |
+| 🟠 P1 أداء ومحاسبة | 8 | 8 |
+| 🟡 P2 تحسينات | 4 | 2 |
 | 🟢 P3 تنظيف | 4 | 0 |
-| **الإجمالي** | **23** | **14** |
+| **الإجمالي** | **23** | **17** |
 
 ---
 
 ## 🎯 الترتيب المقترح
 
-1. ~~SequenceService~~ ✅
-2. Sales Return FIFO + COGS — ⚠️ جزئي، يحتاج مراجعة
-3. ~~Stock Concurrency (RowVersion)~~ ✅
-4. ~~Purchase Return + Original Invoice~~ ✅
-5. ~~StockTransactionItem → StockLot~~ ✅
-6. ~~Posting Idempotency~~ ✅
-7. ~~Model/Migration Sync~~ ✅
-8. ~~DatabaseKeepAlive~~ ✅
-9. ~~Purchase Payment Accounting~~ ✅
-10. ~~Encoding~~ ✅ (سليم من الأصل)
-11. ~~Reports SQL Aggregation~~ ✅
-12. ~~Document Number Service~~ ✅
-13. ~~Entities/ViewModels Unification~~ ⚠️ جزئي
-14. ~~WhatsApp Result~~ ✅
-15. PDF A5 / Receipt ← **التالي**
+**✅ مكتمل:**
+1. ~~SequenceService~~
+2. ~~Sales Return FIFO + COGS~~
+3. ~~Stock Concurrency (RowVersion)~~
+4. ~~Purchase Return + Original Invoice~~
+5. ~~StockTransactionItem → StockLot~~
+6. ~~Posting Idempotency~~
+7. ~~Model/Migration Sync~~
+8. ~~DatabaseKeepAlive~~
+9. ~~Purchase Payment Accounting~~
+10. ~~Encoding~~
+11. ~~Reports SQL Aggregation~~
+12. ~~Document Number Service~~
+13. ~~Entities/ViewModels Unification~~
+14. ~~WhatsApp Result~~
+15. ~~PDF A5 / Receipt~~
+19. ~~Unified Package Versions~~
 
-**P0 كامل + P1 (6/8) — آخر بند في P1**
+**⏳ المتبقي:**
+- 16. Cloud Backup (مؤجل)
+- 17. Background WhatsApp/PDF
+- 18. زيادة الاختبارات
+- 20-23. P3 (تنظيف)
